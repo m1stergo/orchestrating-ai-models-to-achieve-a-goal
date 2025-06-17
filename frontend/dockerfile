@@ -1,0 +1,14 @@
+FROM node:20
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+COPY . .
+
+# Install dependencies with pnpm
+RUN pnpm install
+
+# Start dev server (adjust to your setup: vite, nuxt, vue-cli, etc.)
+CMD ["pnpm", "dev"]
