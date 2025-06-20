@@ -1,15 +1,21 @@
-fastapi
-uvicorn[standard]
-httpx
-pydantic[dotenv]
-aiofiles
+# Web framework and API dependencies
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+httpx>=0.24.0
+pydantic[dotenv]>=2.0.0
+pydantic-settings>=2.0.0  # for settings management
+aiofiles>=0.8.0
+
+# Database dependencies
+sqlalchemy>=2.0.0  # ORM for database operations
+psycopg2-binary>=2.9.5  # PostgreSQL adapter
 
 # AI & processing libraries (modular - include based on use case)
-openai            # for LLM via OpenAI API
-transformers      # for Hugging Face models
-torch             # required for many transformer models
-beautifulsoup4    # web scraping
-requests          # basic HTTP requests
-gtts              # text-to-speech
-opencv-python     # basic visual analysis
-pillow            # image handling
+openai>=1.0.0            # for LLM via OpenAI API
+transformers>=4.30.0     # for Hugging Face models
+torch>=2.0.0             # required for many transformer models
+beautifulsoup4>=4.12.0   # web scraping
+requests>=2.30.0         # basic HTTP requests
+gtts>=2.3.0              # text-to-speech
+opencv-python>=4.7.0     # basic visual analysis
+pillow>=10.0.0           # image handling
