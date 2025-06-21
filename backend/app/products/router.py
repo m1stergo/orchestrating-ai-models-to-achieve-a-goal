@@ -7,7 +7,6 @@ from app.database import get_db
 
 router = APIRouter(
     prefix="/products",
-    tags=["Products"]
 )
 
 

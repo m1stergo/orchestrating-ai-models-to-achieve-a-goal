@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.products import router as products_router
+from app.extract_web_content import router as extract_web_content_router
+from app.describe_image import router as describe_image_router
+from app.generate_description import router as generate_description_router
 from app.config import settings
 
 app = FastAPI(
@@ -19,4 +22,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(products_router.router, prefix=settings.API_V1_STR)
+app.include_router(products_router.router, prefix=f"{settings.API_V1_STR}/products", tags=["products"])
+app.include_router(extract_web_content_router.router, prefix=f"{settings.API_V1_STR}/extract-web-content", tags=["extract-web-content"])
+app.include_router(describe_image_router.router, prefix=f"{settings.API_V1_STR}/describe-image", tags=["describe-image"])
+app.include_router(generate_description_router.router, prefix=f"{settings.API_V1_STR}/generate-description", tags=["generate-description"])
