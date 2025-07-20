@@ -2,7 +2,5 @@
 </script>
 
 <template>
-  <main class="bg-amber-200">
-    welcome
-  </main>
+  <h2>Product description</h2>
 </template>

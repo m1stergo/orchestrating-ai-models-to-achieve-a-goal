@@ -24,5 +24,15 @@ export default defineConfigWithVueTs(
     ...pluginVitest.configs.recommended,
     files: ['src/**/__tests__/*'],
   },
+
+  // Add custom rules
+  {
+    rules: {
+      'indent': ['error', 2],
+      'vue/html-indent': ['error', 2],
+      'vue/script-indent': ['error', 2],
+    }
+  },
+  
   skipFormatting,
 )
