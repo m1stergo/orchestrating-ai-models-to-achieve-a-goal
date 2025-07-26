@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, reactive } from 'vue'
 
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
-import { DescribeImage } from '@/features/DescribeImage'
 import { WriteProductDescription } from '@/features/WriteProductDescription'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { createProduct } from '@/entities/products/api'
@@ -29,27 +28,28 @@ const {
 
 const visible = ref(false)
 
-const name = ref('')
-const description = ref('')
-const images = ref<string[]>([])
-const audio = ref('')
+const product = reactive({
+  name: '',
+  description: '',
+  images: [],
+  audio: '',
+})
 
 const handleSubmit = async () => {
   await mutateAsync({
-    name: name.value || 'prueba',
-    description: description.value || 'prueba',
-    images: images.value || ['prueba'],
-    audio: audio.value || 'prueba',
+    name: product.name || 'prueba',
+    description: product.description || 'prueba',
+    images: product.images || ['prueba'],
+    audio: product.audio || 'prueba',
   })
   visible.value = false
 }
 </script>
 
 <template>
-  <Button label="Add product" rounded text size="small" @click="() => visible = true"/>
-  <Drawer v-model:visible="visible" header="Create Product" position="right" class="w-1/2">
-    <DescribeImage />
-    <WriteProductDescription />
-    <Button type="submit" label="Submit" @click="handleSubmit" />
+  <Button label="Write product description" rounded text size="small" @click="() => visible = true" />
+  <Drawer v-model:visible="visible" header="Write product description" position="right" class="w-1/2" :pt="{ content: { class: 'flex flex-col gap-2' } }">
+    <WriteProductDescription v-model="product" />
+    <Button type="submit" label="Submit" @click="handleSubmit" class="mt-auto" />
   </Drawer>
 </template>

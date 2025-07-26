@@ -17,5 +17,6 @@ async def extract_web_content(url: str) -> ExtractWebContentResponse:
         url=str(url),
         title="Mock Website Title",
         keywords=["mock", "example", "extraction"],
-        description="This is a mock description of the website."
+        description="This is a mock description of the website.",
+        images=["https://picsum.photos/200", "https://picsum.photos/200", "https://picsum.photos/200"]
     )

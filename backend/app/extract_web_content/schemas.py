@@ -12,3 +12,4 @@ class ExtractWebContentResponse(BaseModel):
     title: str
     keywords: list
     description: str
+    images: list

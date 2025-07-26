@@ -9,7 +9,7 @@ import { useMutation, useQueryCache, useQuery } from '@pinia/colada'
 import { updateProduct, getProductById } from '@/entities/products/api'
 import { useToast } from 'primevue/usetoast'
 import InputText from 'primevue/inputtext'
-import type { ProductUpdate } from '@/entities/products/models'
+import type { ProductUpdate } from '@/entities/products/types'
 
 const props = defineProps<{ id: number }>()
 const queryCache = useQueryCache()

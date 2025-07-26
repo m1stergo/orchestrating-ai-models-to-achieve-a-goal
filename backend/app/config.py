@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+from pathlib import Path
 import os
 
 
@@ -20,6 +21,19 @@ class Settings(BaseSettings):
         "DATABASE_URL",
         f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
     )
+    
+    # Backend URL settings
+    BASE_URL: str = "http://localhost:8000"
+    
+    # Image storage settings
+    IMAGES_DIR: Path = Path("app/static/images")
+    STATIC_URL: str = "http://localhost:8000/static"
+    
+    # Computed property for image URL construction
+    @property
+    def images_url(self) -> str:
+        """Get the full URL path for images."""
+        return f"{self.STATIC_URL}/images"
     
     class Config:
         env_file = ".env"

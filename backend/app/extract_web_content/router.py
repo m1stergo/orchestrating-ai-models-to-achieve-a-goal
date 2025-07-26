@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 @router.post("/", response_model=ExtractWebContentResponse)
-async def extract_web_content_endpoint(request: ExtractWebContentRequest):
+async def extract_site_content_endpoint(request: ExtractWebContentRequest):
     """
     Endpoint to extract content from a website.
     
