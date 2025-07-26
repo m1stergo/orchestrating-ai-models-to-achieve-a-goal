@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import Tabs from 'primevue/tabs'
 import TabList from 'primevue/tablist'
 import Tab from 'primevue/tab'
@@ -9,24 +9,39 @@ import Card from 'primevue/card'
 import Chip from 'primevue/chip';
 import ExtractContentFromWebsite from './ExtractContentFromWebsite.vue'
 import UploadImage from './UploadImage.vue'
-import type { ExtractSiteContentResponse, UploadImageResponse } from '../DescribeImage/types'
+import type { ExtractSiteContentResponse, UploadImageResponse } from './types'
 import Skeleton from 'primevue/skeleton'
+import { useMutation } from '@pinia/colada'
+import { extractSiteContent, describeImage } from './api'
+import { useToast } from 'primevue/usetoast'
+
+const toast = useToast()
 
 const loading = ref(false);
-const product = defineModel()
 
 const source = reactive<ExtractSiteContentResponse>({
     title: '',
     description: '',
-    keywords: [],
     images: [],
     url: '',
+})
+
+const mainImage = computed(() => source.images[0])
+const { mutate: describe } = useMutation({
+  mutation: describeImage,
+  onSuccess: (data) => {
+    source.description = data.description
+    toast.add({ severity: 'info', summary: 'Confirmed', detail: 'Image described successfully', life: 3000 });
+  },
+  onError: () => {
+    toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error describing the image, please try again', life: 3000 });
+  },
+
 })
 
 function handleExtractContent(content: ExtractSiteContentResponse) {
     source.title = content.title
     source.description = content.description
-    source.keywords = content.keywords
     source.images = content.images
     source.url = content.url
 }
@@ -34,7 +49,6 @@ function handleExtractContent(content: ExtractSiteContentResponse) {
 function handleUploadImage(content: UploadImageResponse) {
     source.title = ''
     source.description = ''
-    source.keywords = []
     source.images = [content.image_url]
     source.url = ''
 }
@@ -42,6 +56,12 @@ function handleUploadImage(content: UploadImageResponse) {
 function handleLoading(isLoading: boolean) {
     loading.value = isLoading
 }
+
+watch(mainImage, () => {
+    if (mainImage.value) {
+        describe(mainImage.value)
+    }
+})
 </script>
 
 <template>
@@ -65,21 +85,5 @@ function handleLoading(isLoading: boolean) {
         </div>
         <Skeleton height="2rem"></Skeleton>
         <Skeleton height="4rem"></Skeleton>
-    </div>
-    <div v-else>
-        <div v-if="source.images.length > 0" class="flex gap-2">
-            <img v-for="image in source.images" :key="image" :src="image" :alt="image" class="w-24 rounded" />
-        </div>
-        <div v-else>
-            <p>No images available</p>
-        </div>
-        <div class="flex gap-2">
-            <span>Keywords:</span>
-            <Chip v-for="keyword in source.keywords" :key="keyword" :label="keyword" />
-        </div>
-        <h4>Title</h4>
-        <p>{{ source.title }}</p>
-        <h4>Description</h4>
-        <p>{{ source.description }}</p>
     </div>
 </template>

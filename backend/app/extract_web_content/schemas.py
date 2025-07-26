@@ -10,6 +10,5 @@ class ExtractWebContentResponse(BaseModel):
     """Schema for web content extraction response."""
     url: str
     title: str
-    keywords: list
     description: str
     images: list

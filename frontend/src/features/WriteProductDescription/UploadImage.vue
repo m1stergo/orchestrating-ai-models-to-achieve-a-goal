@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
 import FileUpload from 'primevue/fileupload'
 import { ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
@@ -53,11 +52,10 @@ watch(selectedFile, (newFile) => {
 
 <template>
 <div class="flex flex-col gap-2">
-    <div class="flex gap-2">
-        <FileUpload mode="basic" accept="image/*" :maxFileSize="1000000" @select="onFileSelect" :auto="true" chooseLabel="Choose image"/>
-    </div>
-    <div v-if="imagePreview" class="mt-3">
-      <img :src="imagePreview" alt="Preview" style="max-width: 300px; max-height: 300px;" />
+    <div class="flex items-center gap-2">
+      <FileUpload mode="basic" accept="image/*" :maxFileSize="1000000" @select="onFileSelect" :auto="true" chooseLabel="Choose image"/>
+      <img v-if="imagePreview" :src="imagePreview" class="rounded" alt="Preview" style="width: auto; max-height: 42px;" />
+      <p v-if="selectedFile">{{ selectedFile?.name }}</p>
     </div>
 </div>
 </template>

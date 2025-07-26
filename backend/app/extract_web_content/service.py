@@ -1,10 +1,10 @@
 from app.extract_web_content.schemas import ExtractWebContentResponse
+from app.extract_web_content.strategies.factory import StrategyFactory
 
 
 async def extract_web_content(url: str) -> ExtractWebContentResponse:
     """
-    Mock function to extract content from a website.
-    In a real implementation, this would use a library like requests, beautifulsoup, or scrapy.
+    Extract content from a website using the appropriate strategy based on the URL.
     
     Args:
         url: The URL to extract content from
@@ -12,11 +12,15 @@ async def extract_web_content(url: str) -> ExtractWebContentResponse:
     Returns:
         ExtractWebContentResponse: The extracted content
     """
-    # Mock response
+    # Get the appropriate strategy for this URL
+    strategy = StrategyFactory.get_strategy(url)
+    
+    # Extract content using the strategy
+    content = strategy.extract_content(url)
+    
     return ExtractWebContentResponse(
         url=str(url),
-        title="Mock Website Title",
-        keywords=["mock", "example", "extraction"],
-        description="This is a mock description of the website.",
-        images=["https://picsum.photos/200", "https://picsum.photos/200", "https://picsum.photos/200"]
+        title=content["title"],
+        description=content["description"],
+        images=content["media_images"] if content["media_images"] else ([content["image_url"]] if content["image_url"] else [])
     )

@@ -12,10 +12,17 @@ psycopg2-binary>=2.9.5  # PostgreSQL adapter
 
 # AI & processing libraries (modular - include based on use case)
 openai>=1.0.0            # for LLM via OpenAI API
-transformers>=4.30.0     # for Hugging Face models
-torch>=2.0.0             # required for many transformer models
+transformers>=4.37.0     # for Hugging Face models (updated for Qwen2VL)
+torch>=2.1.0             # required for many transformer models
+torchvision>=0.16.0      # for vision models
 beautifulsoup4>=4.12.0   # web scraping
 requests>=2.30.0         # basic HTTP requests
 gtts>=2.3.0              # text-to-speech
 opencv-python>=4.7.0     # basic visual analysis
 pillow>=10.0.0           # image handling
+accelerate>=0.25.0       # for model acceleration
+sentencepiece>=0.1.99    # for tokenization
+protobuf>=3.20.0         # for model serialization
+qwen-vl-utils            # Qwen VL utilities for process_vision_info
+numpy>=1.24.0            # numerical computing
+scipy>=1.10.0            # scientific computing

@@ -19,9 +19,6 @@ async def describe_image_endpoint(request: DescribeImageRequest):
     try:
         result = await describe_image(
             request.image_url,
-            analyze_objects=request.analyze_objects,
-            analyze_faces=request.analyze_faces,
-            analyze_text=request.analyze_text
         )
         return result
     except Exception as e:

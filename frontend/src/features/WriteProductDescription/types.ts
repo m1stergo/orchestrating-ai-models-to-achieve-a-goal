@@ -26,3 +26,6 @@ export interface UploadImageResponse {
   size: number
 }
 
+export interface DescribeImageResponse {
+  description: string 
+}
