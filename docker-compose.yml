@@ -1,7 +1,11 @@
 version: '3.8'
+
 services:
+  # Core Backend Service
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: dockerfile
     ports:
       - "8000:8000"
     depends_on:
@@ -13,14 +17,65 @@ services:
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres
       - DATABASE_NAME=orchestration_db
+      - DESCRIBE_IMAGE_SERVICE_URL=http://describe-image-service:8001
+      - EXTRACT_WEBCONTENT_SERVICE_URL=http://extract-webcontent-service:8002
+      - GENERATE_DESCRIPTION_SERVICE_URL=http://generate-description-service:8003
     volumes:
       - ./backend:/app
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - ./frontend:/app
+    networks:
+      - app-network
+
+  # Describe Image Service (AI - GPU intensive)
+  describe-image-service:
+    build:
+      context: ./services/describe-image
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - MODEL_CACHE_DIR=/app/models
+    volumes:
+      - model_cache:/app/models
+      - ./services/describe-image:/app  # Hot-reload para desarrollo
+    networks:
+      - app-network
+    # Uncomment for GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Extract Web Content Service (CPU intensive)
+  extract-webcontent-service:
+    build:
+      context: ./services/extract-webcontent
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./services/extract-webcontent:/app  # Hot-reload para desarrollo
+    networks:
+      - app-network
+
+  # Generate Description Service (AI - can be CPU or GPU)
+  generate-description-service:
+    build:
+      context: ./services/generate-description
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./services/generate-description:/app  # Hot-reload para desarrollo
+    networks:
+      - app-network
+
+  # PostgreSQL Database
   postgres:
     image: postgres:15
     ports:
@@ -31,6 +86,23 @@ services:
       - POSTGRES_DB=orchestration_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # Frontend (commented out for now)
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./frontend:/app
+  #   networks:
+  #     - app-network
 
 volumes:
   postgres_data:
+  model_cache:
+
+networks:
+  app-network:
+    driver: bridge

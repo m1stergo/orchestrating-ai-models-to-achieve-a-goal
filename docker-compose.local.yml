@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # Describe Image Service (AI - GPU intensive) - LOCAL RTX 5090
+  describe-image-service:
+    build:
+      context: ./services/describe-image
+      dockerfile: Dockerfile.local  # Uses CUDA 12.8 for RTX 5090
+    ports:
+      - "8001:8001"
+    environment:
+      - MODEL_CACHE_DIR=/app/models
+    volumes:
+      - model_cache:/app/models
+      - ./services/describe-image:/app  # Hot-reload para desarrollo
+    networks:
+      - app-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # Extract Webcontent Service
+  extract-webcontent-service:
+    build:
+      context: ./services/extract-webcontent
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./services/extract-webcontent:/app
+    networks:
+      - app-network
+
+  # Generate Description Service
+  generate-description-service:
+    build:
+      context: ./services/generate-description
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./services/generate-description:/app
+    networks:
+      - app-network
+
+  # Core Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/orchestration_db
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=orchestration_db
+      - DESCRIBE_IMAGE_SERVICE_URL=http://describe-image-service:8001
+      - EXTRACT_WEBCONTENT_SERVICE_URL=http://extract-webcontent-service:8002
+      - GENERATE_DESCRIPTION_SERVICE_URL=http://generate-description-service:8003
+    volumes:
+      - ./backend:/app
+    networks:
+      - app-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=orchestration_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  model_cache:
+
+networks:
+  app-network:
+    driver: bridge
