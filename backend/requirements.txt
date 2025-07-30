@@ -1,11 +1,12 @@
-# Web framework and API dependencies
-fastapi>=0.100.0
-uvicorn[standard]>=0.22.0
-python-multipart>=0.0.6  # for form data handling
-httpx>=0.24.0            # for HTTP client requests to microservices
-pydantic>=2.0.0          # for data validation
-pydantic-settings>=2.0.0 # for settings management
-
-# Database dependencies
-sqlalchemy>=2.0.0        # ORM for database operations
-psycopg2-binary>=2.9.5   # PostgreSQL adapter
+beautifulsoup4==4.13.4
+fastapi==0.116.1
+httpx>=0.24.0
+lxml==4.9.3
+psycopg2-binary>=2.9.5
+pydantic-settings>=2.0.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+python-dotenv==1.1.1
+requests==2.32.4
+sqlalchemy>=2.0.0
+uvicorn[standard]==0.35.0

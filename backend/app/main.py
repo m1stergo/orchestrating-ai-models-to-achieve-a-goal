@@ -7,6 +7,8 @@ from app.services import router as services_router
 from app.config import settings
 from pathlib import Path
 import logging
+from dotenv import load_dotenv
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(

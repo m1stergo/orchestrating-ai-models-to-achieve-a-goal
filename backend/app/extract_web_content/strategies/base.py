@@ -14,7 +14,7 @@ class WebScrapingStrategy(ABC):
         """Common method to get BeautifulSoup object from URL."""
         resp = requests.get(url, headers=self.headers)
         resp.raise_for_status()
-        return BeautifulSoup(resp.content, "html.parser")
+        return BeautifulSoup(resp.content, "lxml")
     
     @abstractmethod
     def extract_title(self, soup: BeautifulSoup) -> str:

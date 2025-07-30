@@ -1,125 +1,48 @@
-from PIL import Image
-from io import BytesIO
-import requests
-from transformers import (
-    AutoProcessor,
-    Qwen2_5_VLForConditionalGeneration
-)
-from qwen_vl_utils import process_vision_info
-import torch
 from schemas import DescribeImageResponse
+from strategies.factory import ImageDescriptionStrategyFactory
 import logging
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Global model variables - loaded once at startup
-_qwen_model = None
-_qwen_processor = None
-
-def get_model_instance():
-    """Get the singleton model instance, loading it if necessary."""
-    global _qwen_model, _qwen_processor
+async def describe_image(image_url: str, preferred_strategy: str = None) -> DescribeImageResponse:
+    """
+    Describe an image using the configured strategy.
     
-    if _qwen_model is None or _qwen_processor is None:
-        logger.info("🤖 Loading Qwen2.5-VL model for the first time...")
-        _qwen_model, _qwen_processor = load_qwen_model()
-        logger.info("✅ Model loaded and cached globally")
-    
-    return _qwen_model, _qwen_processor
-
-async def describe_image(image_url) -> DescribeImageResponse:
-    logger.info(f"🚀 describe_image called with image_url: {image_url}")
+    Args:
+        image_url: URL of the image to describe
+        preferred_strategy: Optional preferred strategy name ("qwen", "openai", etc.)
+        
+    Returns:
+        DescribeImageResponse: The image description result
+    """
+    logger.info(f"🚀 describe_image called with image_url: {image_url}, strategy: {preferred_strategy}")
     
     try:
-        logger.info("📦 Retrieving Qwen model...")
-        qwen_model, qwen_processor = get_model_instance()
-        logger.info("✅ Qwen model retrieved successfully")
+        # Get the appropriate strategy
+        strategy = ImageDescriptionStrategyFactory.get_strategy(preferred_strategy)
+        logger.info(f"📦 Using strategy: {strategy.strategy_name}")
         
-        logger.info("🔍 Generating caption...")
-        visual_caption = get_qwen_caption(image_url, qwen_model, qwen_processor)
-        logger.info(f"✅ Caption generated: {visual_caption[:100]}...")
+        # Describe the image using the selected strategy
+        result = await strategy.describe_image(image_url)
         
-        response = DescribeImageResponse(
-            description=visual_caption,
-        )
+        # Add strategy information to the response
+        result.strategy_used = strategy.strategy_name
+        
         logger.info("✅ describe_image completed successfully")
-        return response
+        logger.info(result.description)
+        return result
         
     except Exception as e:
         logger.error(f"❌ Error in describe_image: {str(e)}")
         raise
 
 
-def get_qwen_caption(image_url, model, processor):
-    logger.info(f"🖼️ Processing image from URL: {image_url}")
-    image = Image.open(BytesIO(requests.get(image_url).content)).convert("RGB")
-    logger.info(f"✅ Image loaded successfully, size: {image.size}")
+def get_available_strategies():
+    """
+    Get information about all available image description strategies.
     
-    # Prepare messages in the format expected by Qwen2.5-VL
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "image": image_url,
-                },
-                {
-                    "type": "text", 
-                    "text": """
-Analyze the main product in this image. Focus only on the product itself.
-
-Then complete the following template with what you can observe from the image. If a field cannot be determined from the image alone, say "Not visible" or "Unknown".
-
-Here is the product information:
-
-Image description: {Insert a short but complete visual description of the item, including color, shape, material, and texture}
-Product type: {What is the object?}
-Material: {What is it made of?}
-Keywords: {List relevant keywords that describe the item visually or functionally}
-"""
-                }
-            ],
-        }
-    ]
-    
-    # Preparation for inference
-    text = processor.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-    image_inputs, video_inputs = process_vision_info(messages)
-    inputs = processor(
-        text=[text],
-        images=image_inputs,
-        videos=video_inputs,
-        padding=True,
-        return_tensors="pt",
-    )
-    inputs = inputs.to(model.device)
-    
-    # Generate the response
-    logger.info("🔍 Generating caption with Qwen2.5-VL...")
-    generated_ids = model.generate(**inputs, max_new_tokens=256)
-    generated_ids_trimmed = [
-        out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
-    ]
-    output_text = processor.batch_decode(
-        generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
-    )
-    
-    response = output_text[0] if output_text else "No description generated"
-    logger.info(f"✅ Caption generated successfully")
-    return response
-
-
-def load_qwen_model():
-    logger.info("🤖 Loading Qwen2.5-VL model...")
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        "Qwen/Qwen2.5-VL-7B-Instruct", 
-        torch_dtype="auto", 
-        device_map="auto"
-    )
-    processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
-    logger.info("✅ Qwen2.5-VL model loaded successfully")
-    return model, processor
+    Returns:
+        Dict with strategy information
+    """
+    return ImageDescriptionStrategyFactory.get_available_strategies()
