@@ -1,6 +1,7 @@
 import os
 import httpx
 import logging
+from typing import Dict, Any
 from urllib.parse import urlparse
 
 from schemas import DescribeImageResponse  # Asegurate que la ruta esté bien
@@ -21,11 +22,8 @@ class OpenAIVisionStrategy(ImageDescriptionStrategy):
     def is_available(self) -> bool:
         """Check if OpenAI API key is configured."""
         available = bool(self.api_key and self.api_key.strip())
-        logger.info(f"🔍 OpenAI Strategy availability check: {available}")
         if not available:
-            logger.warning("⚠️ OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
-        else:
-            logger.info(f"✅ OpenAI API key configured (length: {len(self.api_key)})")
+            logger.warning("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
         return available
 
     def is_valid_url(self, url: str) -> bool:
@@ -92,8 +90,20 @@ Keywords: {List relevant keywords that describe the item visually or functionall
                 return DescribeImageResponse(description=description)
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"❌ OpenAI API error: {e.response.status_code} - {e.response.text}")
+            logger.error(f"OpenAI API error: {e.response.status_code} - {e.response.text}")
             raise Exception(f"OpenAI API error: {e.response.status_code}")
         except Exception as e:
-            logger.error(f"❌ OpenAIVisionStrategy error: {str(e)}")
+            logger.error(f"OpenAIVisionStrategy error: {str(e)}")
             raise
+    
+    def get_strategy_info(self) -> Dict[str, Any]:
+        """Get OpenAI strategy information."""
+        return {
+            "name": self.strategy_name,
+            "model": self.model,
+            "type": "api",
+            "provider": "OpenAI",
+            "description": "OpenAI GPT-4o Vision API for image description",
+            "requires_api_key": True,
+            "api_key_available": bool(self.api_key)
+        }

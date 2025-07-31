@@ -17,10 +17,7 @@ async def describe_image_endpoint(request: DescribeImageRequest):
         The image description results with information about which strategy was used
     """
     try:
-        result = await describe_image(
-            request.image_url,
-            preferred_strategy=request.strategy
-        )
+        result = await describe_image(request)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to describe image: {str(e)}")
@@ -35,13 +32,15 @@ async def list_available_strategies():
         Dict with information about available strategies
     """
     try:
-        strategies = get_available_strategies()
+        strategies = await get_available_strategies()
         return {
-            "available_strategies": strategies,
-            "default_order": ["openai", "google", "qwen"],
+            "strategies": strategies,
+            "total": len(strategies),
+            "available": len([s for s in strategies if s.get("available", False)]),
+            "default_order": ["openai", "gemini", "qwen"],
             "usage": {
                 "openai": "OpenAI GPT-4o Vision API (requires OPENAI_API_KEY)",
-                "google": "Google Cloud Vision API (requires GOOGLE_VISION_API_KEY)",
+                "gemini": "Google Gemini Vision API (requires GOOGLE_API_KEY)",
                 "qwen": "Local Qwen2.5-VL model (requires GPU/CPU resources)"
             }
         }

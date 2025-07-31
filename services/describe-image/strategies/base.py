@@ -33,6 +33,7 @@ class ImageDescriptionStrategy(ABC):
         """
         pass
     
+    @abstractmethod
     def get_strategy_info(self) -> Dict[str, Any]:
         """
         Get information about this strategy.
@@ -40,8 +41,10 @@ class ImageDescriptionStrategy(ABC):
         Returns:
             Dict containing strategy metadata
         """
-        return {
-            "name": self.strategy_name,
-            "available": self.is_available(),
-            "type": "local" if "local" in self.strategy_name.lower() else "cloud"
-        }
+        pass
+    
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}(name={self.strategy_name})"
+    
+    def __repr__(self) -> str:
+        return self.__str__()

@@ -4,7 +4,7 @@ from typing import Optional
 class DescribeImageRequest(BaseModel):
     """Schema for image description request."""
     image_url: str = Field(..., description="URL of the image to describe")
-    strategy: Optional[str] = Field(None, description="Preferred strategy: 'qwen' (local) or 'openai' (cloud). If not specified, uses the first available strategy.")
+    strategy: Optional[str] = Field(None, description="Preferred strategy: 'openai', 'gemini', or 'qwen'. If not specified, uses the first available strategy.")
     
 class DescribeImageResponse(BaseModel):
     """Schema for image description response."""

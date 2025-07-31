@@ -24,11 +24,8 @@ class GeminiStrategy(ImageDescriptionStrategy):
     def is_available(self) -> bool:
         """Check if Gemini API key is configured."""
         available = bool(self.api_key and self.api_key.strip())
-        logger.info(f"🔍 Gemini Strategy availability check: {available}")
         if not available:
-            logger.warning("⚠️ Gemini API key not found. Set GEMINI_API_KEY environment variable.")
-        else:
-            logger.info(f"✅ Gemini API key configured (length: {len(self.api_key)})")
+            logger.warning("Gemini API key not found. Set GEMINI_API_KEY environment variable.")
         return available
 
     def is_valid_url(self, url: str) -> bool:
@@ -111,7 +108,7 @@ Keywords: List relevant keywords that describe the item's appearance or function
             logger.error(f"❌ Gemini API error: {e.response.status_code} - {e.response.text}")
             raise Exception(f"Gemini API error: {e.response.status_code}")
         except Exception as e:
-            logger.error(f"❌ GeminiStrategy error: {str(e)}")
+            logger.error(f"GeminiStrategy error: {str(e)}")
             raise
 
     def _extract_description(self, result: Dict[str, Any]) -> str:
@@ -131,5 +128,17 @@ Keywords: List relevant keywords that describe the item's appearance or function
             return description.strip()
 
         except Exception as e:
-            logger.error(f"❌ Error extracting description: {str(e)}")
+            logger.error(f"Error extracting description: {str(e)}")
             return f"Error processing response: {str(e)}"
+    
+    def get_strategy_info(self) -> Dict[str, Any]:
+        """Get Gemini strategy information."""
+        return {
+            "name": self.strategy_name,
+            "model": self.model,
+            "type": "api",
+            "provider": "Google",
+            "description": "Google Gemini Pro Vision API for image description",
+            "requires_api_key": True,
+            "api_key_available": bool(self.api_key)
+        }

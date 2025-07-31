@@ -1,6 +1,7 @@
 from PIL import Image
 from io import BytesIO
 import requests
+from typing import Dict, Any
 from transformers import (
     AutoProcessor,
     Qwen2_5_VLForConditionalGeneration
@@ -35,7 +36,7 @@ class QwenStrategy(ImageDescriptionStrategy):
     def _load_qwen_model(self):
         """Load Qwen model and processor if not already loaded."""
         if self._model is None or self._processor is None:
-            logger.info("🔄 Loading Qwen2.5-VL model...")
+            logger.info("Loading Qwen2.5-VL model...")
             
             # Load the model and processor
             model_name = "Qwen/Qwen2.5-VL-7B-Instruct"
@@ -124,7 +125,7 @@ Keywords: {List relevant keywords that describe the item visually or functionall
         inputs = inputs.to(model.device)
         
         # Generate the response
-        logger.info("🔍 Generating caption with Qwen2.5-VL...")
+        logger.info("Generating caption with Qwen2.5-VL...")
         generated_ids = model.generate(**inputs, max_new_tokens=256)
         generated_ids_trimmed = [
             out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
@@ -134,5 +135,17 @@ Keywords: {List relevant keywords that describe the item visually or functionall
         )
         
         response = output_text[0] if output_text else "No description generated"
-        logger.info(f"✅ Caption generated successfully")
+        logger.info("Caption generated successfully")
         return response
+    
+    def get_strategy_info(self) -> Dict[str, Any]:
+        """Get Qwen strategy information."""
+        return {
+            "name": self.strategy_name,
+            "model": "Qwen2.5-VL-7B-Instruct",
+            "type": "local",
+            "provider": "Qwen",
+            "description": "Local Qwen2.5-VL model for image description",
+            "requires_api_key": False,
+            "cuda_available": torch.cuda.is_available()
+        }
