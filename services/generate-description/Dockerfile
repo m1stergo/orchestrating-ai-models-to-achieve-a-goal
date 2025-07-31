@@ -2,21 +2,22 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+# Install Poetry and dependencies in a single layer, no color or prompts
+RUN pip install --upgrade pip \
+    && pip install "poetry==1.8.2" \
+    && poetry config virtualenvs.create false
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy Poetry files first for better build cache
+COPY pyproject.toml poetry.lock* ./
 
-# Copy application code
+# Install main dependencies without interaction or ANSI colors
+RUN poetry install --only=main --no-dev --no-interaction --no-ansi
+
+# Copy the rest of the application
 COPY . .
 
 # Expose port
 EXPOSE 8003
 
-# Run the application
+# Production command
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]

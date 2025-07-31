@@ -1,8 +1,0 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-dotenv==1.0.0
-httpx==0.25.2
-# Transformers for local Mistral model
-torch==2.7.1+cu128 --index-url https://download.pytorch.org/whl/cu128
-transformers==4.54.1
-accelerate==1.9.0

@@ -1,4 +1,3 @@
-import os
 import httpx
 import logging
 import base64
@@ -7,6 +6,7 @@ from typing import Dict, Any
 
 from schemas import DescribeImageResponse
 from .base import ImageDescriptionStrategy
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +16,9 @@ class GeminiStrategy(ImageDescriptionStrategy):
 
     def __init__(self):
         super().__init__()
-        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.api_key = settings.GEMINI_API_KEY
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-        # self.model = "gemini-1.5-flash"
-        self.model = "gemini-2.5-pro"
+        self.model = settings.GEMINI_MODEL
 
     def is_available(self) -> bool:
         """Check if Gemini API key is configured."""

@@ -1,19 +1,19 @@
-# Use PyTorch official image with CUDA 12.1 (much lighter than nvidia/cuda devel)
+# Use PyTorch official image with CUDA 12.1 (lighter than nvidia/cuda devel)
 FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
+# Set working directory to /app
 WORKDIR /app
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-# Install requirements (PyTorch already included in base image)
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Poetry and dependencies in a single layer, no color or prompts
+RUN pip install --upgrade pip \
+    && pip install "poetry==1.8.2" \
+    && poetry config virtualenvs.create false
+
+# Copy Poetry files first for better build cache
+COPY pyproject.toml poetry.lock* ./
+
+# Install main dependencies without interaction or ANSI colors (PyTorch already present)
+RUN poetry install --only=main --no-dev --no-interaction --no-ansi
 
 # Pre-download model weights (CPU-only, no GPU needed during build)
 RUN python -c "\
@@ -36,5 +36,5 @@ COPY . .
 # Expose port
 EXPOSE 8001
 
-# Run the application
+# Production command
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

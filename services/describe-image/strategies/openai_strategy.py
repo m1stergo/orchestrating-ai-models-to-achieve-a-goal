@@ -1,4 +1,3 @@
-import os
 import httpx
 import logging
 from typing import Dict, Any
@@ -6,6 +5,7 @@ from urllib.parse import urlparse
 
 from schemas import DescribeImageResponse  # Asegurate que la ruta esté bien
 from .base import ImageDescriptionStrategy
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +15,9 @@ class OpenAIVisionStrategy(ImageDescriptionStrategy):
 
     def __init__(self):
         super().__init__()
-        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.api_key = settings.OPENAI_API_KEY
         self.base_url = "https://api.openai.com/v1"
-        self.model = "gpt-4o"
+        self.model = settings.OPENAI_MODEL
 
     def is_available(self) -> bool:
         """Check if OpenAI API key is configured."""

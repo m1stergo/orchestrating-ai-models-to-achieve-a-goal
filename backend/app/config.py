@@ -1,7 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
 from pathlib import Path
-import os
 
 
 class Settings(BaseSettings):
@@ -12,15 +11,18 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Orchestration API"
     
     # Database settings
-    DATABASE_HOST: str = os.getenv("DATABASE_HOST", "localhost")
-    DATABASE_PORT: str = os.getenv("DATABASE_PORT", "5432")
-    DATABASE_USER: str = os.getenv("DATABASE_USER", "postgres")
-    DATABASE_PASSWORD: str = os.getenv("DATABASE_PASSWORD", "postgres")
-    DATABASE_NAME: str = os.getenv("DATABASE_NAME", "orchestration_db")
-    DATABASE_URL: Optional[str] = os.getenv(
-        "DATABASE_URL",
-        f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
-    )
+    DATABASE_HOST: str = "localhost"
+    DATABASE_PORT: str = "5432"
+    DATABASE_USER: str = "postgres"
+    DATABASE_PASSWORD: str = "postgres"
+    DATABASE_NAME: str = "orchestration_db"
+    DATABASE_URL: Optional[str] = None
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Build DATABASE_URL if not provided
+        if not self.DATABASE_URL:
+            self.DATABASE_URL = f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
     
     # Backend URL settings
     BASE_URL: str = "http://localhost:8000"
@@ -28,6 +30,10 @@ class Settings(BaseSettings):
     # Image storage settings
     IMAGES_DIR: Path = Path("app/static/images")
     STATIC_URL: str = "http://localhost:8000/static"
+    
+    # Microservice URLs
+    DESCRIBE_IMAGE_SERVICE_URL: str = "http://localhost:8001"
+    GENERATE_DESCRIPTION_SERVICE_URL: str = "http://localhost:8002"
     
     # Computed property for image URL construction
     @property

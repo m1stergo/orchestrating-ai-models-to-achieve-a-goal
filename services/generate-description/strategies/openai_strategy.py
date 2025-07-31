@@ -1,8 +1,8 @@
-import os
 import logging
 from typing import Dict, Any
 import httpx
 from .base import BaseGenerateDescriptionStrategy
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +12,8 @@ class OpenAIStrategy(BaseGenerateDescriptionStrategy):
     
     def __init__(self):
         super().__init__()
-        self.api_key = os.getenv("OPENAI_API_KEY")
-        self.model = "gpt-4o"
+        self.api_key = settings.OPENAI_API_KEY
+        self.model = settings.OPENAI_MODEL
         self.base_url = "https://api.openai.com/v1/chat/completions"
         
     async def generate_description(self, text: str, prompt: str) -> str:

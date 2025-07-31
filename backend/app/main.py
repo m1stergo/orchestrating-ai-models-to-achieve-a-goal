@@ -18,7 +18,7 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
+    title="Product description generator",
     description="API for product management with AI capabilities",
     version="0.1.0"
 )

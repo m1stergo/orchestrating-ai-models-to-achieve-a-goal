@@ -1,12 +1,8 @@
-import os
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from router import router
-
-# Load environment variables
-load_dotenv()
+from config import settings
 
 # Configure logging
 logging.basicConfig(
@@ -15,9 +11,9 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="Describe Image Service",
-    description="AI service for image description and analysis",
-    version="1.0.0"
+    title=settings.API_TITLE,
+    description=settings.API_DESCRIPTION,
+    version=settings.API_VERSION
 )
 
 # Configure CORS
