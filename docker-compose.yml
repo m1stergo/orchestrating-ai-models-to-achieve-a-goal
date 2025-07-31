@@ -18,7 +18,6 @@ services:
       - DATABASE_PASSWORD=postgres
       - DATABASE_NAME=orchestration_db
       - DESCRIBE_IMAGE_SERVICE_URL=http://describe-image-service:8001
-      - EXTRACT_WEBCONTENT_SERVICE_URL=http://extract-webcontent-service:8002
       - GENERATE_DESCRIPTION_SERVICE_URL=http://generate-description-service:8003
     volumes:
       - ./backend:/app
@@ -48,17 +47,6 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
-  # Extract Web Content Service (CPU intensive)
-  extract-webcontent-service:
-    build:
-      context: ./services/extract-webcontent
-      dockerfile: Dockerfile
-    ports:
-      - "8002:8002"
-    volumes:
-      - ./services/extract-webcontent:/app  # Hot-reload para desarrollo
-    networks:
-      - app-network
 
   # Generate Description Service (AI - can be CPU or GPU)
   generate-description-service:

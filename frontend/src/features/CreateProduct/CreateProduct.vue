@@ -47,7 +47,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <Button label="Write product description" rounded text size="small" @click="() => visible = true" />
+  <Button icon="pi pi-sparkles" label="Write product description" size="small" outlined severity="primary" @click="() => visible = true" />
   <Drawer v-model:visible="visible" header="Write product description" position="right" class="w-1/2" :pt="{ content: { class: 'flex flex-col gap-2' } }">
     <WriteProductDescription v-model="product" />
     <Button type="submit" label="Submit" @click="handleSubmit" class="mt-auto" />

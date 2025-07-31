@@ -12,13 +12,7 @@ const { state: products } = useQuery({
 </script>
 
 <template>
-  <DataTable :value="products.data" tableStyle="min-width: 50rem">
-    <template #header>
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="text-xl font-bold">Products</span>
-        <slot name="header" />
-      </div>
-    </template>
+  <DataTable :value="products.data">
     <Column field="name" header="Name"></Column>
     <Column header="Images">
       <template #body="slotProps">
@@ -32,6 +26,9 @@ const { state: products } = useQuery({
           <DeleteProduct v-if="slotProps.data.id" :id="slotProps.data.id" />
       </template>
     </Column>
-    <template #footer> In total there are {{ products.data?.length || 0 }} products. </template>
+    <template #empty>
+      <slot name="empty" />
+    </template>
+    <template #footer v-if="products.data?.length"> In total there are {{ products.data?.length || 0 }} products. </template>
   </DataTable>
 </template>

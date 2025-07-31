@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 from typing import Optional
 import httpx
 import os
+from sqlalchemy.orm import Session
 from app.extract_web_content.service import extract_web_content
 from app.extract_web_content.schemas import ExtractWebContentRequest
+from app.settings.service import get_settings_service, SettingsService
+from app.database import get_db
 
 router = APIRouter()
 
@@ -14,13 +17,23 @@ GENERATE_DESCRIPTION_SERVICE_URL = os.getenv("GENERATE_DESCRIPTION_SERVICE_URL",
 @router.post("/describe-image")
 async def describe_image_proxy(
     image: UploadFile = File(...),
-    prompt: Optional[str] = Form(None)
+    prompt: Optional[str] = Form(None),
+    user_id: Optional[str] = Form("default"),
+    db: Session = Depends(get_db)
 ):
-    """Proxy endpoint for describe image service"""
+    """Proxy endpoint for describe image service with user strategy preferences"""
     try:
+        # Get user settings to determine preferred strategy
+        settings_service = get_settings_service(db)
+        user_settings = settings_service.get_or_create_user_settings(user_id)
+        preferred_strategy = user_settings.describe_image_strategy
+        
         # Prepare the files and data for the request
         files = {"image": (image.filename, await image.read(), image.content_type)}
-        data = {"prompt": prompt} if prompt else {}
+        data = {
+            "prompt": prompt if prompt else "",
+            "strategy": preferred_strategy
+        }
         
         async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.post(
@@ -47,13 +60,28 @@ async def extract_webcontent_proxy(request: ExtractWebContentRequest):
         raise HTTPException(status_code=500, detail=f"Error extracting web content: {str(e)}")
 
 @router.post("/generate-description")
-async def generate_description_proxy(request_data: dict):
-    """Proxy endpoint for generate description service"""
+async def generate_description_proxy(
+    request_data: dict,
+    user_id: str = "default",
+    db: Session = Depends(get_db)
+):
+    """Proxy endpoint for generate description service with user strategy preferences"""
     try:
+        # Get user settings to determine preferred strategy
+        settings_service = get_settings_service(db)
+        user_settings = settings_service.get_or_create_user_settings(user_id)
+        preferred_strategy = user_settings.generate_description_strategy
+        
+        # Add strategy to request data
+        enhanced_request_data = {
+            **request_data,
+            "strategy": preferred_strategy
+        }
+        
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
                 f"{GENERATE_DESCRIPTION_SERVICE_URL}/api/v1/generate",
-                json=request_data
+                json=enhanced_request_data
             )
             response.raise_for_status()
             return response.json()

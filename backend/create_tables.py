@@ -1,5 +1,6 @@
 from app.database import Base, engine
-from app.products.models import Product  
+from app.products.models import Product
+from app.settings.models import UserSettings  
 
 def create_tables():
     print("Creating tables...")

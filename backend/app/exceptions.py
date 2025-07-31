@@ -29,3 +29,23 @@ class ValidationException(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=detail
         )
+
+
+class NotFoundError(HTTPException):
+    """Exception raised when a resource is not found."""
+    
+    def __init__(self, detail: str):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=detail
+        )
+
+
+class ValidationError(HTTPException):
+    """Exception raised for validation errors."""
+    
+    def __init__(self, detail: str):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail
+        )
