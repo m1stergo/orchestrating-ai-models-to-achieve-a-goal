@@ -1,7 +1,6 @@
 from PIL import Image
 from io import BytesIO
 import requests
-from typing import Dict, Any
 from transformers import (
     AutoProcessor,
     Qwen2_5_VLForConditionalGeneration
@@ -9,14 +8,14 @@ from transformers import (
 from qwen_vl_utils import process_vision_info
 import torch
 from schemas import DescribeImageResponse
-from .base import ImageDescriptionStrategy
+from .base import ImageDescriptionModel
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class QwenStrategy(ImageDescriptionStrategy):
-    """Strategy for image description using Qwen2.5-VL model (local)."""
+class QwenModel(ImageDescriptionModel):
+    """ModelImageDescriptionModel for image description using Qwen2.5-VL model (local)."""
     
     def __init__(self):
         super().__init__()
@@ -51,37 +50,42 @@ class QwenStrategy(ImageDescriptionStrategy):
             )
             self._processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
             
-            logger.info("✅ Qwen2.5-VL model loaded successfully")
+            logger.info("Qwen2.5-VL model loaded successfully")
         
         return self._model, self._processor
     
-    async def describe_image(self, image_url: str, **kwargs) -> DescribeImageResponse:
+    async def describe_image(self, image_url: str, prompt: str = None, **kwargs) -> DescribeImageResponse:
         """Describe image using Qwen2.5-VL model."""
-        logger.info(f"🚀 QwenStrategy: describing image from {image_url}")
+        logger.info(f"QwenModel: describing image from {image_url}")
         
         try:
             # Load model if needed
             model, processor = self._load_qwen_model()
             
             # Generate caption
-            description = self._get_qwen_caption(image_url, model, processor)
+            description = self._get_qwen_caption(image_url, prompt, model, processor)
             
             response = DescribeImageResponse(description=description)
-            logger.info("✅ QwenStrategy: description generated successfully")
+            logger.info("QwenModel: description generated successfully")
             return response
             
         except Exception as e:
-            logger.error(f"❌ QwenStrategy error: {str(e)}")
+            logger.error(f"QwenModel error: {str(e)}")
             raise
     
-    def _get_qwen_caption(self, image_url: str, model, processor) -> str:
+    def _get_qwen_caption(self, image_url: str, prompt, model, processor) -> str:
         """Generate caption using Qwen model."""
-        logger.info(f"🖼️ Processing image from URL: {image_url}")
+        logger.info(f"Processing image from URL: {image_url}")
         
         # Load and convert image
         image = Image.open(BytesIO(requests.get(image_url).content)).convert("RGB")
-        logger.info(f"✅ Image loaded successfully, size: {image.size}")
+        logger.info(f"Image loaded successfully, size: {image.size}")
         
+        if prompt is None:
+            from pathlib import Path
+            PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "default.txt"
+            prompt = PROMPT_PATH.read_text(encoding="utf-8")
+
         # Prepare messages in the format expected by Qwen2.5-VL
         messages = [
             {
@@ -93,18 +97,7 @@ class QwenStrategy(ImageDescriptionStrategy):
                     },
                     {
                         "type": "text", 
-                        "text": """
-Analyze the main product in this image. Focus only on the product itself.
-
-Then complete the following template with what you can observe from the image. If a field cannot be determined from the image alone, say "Not visible" or "Unknown".
-
-Here is the product information:
-
-Image description: {Insert a short but complete visual description of the item, including color, shape, material, and texture}
-Product type: {What is the object?}
-Material: {What is it made of?}
-Keywords: {List relevant keywords that describe the item visually or functionally}
-"""
+                        "text": prompt
                     }
                 ],
             }
@@ -137,15 +130,4 @@ Keywords: {List relevant keywords that describe the item visually or functionall
         response = output_text[0] if output_text else "No description generated"
         logger.info("Caption generated successfully")
         return response
-    
-    def get_strategy_info(self) -> Dict[str, Any]:
-        """Get Qwen strategy information."""
-        return {
-            "name": self.strategy_name,
-            "model": "Qwen2.5-VL-7B-Instruct",
-            "type": "local",
-            "provider": "Qwen",
-            "description": "Local Qwen2.5-VL model for image description",
-            "requires_api_key": False,
-            "cuda_available": torch.cuda.is_available()
-        }
+

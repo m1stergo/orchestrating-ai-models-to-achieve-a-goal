@@ -1,10 +1,10 @@
 from app.extract_web_content.schemas import ExtractWebContentResponse
-from app.extract_web_content.strategies.factory import StrategyFactory
+from app.extract_web_content.extractors.factory import ScraperFactory
 
 
 async def extract_web_content(url: str) -> ExtractWebContentResponse:
     """
-    Extract content from a website using the appropriate strategy based on the URL.
+    Extract content from a website using the appropriate extractor based on the URL.
     
     Args:
         url: The URL to extract content from
@@ -12,11 +12,11 @@ async def extract_web_content(url: str) -> ExtractWebContentResponse:
     Returns:
         ExtractWebContentResponse: The extracted content
     """
-    # Get the appropriate strategy for this URL
-    strategy = StrategyFactory.get_strategy(url)
+    # Get the appropriate extractor for this URL
+    extractor = ScraperFactory.get_scraper(url)
     
-    # Extract content using the strategy
-    content = strategy.extract_content(url)
+    # Extract content using the extractor
+    content = extractor.extract_content(url)
     
     return ExtractWebContentResponse(
         url=str(url),

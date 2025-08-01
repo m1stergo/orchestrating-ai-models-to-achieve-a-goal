@@ -2,7 +2,7 @@ import logging
 from typing import List, Dict
 
 from schemas import DescribeImageRequest, DescribeImageResponse
-from strategies.factory import ImageDescriptionStrategyFactory
+from ai_models.factory import ImageDescriptionModelFactory
 
 logger = logging.getLogger(__name__)
 
@@ -10,30 +10,28 @@ async def describe_image(
     request: DescribeImageRequest
 ) -> DescribeImageResponse:
     """
-    Describe an image using the specified or best available strategy.
+    Describe an image using the specified or best available model.
     
     Args:
-        request: The image description request containing image_url and optional strategy
+        request: The image description request containing image_url and optional model
         
     Returns:
-        DescribeImageResponse: The image description result with strategy_used
+        DescribeImageResponse: The image description result with model_used
     """
     try:
-        # Get strategy from request
-        strategy = ImageDescriptionStrategyFactory.get_strategy(request.strategy)
-        logger.info(f"Using strategy: {strategy.strategy_name}")
+        # Get model from request
+        model = ImageDescriptionModelFactory.get_model(request.model)
+        logger.info(f"Using model: {model.model_name}")
         
-        # Check if strategy is available
-        if not strategy.is_available():
-            raise Exception(f"Strategy {strategy.strategy_name} is not available")
+        # Check if model is available
+        if not model.is_available():
+            raise Exception(f"Model {model.model_name} is not available")
         
-        # Describe the image using the selected strategy
-        result = await strategy.describe_image(request.image_url)
+        # Describe the image using the selected model
+        result = await model.describe_image(request.image_url)
         
-        # Add strategy information to the response
-        result.strategy_used = strategy.strategy_name
-        
-        logger.info("✅ Image description completed successfully")
+        logger.info("Image description completed successfully")
+        logger.info(result)
         return result
         
     except Exception as e:
@@ -41,22 +39,21 @@ async def describe_image(
         raise Exception(f"Image description failed: {str(e)}")
 
 
-async def get_available_strategies() -> List[Dict]:
+async def get_available_models() -> List[Dict]:
     """
-    Get information about all available image description strategies.
+    Get information about all available image description models.
     
     Returns:
-        List of strategy information dictionaries
+        List of dictionaries containing model information
     """
     try:
-        strategies_dict = ImageDescriptionStrategyFactory.get_available_strategies()
-        # Convert dict to list format to match generate-description pattern
-        strategies_list = []
-        for name, info in strategies_dict.items():
-            strategy_info = info.copy()
-            strategy_info['name'] = name
-            strategies_list.append(strategy_info)
-        return strategies_list
+        models_dict = ImageDescriptionModelFactory.get_available_models()
+        
+        models_list = []
+        for name, info in models_dict.items():
+            model_info = {"name": name, **info}
+            models_list.append(model_info)
+        return models_list
     except Exception as e:
-        logger.error(f"Error getting available strategies: {str(e)}")
+        logger.error(f"Error getting available models: {str(e)}")
         return []

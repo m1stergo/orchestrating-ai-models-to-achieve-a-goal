@@ -5,9 +5,8 @@ from datetime import datetime
 
 class UserSettingsBase(BaseModel):
     """Base schema for User Settings."""
-    user_id: str = Field(default="default", description="User identifier")
-    describe_image_strategy: str = Field(default="openai", description="Preferred strategy for image description")
-    generate_description_strategy: str = Field(default="openai", description="Preferred strategy for description generation")
+    describe_image_model: str = Field(default="openai", description="Preferred model for image description")
+    generate_description_model: str = Field(default="openai", description="Preferred model for description generation")
 
 
 class UserSettingsCreate(UserSettingsBase):
@@ -17,8 +16,8 @@ class UserSettingsCreate(UserSettingsBase):
 
 class UserSettingsUpdate(BaseModel):
     """Schema for updating user settings."""
-    describe_image_strategy: Optional[str] = Field(None, description="Preferred strategy for image description")
-    generate_description_strategy: Optional[str] = Field(None, description="Preferred strategy for description generation")
+    describe_image_model: Optional[str] = Field(None, description="Preferred model for image description")
+    generate_description_model: Optional[str] = Field(None, description="Preferred model for description generation")
 
 
 class UserSettingsInDB(UserSettingsBase):
@@ -36,17 +35,17 @@ class UserSettingsResponse(UserSettingsInDB):
     pass
 
 
-class AvailableStrategiesResponse(BaseModel):
-    """Schema for available strategies response."""
-    describe_image_strategies: list[dict] = Field(..., description="Available strategies for image description")
-    generate_description_strategies: list[dict] = Field(..., description="Available strategies for description generation")
+class AvailableModelsResponse(BaseModel):
+    """Schema for available models response."""
+    describe_image_models: list[dict] = Field(..., description="Available models for image description")
+    generate_description_models: list[dict] = Field(..., description="Available models for description generation")
 
 
-class StrategyInfo(BaseModel):
-    """Schema for strategy information."""
-    name: str = Field(..., description="Strategy name")
-    type: str = Field(..., description="Strategy type (api/local)")
-    provider: str = Field(..., description="Strategy provider")
-    description: str = Field(..., description="Strategy description")
-    available: bool = Field(..., description="Whether strategy is currently available")
-    requires_api_key: bool = Field(..., description="Whether strategy requires API key")
+class ModelInfo(BaseModel):  
+    """Schema for model information."""
+    name: str = Field(..., description="Model name")
+    type: str = Field(..., description="Model type (api/local)")
+    provider: str = Field(..., description="Model provider")
+    description: str = Field(..., description="Model description")
+    available: bool = Field(..., description="Whether model is currently available")
+    requires_api_key: bool = Field(..., description="Whether model requires API key")

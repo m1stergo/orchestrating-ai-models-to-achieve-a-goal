@@ -1,14 +1,13 @@
 import logging
-from typing import Dict, Any
 import httpx
-from .base import BaseGenerateDescriptionStrategy
+from .base import BaseGenerateDescriptionModel
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 
-class OpenAIStrategy(BaseGenerateDescriptionStrategy):
-    """OpenAI GPT-4 strategy for text generation."""
+class OpenAIModel(BaseGenerateDescriptionModel):
+    """OpenAI GPT-4 model for text generation."""
     
     def __init__(self):
         super().__init__()
@@ -53,15 +52,15 @@ class OpenAIStrategy(BaseGenerateDescriptionStrategy):
                 result = response.json()
                 generated_text = result["choices"][0]["message"]["content"].strip()
                 
-                logger.info(f"OpenAI strategy generated description successfully")
+                logger.info(f"OpenAI model generated description successfully")
                 return generated_text
                 
         except httpx.HTTPStatusError as e:
             logger.error(f"OpenAI API error: {e.response.status_code} - {e.response.text}")
             raise Exception(f"OpenAI API error: {e.response.status_code}")
         except Exception as e:
-            logger.error(f"Error in OpenAI strategy: {str(e)}")
-            raise Exception(f"OpenAI strategy failed: {str(e)}")
+            logger.error(f"Error in OpenAI model: {str(e)}")
+            raise Exception(f"OpenAI model failed: {str(e)}")
     
     def is_available(self) -> bool:
         """Check if OpenAI API key is configured."""
@@ -69,15 +68,3 @@ class OpenAIStrategy(BaseGenerateDescriptionStrategy):
         if not available:
             logger.warning("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
         return available
-    
-    def get_strategy_info(self) -> Dict[str, Any]:
-        """Get OpenAI strategy information."""
-        return {
-            "name": self.name,
-            "model": self.model,
-            "type": "api",
-            "provider": "OpenAI",
-            "description": "OpenAI GPT-4 text generation",
-            "requires_api_key": True,
-            "api_key_available": bool(self.api_key)
-        }

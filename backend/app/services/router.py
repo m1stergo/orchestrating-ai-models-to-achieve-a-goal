@@ -4,6 +4,7 @@ from app.extract_web_content.service import extract_web_content
 from app.extract_web_content.schemas import ExtractWebContentRequest
 from app.config import settings
 from app.services.schemas import (
+    DescribeImageRequest,
     DescribeImageResponse,
     GenerateDescriptionRequest,
     GenerateDescriptionResponse,
@@ -23,7 +24,6 @@ router = APIRouter()
                 "application/json": {
                     "example": {
                         "description": "A modern smartphone with a sleek black design, featuring a large touchscreen display and multiple camera lenses on the back.",
-                        "strategy_used": "openai"
                     }
                 }
             }
@@ -46,14 +46,9 @@ router = APIRouter()
     Generate a detailed description of an image using AI vision models.
     
     This endpoint acts as a proxy to the describe-image microservice, automatically
-    selecting the user's preferred AI strategy (OpenAI GPT-4 Vision, Google Gemini Vision, or Qwen-VL).
+    selecting the user's preferred AI model (OpenAI GPT-4 Vision, Google Gemini Vision, or Qwen-VL).
     
-    **Features:**
-    - Automatic strategy selection based on user preferences
-    - Support for image URLs
-    - Multiple AI vision strategies available
-    
-    **Supported Strategies:**
+    **Supported Models:**
     - `openai`: GPT-4 Vision (high accuracy, detailed descriptions)
     - `gemini`: Google Gemini Vision (fast processing, good for products)
     - `qwen`: Qwen-VL (local processing, privacy-focused)
@@ -64,7 +59,7 @@ async def describe_image_proxy(
         ...,
         example={
             "image_url": "https://example.com/product-image.jpg",
-            "strategy": "openai"
+            "model": "openai"
         }
     )
 ):
@@ -72,7 +67,7 @@ async def describe_image_proxy(
         # Direct proxy to the microservice
         async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.post(
-                f"{settings.DESCRIBE_IMAGE_SERVICE_URL}/api/v1/describe",
+                settings.DESCRIBE_IMAGE_SERVICE_URL,
                 json=request.model_dump()
             )
             response.raise_for_status()
@@ -82,7 +77,24 @@ async def describe_image_proxy(
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
 
-@router.post("/extract-webcontent")
+@router.post(
+    "/extract-webcontent",
+    summary="Extract Web Content",
+    description="""
+    Extract and parse content from web pages using internal scraping service.
+    
+    This endpoint uses an internal web scraping service to extract structured content
+    from web pages. It supports multiple e-commerce platforms and general web content.
+    
+    **Supported Platforms:**
+    - AliExpress product pages
+    - Alibaba product pages
+    - General web content
+    
+    **Input Requirements:**
+    - `url`: Valid HTTP/HTTPS URL to extract content from
+    """
+)
 async def extract_webcontent_proxy(request: ExtractWebContentRequest):
     """Extract web content using internal service"""
     try:
@@ -103,7 +115,7 @@ async def extract_webcontent_proxy(request: ExtractWebContentRequest):
                 "application/json": {
                     "example": {
                         "text": "Experience cutting-edge technology with this premium smartphone featuring an elegant black finish. The device boasts a stunning large touchscreen display that delivers crystal-clear visuals, while the advanced multi-camera system captures professional-quality photos and videos. Perfect for both business professionals and tech enthusiasts who demand excellence in design and performance.",
-                        "strategy_used": "openai"
+                        "model": "openai"
                     }
                 }
             }
@@ -126,24 +138,16 @@ async def extract_webcontent_proxy(request: ExtractWebContentRequest):
     Transform a basic image description into an engaging, marketing-ready product description.
     
     This endpoint acts as a proxy to the generate-description microservice, automatically
-    selecting the user's preferred AI strategy for content generation.
+    selecting the user's preferred AI model for content generation.
     
-    **Features:**
-    - Automatic strategy selection based on user preferences
-    - Marketing-focused content enhancement
-    - Customizable writing style and tone
-    - Word count optimization
-    - SEO-friendly descriptions
-    
-    **Supported Strategies:**
+    **Supported models:**
     - `openai`: GPT-4 (creative, engaging copy)
-    - `anthropic`: Claude (professional, detailed descriptions)
+    - `mistral`: Mistral AI (balanced, versatile content)
     - `gemini`: Google Gemini (balanced, versatile content)
     
     **Input Requirements:**
-    - `image_description`: Basic description of the product/image
-    - `product_context`: Optional context about the product category, brand, etc.
-    - `style`: Optional style guide (e.g., "professional", "casual", "luxury")
+    - `text`: Product information to generate description from (required)
+    - `model`: Preferred AI model - 'openai', 'gemini', or 'mistral' (required)
     """
 )
 async def generate_description_proxy(
@@ -151,7 +155,7 @@ async def generate_description_proxy(
         ...,
         example={
             "text": "A black smartphone with a large screen and multiple cameras",
-            "strategy": "openai"
+            "model": "openai"
         }
     )
 ):
@@ -159,7 +163,7 @@ async def generate_description_proxy(
         # Direct proxy to the microservice
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
-                f"{settings.GENERATE_DESCRIPTION_SERVICE_URL}/api/v1/generate",
+                settings.GENERATE_DESCRIPTION_SERVICE_URL,
                 json=request.model_dump()
             )
             response.raise_for_status()
@@ -187,7 +191,7 @@ async def generate_description_proxy(
                             "generate-description": {
                                 "status": "healthy",
                                 "type": "external",
-                                "url": "http://generate-description-service:8003"
+                                "url": "http://generate-description-service:8002"
                             },
                             "extract-webcontent": {
                                 "status": "healthy",
@@ -249,7 +253,7 @@ async def services_health():
     # Check internal extract-webcontent feature
     try:
         # Simple test to verify the internal service is working
-        from app.extract_web_content.strategies.factory import StrategyFactory
+        from app.extract_web_content.extractors.factory import ScraperFactory
         # If we can import and access the factory, the service is healthy
         services_status["extract-webcontent"] = {
             "status": "healthy",

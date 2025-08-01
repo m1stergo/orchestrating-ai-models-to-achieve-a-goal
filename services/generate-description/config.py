@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     # Model configurations
     OPENAI_MODEL: str = "gpt-4o"
     GEMINI_MODEL: str = "gemini-1.5-flash"
+    MISTRAL_MODEL: str = "mistralai/Mistral-7B-Instruct-v0.1"
     
     class Config:
         env_file = ".env"

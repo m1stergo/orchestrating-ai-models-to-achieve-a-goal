@@ -1,12 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
 
-
-class BaseGenerateDescriptionStrategy(ABC):
-    """Abstract base class for text generation strategies."""
+class BaseGenerateDescriptionModel(ABC):
+    """Abstract base class for text generation models."""
     
     def __init__(self):
-        self.name = self.__class__.__name__.replace('Strategy', '').lower()
+        self.name = self.__class__.__name__.replace('Model', '').lower()
     
     @abstractmethod
     async def generate_description(self, text: str, prompt: str) -> str:
@@ -25,20 +23,10 @@ class BaseGenerateDescriptionStrategy(ABC):
     @abstractmethod
     def is_available(self) -> bool:
         """
-        Check if this strategy is available for use.
+        Check if this model is available for use.
         
         Returns:
-            True if the strategy can be used, False otherwise
-        """
-        pass
-    
-    @abstractmethod
-    def get_strategy_info(self) -> Dict[str, Any]:
-        """
-        Get information about this strategy.
-        
-        Returns:
-            Dictionary containing strategy metadata
+            True if the model can be used, False otherwise
         """
         pass
     

@@ -31,9 +31,9 @@ class Settings(BaseSettings):
     IMAGES_DIR: Path = Path("app/static/images")
     STATIC_URL: str = "http://localhost:8000/static"
     
-    # Microservice URLs
-    DESCRIBE_IMAGE_SERVICE_URL: str = "http://localhost:8001"
-    GENERATE_DESCRIPTION_SERVICE_URL: str = "http://localhost:8002"
+    # Microservice URLs (complete URLs with endpoints)
+    DESCRIBE_IMAGE_SERVICE_URL: str = "http://localhost:8001/api/v1/describe-image/"
+    GENERATE_DESCRIPTION_SERVICE_URL: str = "http://localhost:8002/api/v1/generate-description/"
     
     # Computed property for image URL construction
     @property

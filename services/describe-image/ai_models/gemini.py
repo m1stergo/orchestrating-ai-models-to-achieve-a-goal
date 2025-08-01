@@ -5,14 +5,13 @@ from urllib.parse import urlparse
 from typing import Dict, Any
 
 from schemas import DescribeImageResponse
-from .base import ImageDescriptionStrategy
+from .base import ImageDescriptionModel
 from config import settings
 
 logger = logging.getLogger(__name__)
 
-
-class GeminiStrategy(ImageDescriptionStrategy):
-    """Strategy for image description using Google Gemini Pro Vision API."""
+class GeminiModel(ImageDescriptionModel):
+    """Model for image description using Google Vision API."""
 
     def __init__(self):
         super().__init__()
@@ -43,12 +42,12 @@ class GeminiStrategy(ImageDescriptionStrategy):
                 image_data = response.content
                 return base64.b64encode(image_data).decode('utf-8')
         except Exception as e:
-            logger.error(f"❌ Error downloading image: {str(e)}")
+            logger.error(f"Error downloading image: {str(e)}")
             raise
 
     async def describe_image(self, image_url: str, prompt: str = None, **kwargs) -> DescribeImageResponse:
         """Describe image using Google Gemini Pro Vision API."""
-        logger.info(f"🚀 GeminiStrategy: describing image from {image_url}")
+        logger.info(f"GeminiModel: describing image from {image_url}")
 
         if not self.is_available():
             raise ValueError("Gemini API key is not configured. Set GEMINI_API_KEY environment variable.")
@@ -56,13 +55,11 @@ class GeminiStrategy(ImageDescriptionStrategy):
         if not self.is_valid_url(image_url):
             raise ValueError("Invalid image URL")
 
-        # Default prompt (same as your script)
-        prompt = prompt or """Analyze the main product in the image provided. Focus exclusively on the product itself. Based on your visual analysis of the product, complete the following template. If any field cannot be determined from the image, state "Not visible" or "Unknown".
-
-Image description: A brief but comprehensive visual description of the item, detailing its color, shape, material, and texture.
-Product type: What is the object?
-Material: What is it made of? Be specific if possible (e.g., "leather," "plastic," "wood").
-Keywords: List relevant keywords that describe the item's appearance or function."""
+        # Default prompt: load from file if not provided
+        if prompt is None:
+            from pathlib import Path
+            PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "default.txt"
+            prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
         try:
             # Download and encode image
@@ -87,7 +84,6 @@ Keywords: List relevant keywords that describe the item's appearance or function
                 ]
             }
 
-            # Make the API request
             async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
                     f"{self.base_url}/models/{self.model}:generateContent",
@@ -98,46 +94,35 @@ Keywords: List relevant keywords that describe the item's appearance or function
                 result = response.json()
 
                 # Extract the generated text
-                description = self._extract_description(result)
+                description = self._parse_response(result)
                 
-                logger.info("✅ GeminiStrategy: description generated successfully")
+                logger.info("GeminiModel: description generated successfully")
                 return DescribeImageResponse(description=description)
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"❌ Gemini API error: {e.response.status_code} - {e.response.text}")
+            logger.error(f"Gemini API error: {e.response.status_code} - {e.response.text}")
             raise Exception(f"Gemini API error: {e.response.status_code}")
         except Exception as e:
-            logger.error(f"GeminiStrategy error: {str(e)}")
+            logger.error(f"GeminiModel error: {str(e)}")
             raise
 
-    def _extract_description(self, result: Dict[str, Any]) -> str:
-        """Extract description from Gemini API response."""
+    def _parse_response(self, result: Dict[str, Any]) -> str:
+        """Parse response from Gemini API response."""
         try:
             candidates = result.get("candidates", [])
             if not candidates:
-                return "No description generated"
+                return "No response generated"
 
             content = candidates[0].get("content", {})
             parts = content.get("parts", [])
             
             if not parts:
-                return "No description generated"
+                return "No response generated"
 
-            description = parts[0].get("text", "No description generated")
-            return description.strip()
+            output = parts[0].get("text", "No response generated")
+            return output.strip()
 
         except Exception as e:
-            logger.error(f"Error extracting description: {str(e)}")
+            logger.error(f"Error parsing response: {str(e)}")
             return f"Error processing response: {str(e)}"
-    
-    def get_strategy_info(self) -> Dict[str, Any]:
-        """Get Gemini strategy information."""
-        return {
-            "name": self.strategy_name,
-            "model": self.model,
-            "type": "api",
-            "provider": "Google",
-            "description": "Google Gemini Pro Vision API for image description",
-            "requires_api_key": True,
-            "api_key_available": bool(self.api_key)
-        }
+

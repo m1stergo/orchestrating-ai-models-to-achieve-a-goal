@@ -1,15 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from typing import Dict, Any
 import logging
 
-from app.database import get_db
 from .service import get_settings_service, SettingsService
 from .schemas import (
     UserSettingsResponse, 
-    UserSettingsCreate, 
     UserSettingsUpdate,
-    AvailableStrategiesResponse
+    AvailableModelsResponse
 )
 from app.exceptions import NotFoundError, ValidationError
 
@@ -17,71 +13,44 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/settings", tags=["settings"])
 
-
-@router.get("/strategies", response_model=AvailableStrategiesResponse)
-async def get_available_strategies(
+@router.get("/models", response_model=AvailableModelsResponse)
+async def get_available_models(
     settings_service: SettingsService = Depends(get_settings_service)
 ):
-    """Get all available strategies for both services."""
+    """Get all available models for both services."""
     try:
-        strategies = await settings_service.get_available_strategies()
-        return AvailableStrategiesResponse(**strategies)
+        models = await settings_service.get_available_models()
+        return AvailableModelsResponse(**models)
     except Exception as e:
-        logger.error(f"Error getting available strategies: {str(e)}")
+        logger.error(f"Error getting available models: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get available strategies"
+            detail="Failed to get available models"
         )
 
-
-@router.get("/{user_id}", response_model=UserSettingsResponse)
-async def get_user_settings(
-    user_id: str = "default",
+@router.get("/", response_model=UserSettingsResponse)
+async def get_settings(
     settings_service: SettingsService = Depends(get_settings_service)
 ):
-    """Get user settings by user_id."""
+    """Get global application settings."""
     try:
-        settings = settings_service.get_or_create_user_settings(user_id)
+        settings = settings_service.get_or_create_user_settings("default")
         return UserSettingsResponse.model_validate(settings)
     except Exception as e:
-        logger.error(f"Error getting user settings: {str(e)}")
+        logger.error(f"Error getting settings: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get user settings"
+            detail="Failed to get settings"
         )
 
-
-@router.post("/", response_model=UserSettingsResponse, status_code=status.HTTP_201_CREATED)
-async def create_user_settings(
-    settings_data: UserSettingsCreate,
-    settings_service: SettingsService = Depends(get_settings_service)
-):
-    """Create new user settings."""
-    try:
-        settings = settings_service.create_user_settings(settings_data)
-        return UserSettingsResponse.model_validate(settings)
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        logger.error(f"Error creating user settings: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create user settings"
-        )
-
-
-@router.put("/{user_id}", response_model=UserSettingsResponse)
-async def update_user_settings(
-    user_id: str,
+@router.put("/", response_model=UserSettingsResponse)
+async def update_settings(
     settings_data: UserSettingsUpdate,
     settings_service: SettingsService = Depends(get_settings_service)
 ):
-    """Update user settings."""
+    """Update global application settings."""
     try:
-        settings = settings_service.update_user_settings(user_id, settings_data)
+        settings = settings_service.update_user_settings("default", settings_data)
         return UserSettingsResponse.model_validate(settings)
     except NotFoundError as e:
         raise HTTPException(
@@ -94,21 +63,19 @@ async def update_user_settings(
             detail=str(e)
         )
     except Exception as e:
-        logger.error(f"Error updating user settings: {str(e)}")
+        logger.error(f"Error updating settings: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update user settings"
+            detail="Failed to update settings"
         )
 
-
-@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user_settings(
-    user_id: str,
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+async def reset_settings(
     settings_service: SettingsService = Depends(get_settings_service)
 ):
-    """Delete user settings."""
+    """Reset settings to default values."""
     try:
-        settings_service.delete_user_settings(user_id)
+        settings_service.delete_user_settings("default")
         return None
     except NotFoundError as e:
         raise HTTPException(
@@ -121,16 +88,8 @@ async def delete_user_settings(
             detail=str(e)
         )
     except Exception as e:
-        logger.error(f"Error deleting user settings: {str(e)}")
+        logger.error(f"Error resetting settings: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete user settings"
+            detail="Failed to reset settings"
         )
-
-
-@router.get("/", response_model=UserSettingsResponse)
-async def get_default_user_settings(
-    settings_service: SettingsService = Depends(get_settings_service)
-):
-    """Get default user settings (convenience endpoint)."""
-    return await get_user_settings("default", settings_service)

@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from schemas import GenerateDescriptionRequest, GenerateDescriptionResponse
-from strategies.factory import GenerateDescriptionStrategyFactory, strategy_factory
+from ai_models.factory import GenerateDescriptionModelFactory
 
 logger = logging.getLogger(__name__)
 
@@ -20,35 +20,33 @@ async def generate_description(
     request: GenerateDescriptionRequest
 ) -> GenerateDescriptionResponse:
     """
-    Generate description using the specified or best available strategy.
+    Generate description using the specified or best available model.
     
     Args:
-        request: The generation request containing text and optional strategy
+        request: The generation request containing text and optional model
         
     Returns:
-        Generated description response with strategy_used
+        Generated description response with model_used
     """
     try:
-        # Get strategy from request body
-        strategy = GenerateDescriptionStrategyFactory.get_strategy(request.strategy)
-        logger.info(f"Using strategy: {strategy.name}")
+        # Get model from request body
+        model = GenerateDescriptionModelFactory.get_model(request.model)
         
-        # Check if strategy is available
-        if not strategy.is_available():
-            raise Exception(f"Strategy {strategy.name} is not available")
+        # Check if model is available
+        if not model.is_available():
+            raise Exception(f"Model {model.name} is not available")
         
         # Format the hardcoded prompt with request data
         formatted_prompt = PROMPT_TEMPLATE.format(text=request.text)
         
         # Generate description
-        generated_text = await strategy.generate_description(
+        generated_text = await model.generate_description(
             text="",  # Not needed since all info is in the prompt
             prompt=formatted_prompt
         )
         
         return GenerateDescriptionResponse(
-            text=generated_text,
-            strategy_used=strategy.name
+            text=generated_text
         )
         
     except Exception as e:
@@ -56,15 +54,15 @@ async def generate_description(
         raise Exception(f"Text generation failed: {str(e)}")
 
 
-async def get_available_strategies() -> List[dict]:
+async def get_available_models() -> List[dict]:
     """
-    Get list of available text generation strategies.
+    Get list of available text generation models.
     
     Returns:
-        List of strategy information dictionaries
+        List of model information dictionaries
     """
     try:
-        return await strategy_factory.get_available_strategies()
+        return GenerateDescriptionModelFactory.get_available_models()
     except Exception as e:
-        logger.error(f"Error getting available strategies: {str(e)}")
+        logger.error(f"Error getting available models: {str(e)}")
         return []

@@ -1,6 +1,6 @@
 import logging
-from typing import Dict, Any, Optional
-from .base import BaseGenerateDescriptionStrategy
+from typing import Any, Optional
+from .base import BaseGenerateDescriptionModel
 
 logger = logging.getLogger(__name__)
 
@@ -11,15 +11,16 @@ try:
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
-    logger.warning("Transformers not available. Mistral strategy will be disabled.")
+    logger.warning("Transformers not available. Mistral model will be disabled.")
 
 
-class MistralStrategy(BaseGenerateDescriptionStrategy):
-    """Local Mistral strategy for text generation."""
+class MistralModel(BaseGenerateDescriptionModel):
+    """Local Mistral model for text generation."""
     
     def __init__(self):
         super().__init__()
-        self.model_name = "mistralai/Mistral-7B-Instruct-v0.1"
+        from config import settings
+        self.model_name = getattr(settings, "MISTRAL_MODEL", "mistralai/Mistral-7B-Instruct-v0.1")
         self.model: Optional[Any] = None
         self.tokenizer: Optional[Any] = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -100,30 +101,16 @@ class MistralStrategy(BaseGenerateDescriptionStrategy):
                 skip_special_tokens=True
             ).strip()
             
-            logger.info("Mistral strategy generated description successfully")
-            return generated_text
+            logger.info("Mistral model generated description successfully")
+            return generated_text   
             
         except Exception as e:
             logger.error(f"Error in Mistral generation: {str(e)}")
-            raise Exception(f"Mistral strategy failed: {str(e)}")
+            raise Exception(f"Mistral model failed: {str(e)}")
     
     def is_available(self) -> bool:
         """Check if Mistral dependencies are available."""
         if not TRANSFORMERS_AVAILABLE:
-            logger.warning("Transformers library not available for Mistral strategy")
+            logger.warning("Transformers library not available for Mistral model")
             return False
         return True
-    
-    def get_strategy_info(self) -> Dict[str, Any]:
-        """Get Mistral strategy information."""
-        return {
-            "name": self.name,
-            "model": self.model_name,
-            "type": "local",
-            "provider": "Mistral AI",
-            "description": "Local Mistral-7B text generation",
-            "requires_api_key": False,
-            "device": self.device,
-            "transformers_available": TRANSFORMERS_AVAILABLE,
-            "cuda_available": torch.cuda.is_available() if TRANSFORMERS_AVAILABLE else False
-        }
