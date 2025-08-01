@@ -23,26 +23,17 @@ async def describe_image_endpoint(request: DescribeImageRequest):
         raise HTTPException(status_code=500, detail=f"Failed to describe image: {str(e)}")
 
 
-@router.get("/models")
+@router.get("/models/")
 async def list_available_models():
     """
-    Endpoint to list all available image description models and their status.
+    Endpoint to list all available image description models.
     
     Returns:
-        Dict with information about available models
+        Array of available model names
     """
     try:
-        models = await get_available_models()
-        return {
-            "models": models,
-            "total": len(models),
-            "available": len([m for m in models if m.get("available", False)]),
-            "default_order": ["openai", "gemini", "qwen"],
-            "usage": {
-                "openai": "OpenAI GPT-4o Vision API (requires OPENAI_API_KEY)",
-                "gemini": "Google Gemini Vision API (requires GOOGLE_API_KEY)",
-                "qwen": "Local Qwen2.5-VL model (requires GPU resources)"
-            }
-        }
+        # Now get_available_models returns a simple array of strings (model names)
+        model_names = await get_available_models()
+        return model_names
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get models: {str(e)}")

@@ -37,15 +37,5 @@ class UserSettingsResponse(UserSettingsInDB):
 
 class AvailableModelsResponse(BaseModel):
     """Schema for available models response."""
-    describe_image_models: list[dict] = Field(..., description="Available models for image description")
-    generate_description_models: list[dict] = Field(..., description="Available models for description generation")
-
-
-class ModelInfo(BaseModel):  
-    """Schema for model information."""
-    name: str = Field(..., description="Model name")
-    type: str = Field(..., description="Model type (api/local)")
-    provider: str = Field(..., description="Model provider")
-    description: str = Field(..., description="Model description")
-    available: bool = Field(..., description="Whether model is currently available")
-    requires_api_key: bool = Field(..., description="Whether model requires API key")
+    describe_image_models: list[str] = Field(..., description="Available model names for image description")
+    generate_description_models: list[str] = Field(..., description="Available model names for description generation")

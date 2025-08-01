@@ -45,7 +45,7 @@ class GeminiModel(ImageDescriptionModel):
             logger.error(f"Error downloading image: {str(e)}")
             raise
 
-    async def describe_image(self, image_url: str, prompt: str = None, **kwargs) -> DescribeImageResponse:
+    async def describe_image(self, image_url: str, prompt: str = None) -> DescribeImageResponse:
         """Describe image using Google Gemini Pro Vision API."""
         logger.info(f"GeminiModel: describing image from {image_url}")
 

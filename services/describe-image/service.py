@@ -47,12 +47,7 @@ async def get_available_models() -> List[Dict]:
         List of dictionaries containing model information
     """
     try:
-        models_dict = ImageDescriptionModelFactory.get_available_models()
-        
-        models_list = []
-        for name, info in models_dict.items():
-            model_info = {"name": name, **info}
-            models_list.append(model_info)
+        models_list = ImageDescriptionModelFactory.list_keys()
         return models_list
     except Exception as e:
         logger.error(f"Error getting available models: {str(e)}")

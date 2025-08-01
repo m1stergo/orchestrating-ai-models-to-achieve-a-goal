@@ -1,8 +1,10 @@
 import type { ExtractSiteContentRequest, ExtractSiteContentResponse, UploadImageResponse, DescribeImageResponse } from './types'
 
-const DESCRIBE_IMAGE_URL = 'http://localhost:8000/api/v1/describe-image'
-const EXTRACT_SITE_CONTENT_URL = 'http://localhost:8000/api/v1/extract-site-content/'
-const UPLOAD_IMAGE_URL = 'http://localhost:8000/api/v1/upload-image/' 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+
+const DESCRIBE_IMAGE_URL = `${API_BASE_URL}/api/v1/describe-image`
+const EXTRACT_SITE_CONTENT_URL = `${API_BASE_URL}/api/v1/extract-site-content/`
+const UPLOAD_IMAGE_URL = `${API_BASE_URL}/api/v1/upload-image/` 
 
 export async function uploadImage(formData: FormData): Promise<UploadImageResponse> {
   const response = await fetch(UPLOAD_IMAGE_URL, {

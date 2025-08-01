@@ -33,9 +33,7 @@ async def list_models():
         List of available models with their information
     """
     try:
-        models = await get_available_models()
-        # Filter to only available models and return their names as a list of strings
-        available_model_names = [m["name"] for m in models if m.get("available", False)]
-        return available_model_names
+        model_names = await get_available_models()
+        return model_names
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get models: {str(e)}")

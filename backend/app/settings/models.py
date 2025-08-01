@@ -9,11 +9,10 @@ class UserSettings(Base):
     __tablename__ = "user_settings"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, index=True, nullable=False, default="default")
     describe_image_model = Column(String, nullable=False, default="openai")
     generate_description_model = Column(String, nullable=False, default="openai")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     def __repr__(self):
-        return f"<UserSettings(id={self.id}, user_id='{self.user_id}', describe_image='{self.describe_image_model}', generate_description='{self.generate_description_model}')>"
+        return f"<UserSettings(id={self.id}, describe_image='{self.describe_image_model}', generate_description='{self.generate_description_model}')>"

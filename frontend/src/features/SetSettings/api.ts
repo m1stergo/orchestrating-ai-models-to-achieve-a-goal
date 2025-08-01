@@ -1,59 +1,40 @@
 import type { 
-  AvailableStrategiesResponse, 
+  AvailableModelsResponse, 
   UserSettingsResponse, 
   UserSettingsCreate, 
   UserSettingsUpdate 
 } from './types'
 
-const BASE_URL = 'http://localhost:8000/api/v1/settings'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const BASE_URL = `${API_BASE_URL}/api/v1/settings`
 
 /**
- * Get available strategies for both services
+ * Get available models for both services
  */
-export async function getAvailableStrategies(): Promise<AvailableStrategiesResponse> {
-  const response = await fetch(`${BASE_URL}/strategies`)
+export async function getAvailableModels(): Promise<AvailableModelsResponse> {
+  const response = await fetch(`${BASE_URL}/models`)
   if (!response.ok) {
-    throw new Error(`Failed to get available strategies: ${response.statusText}`)
+    throw new Error(`Failed to get available models: ${response.statusText}`)
   }
   return response.json()
 }
 
 /**
- * Get user settings by user ID
+ * Get global application settings
  */
-export async function getUserSettings(userId: string = 'default'): Promise<UserSettingsResponse> {
-  const response = await fetch(`${BASE_URL}/${userId}`)
+export async function getSettings(): Promise<UserSettingsResponse> {
+  const response = await fetch(`${BASE_URL}/`)
   if (!response.ok) {
-    throw new Error(`Failed to get user settings: ${response.statusText}`)
+    throw new Error(`Failed to get settings: ${response.statusText}`)
   }
   return response.json()
 }
 
 /**
- * Create new user settings
+ * Update global application settings
  */
-export async function createUserSettings(settings: UserSettingsCreate): Promise<UserSettingsResponse> {
+export async function updateSettings(settings: UserSettingsUpdate): Promise<UserSettingsResponse> {
   const response = await fetch(`${BASE_URL}/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(settings),
-  })
-  if (!response.ok) {
-    throw new Error(`Failed to create user settings: ${response.statusText}`)
-  }
-  return response.json()
-}
-
-/**
- * Update user settings
- */
-export async function updateUserSettings(
-  userId: string, 
-  settings: UserSettingsUpdate
-): Promise<UserSettingsResponse> {
-  const response = await fetch(`${BASE_URL}/${userId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -61,19 +42,20 @@ export async function updateUserSettings(
     body: JSON.stringify(settings),
   })
   if (!response.ok) {
-    throw new Error(`Failed to update user settings: ${response.statusText}`)
+    throw new Error(`Failed to update settings: ${response.statusText}`)
   }
   return response.json()
 }
 
 /**
- * Delete user settings
+ * Reset settings to default values
  */
-export async function deleteUserSettings(userId: string): Promise<void> {
-  const response = await fetch(`${BASE_URL}/${userId}`, {
-    method: 'DELETE',
+export async function resetSettings(): Promise<UserSettingsResponse> {
+  const response = await fetch(`${BASE_URL}/reset`, {
+    method: 'POST',
   })
   if (!response.ok) {
-    throw new Error(`Failed to delete user settings: ${response.statusText}`)
+    throw new Error(`Failed to reset settings: ${response.statusText}`)
   }
+  return response.json()
 }

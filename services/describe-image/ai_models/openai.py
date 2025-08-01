@@ -32,7 +32,7 @@ class OpenAIVisionModel(ImageDescriptionModel):
         except Exception:
             return False
 
-    async def describe_image(self, image_url: str, prompt: str = None, **kwargs) -> DescribeImageResponse:
+    async def describe_image(self, image_url: str, prompt: str = None) -> DescribeImageResponse:
         """Describe image using OpenAI GPT-4 Vision API."""
         logger.info(f"describing image from {image_url}")
 

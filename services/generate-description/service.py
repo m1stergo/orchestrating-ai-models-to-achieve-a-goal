@@ -62,7 +62,7 @@ async def get_available_models() -> List[dict]:
         List of model information dictionaries
     """
     try:
-        return GenerateDescriptionModelFactory.get_available_models()
+        return GenerateDescriptionModelFactory.list_keys()
     except Exception as e:
         logger.error(f"Error getting available models: {str(e)}")
         return []

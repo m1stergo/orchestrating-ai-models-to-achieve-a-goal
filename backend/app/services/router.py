@@ -67,7 +67,7 @@ async def describe_image_proxy(
         # Direct proxy to the microservice
         async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.post(
-                settings.DESCRIBE_IMAGE_SERVICE_URL,
+                f"{settings.DESCRIBE_IMAGE_SERVICE_URL}/describe-image/",
                 json=request.model_dump()
             )
             response.raise_for_status()
@@ -163,7 +163,7 @@ async def generate_description_proxy(
         # Direct proxy to the microservice
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
-                settings.GENERATE_DESCRIPTION_SERVICE_URL,
+                f"{settings.GENERATE_DESCRIPTION_SERVICE_URL}/generate-description/",
                 json=request.model_dump()
             )
             response.raise_for_status()

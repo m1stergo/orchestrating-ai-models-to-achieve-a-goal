@@ -9,13 +9,12 @@ class ImageDescriptionModel(ABC):
         self.model_name = self.__class__.__name__
     
     @abstractmethod
-    async def describe_image(self, image_url: str, **kwargs) -> DescribeImageResponse:
+    async def describe_image(self, image_url: str) -> DescribeImageResponse:
         """
         Describe an image using the specific model.
         
         Args:
             image_url: URL of the image to describe
-            **kwargs: Additional parameters specific to each model
             
         Returns:
             DescribeImageResponse: The image description result

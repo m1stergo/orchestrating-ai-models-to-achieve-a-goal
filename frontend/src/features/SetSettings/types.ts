@@ -3,30 +3,19 @@
  */
 
 /**
- * Strategy information
+ * Available models response from backend
  */
-export interface StrategyInfo {
-  name: string
-  type: string
-  provider: string
-  description: string
-}
-
-/**
- * Available strategies response from backend
- */
-export interface AvailableStrategiesResponse {
-  describe_image_strategies: StrategyInfo[]
-  generate_description_strategies: StrategyInfo[]
+export interface AvailableModelsResponse {
+  describe_image_models: string[]
+  generate_description_models: string[]
 }
 
 /**
  * User settings base structure
  */
 export interface UserSettingsBase {
-  user_id: string
-  describe_image_strategy: string
-  generate_description_strategy: string
+  describe_image_model: string
+  generate_description_model: string
 }
 
 /**
@@ -38,8 +27,8 @@ export interface UserSettingsCreate extends UserSettingsBase {}
  * User settings for updates (all fields optional)
  */
 export interface UserSettingsUpdate {
-  describe_image_strategy?: string
-  generate_description_strategy?: string
+  describe_image_model?: string
+  generate_description_model?: string
 }
 
 /**
@@ -55,6 +44,6 @@ export interface UserSettingsResponse extends UserSettingsBase {
  * Settings form data for the UI
  */
 export interface SettingsFormData {
-  describe_image_strategy: string
-  generate_description_strategy: string
+  describe_image_model: string
+  generate_description_model: string
 }

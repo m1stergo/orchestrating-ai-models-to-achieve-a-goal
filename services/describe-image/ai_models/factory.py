@@ -59,9 +59,6 @@ class ImageDescriptionModelFactory:
     def list_keys(cls) -> List[str]:
         """Get list of all model names."""
         return list(cls._models.keys())
-    
-    @classmethod
-    def get_available_models(cls) -> Dict[str, Dict]:
         """Get information about all available models."""
         models_info = {}
         

@@ -1,13 +1,11 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-from typing import Optional, List, Dict, Any
+from typing import List, Dict
 import logging
 import httpx
 from fastapi import Depends
 
 from .models import UserSettings
-from .schemas import UserSettingsCreate, UserSettingsUpdate, ModelInfo
-from app.exceptions import NotFoundError, ValidationError
+from .schemas import UserSettingsUpdate
 from app.database import get_db
 from app.config import settings
 
@@ -15,105 +13,80 @@ logger = logging.getLogger(__name__)
 
 
 class SettingsService:
-    """Service for managing user settings."""
+    """Service for managing global application settings."""
     
     def __init__(self, db: Session):
         self.db = db
     
-    def get_user_settings(self, user_id: str = "default") -> Optional[UserSettings]:
-        """Get user settings by user_id."""
-        return self.db.query(UserSettings).filter(UserSettings.user_id == user_id).first()
-    
-    def get_or_create_user_settings(self, user_id: str = "default") -> UserSettings:
-        """Get user settings or create default if not exists."""
-        settings = self.get_user_settings(user_id)
+    def get_or_create_settings(self) -> UserSettings:
+        """Get global settings or create default if not exists."""
+        settings = self.db.query(UserSettings).first()
         if not settings:
-            settings = self.create_user_settings(
-                UserSettingsCreate(user_id=user_id)
+            settings = UserSettings(
+                describe_image_model="openai",
+                generate_description_model="openai"
             )
-        return settings
-    
-    def create_user_settings(self, settings_data: UserSettingsCreate) -> UserSettings:
-        """Create new user settings."""
-        try:
-            db_settings = UserSettings(**settings_data.model_dump())
-            self.db.add(db_settings)
-            self.db.commit()
-            self.db.refresh(db_settings)
-            logger.info(f"Created settings for user: {settings_data.user_id}")
-            return db_settings
-        except IntegrityError as e:
-            self.db.rollback()
-            logger.error(f"Error creating settings: {str(e)}")
-            raise ValidationError("Settings already exist for this user")
-    
-    def update_user_settings(self, user_id: str, settings_data: UserSettingsUpdate) -> UserSettings:
-        """Update user settings."""
-        settings = self.get_user_settings(user_id)
-        if not settings:
-            raise NotFoundError(f"Settings not found for user: {user_id}")
-        
-        # Validate models before updating
-        update_data = settings_data.model_dump(exclude_unset=True)
-        if update_data:
-            self._validate_models(update_data)
-        
-        # Update fields
-        for field, value in update_data.items():
-            setattr(settings, field, value)
-        
-        try:
+            self.db.add(settings)
             self.db.commit()
             self.db.refresh(settings)
-            logger.info(f"Updated settings for user: {user_id}")
+            logger.info("Created default global settings")
+        return settings
+    
+    def update_settings(self, settings_data: UserSettingsUpdate) -> UserSettings:
+        """Update global settings."""
+        settings = self.get_or_create_settings()
+        
+        # Update only provided fields
+        update_data = settings_data.model_dump(exclude_unset=True)
+        
+        try:
+            for field, value in update_data.items():
+                setattr(settings, field, value)
+            
+            self.db.commit()
+            self.db.refresh(settings)
+            logger.info("Updated global settings")
             return settings
         except Exception as e:
             self.db.rollback()
             logger.error(f"Error updating settings: {str(e)}")
-            raise ValidationError("Failed to update settings")
+            raise Exception("Failed to update settings")
     
-    def delete_user_settings(self, user_id: str) -> bool:
-        """Delete user settings."""
-        settings = self.get_user_settings(user_id)
-        if not settings:
-            raise NotFoundError(f"Settings not found for user: {user_id}")
+    def reset_settings(self) -> UserSettings:
+        """Reset settings to default values."""
+        settings = self.get_or_create_settings()
         
         try:
-            self.db.delete(settings)
+            settings.describe_image_model = "openai"
+            settings.generate_description_model = "openai"
+            
             self.db.commit()
-            logger.info(f"Deleted settings for user: {user_id}")
-            return True
+            self.db.refresh(settings)
+            logger.info("Reset settings to defaults")
+            return settings
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error deleting settings: {str(e)}")
-            raise ValidationError("Failed to delete settings")
+            logger.error(f"Error resetting settings: {str(e)}")
+            raise Exception("Failed to reset settings")
     
-    async def get_available_models(self) -> Dict[str, List[ModelInfo]]:
+    async def get_available_models(self) -> Dict[str, List[str]]:
         """Get available models from microservices."""
-        try:
-            # Get models from describe-image service
-            describe_models = await self._get_models_from_service(
-                f"{settings.DESCRIBE_IMAGE_SERVICE_URL.rstrip('/')}/models"
-            )
-            
-            # Get models from generate-description service  
-            generate_models = await self._get_models_from_service(
-                f"{settings.GENERATE_DESCRIPTION_SERVICE_URL.rstrip('/')}/models"
-            )
-            
-            return {
-                "describe_image_models": describe_models,
-                "generate_description_models": generate_models
-            }
-        except Exception as e:
-            logger.error(f"Error getting available models: {str(e)}")
-            # Return default models if services are not available
-            return {
-                "describe_image_models": self._get_default_describe_models(),
-                "generate_description_models": self._get_default_generate_models()
-            }
+        # Get models from describe-image service (with trailing slash)
+        describe_models = await self._get_models_from_service(
+            f"{settings.DESCRIBE_IMAGE_SERVICE_URL}/models/"
+        )
+        
+        # Get models from generate-description service (with trailing slash)
+        generate_models = await self._get_models_from_service(
+            f"{settings.GENERATE_DESCRIPTION_SERVICE_URL}/models/"
+        )
+        
+        return {
+            "describe_image_models": describe_models,
+            "generate_description_models": generate_models
+        }
     
-    async def _get_models_from_service(self, url: str) -> List[ModelInfo]:
+    async def _get_models_from_service(self, url: str) -> List[str]:
         """Get models from a microservice."""
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
@@ -121,98 +94,16 @@ class SettingsService:
                 response.raise_for_status()
                 data = response.json()
                 
-                # Convert models to ModelInfo objects
-                models = []
-                model_list = data.get("models", [])
-                
-                for model in model_list:
-                    models.append(ModelInfo(
-                        name=model.get("name", "unknown"),
-                        type=model.get("type", "unknown"),
-                        provider=model.get("provider", "unknown"),
-                        description=model.get("description", ""),
-                        available=model.get("available", False),
-                        requires_api_key=model.get("requires_api_key", False)
-                    ))
-                
-                return models
+                # Expect all services to return array of strings: ["model1", "model2", ...]
+                if isinstance(data, list):
+                    # Return the array of model names directly
+                    return data
+                else:
+                    logger.warning(f"Unexpected response format from {url}: expected array, got {type(data)}")
+                    return []
         except Exception as e:
             logger.warning(f"Failed to get models from {url}: {str(e)}")
             return []
-    
-    def _get_default_describe_models(self) -> List[ModelInfo]:
-        """Get default describe image models."""
-        return [
-            ModelInfo(
-                name="openai",
-                type="api",
-                provider="OpenAI",
-                description="OpenAI GPT-4o Vision API for image description",
-                available=False,
-                requires_api_key=True
-            ),
-            ModelInfo(
-                name="gemini",
-                type="api", 
-                provider="Google",
-                description="Google Gemini Pro Vision API for image description",
-                available=False,
-                requires_api_key=True
-            ),
-            ModelInfo(
-                name="qwen",
-                type="local",
-                provider="Qwen",
-                description="Local Qwen2.5-VL model for image description",
-                available=False,
-                requires_api_key=False
-            )
-        ]
-    
-    def _get_default_generate_models(self) -> List[ModelInfo]:
-        """Get default generate description models."""
-        return [
-            ModelInfo(
-                name="openai",
-                type="api",
-                provider="OpenAI",
-                description="OpenAI GPT-4 text generation",
-                available=False,
-                requires_api_key=True
-            ),
-            ModelInfo(
-                name="gemini",
-                type="api",
-                provider="Google", 
-                description="Google Gemini Pro text generation",
-                available=False,
-                requires_api_key=True
-            ),
-            ModelInfo(
-                name="mistral",
-                type="local",
-                provider="Mistral AI",
-                description="Local Mistral-7B text generation",
-                available=False,
-                requires_api_key=False
-            )
-        ]
-    
-    def _validate_models(self, update_data: Dict[str, Any]) -> None:
-        """Validate that models are valid."""
-        valid_describe_models = ["openai", "gemini", "qwen"]
-        valid_generate_models = ["openai", "gemini", "mistral"]
-        
-        if "describe_image_model" in update_data:
-            model = update_data["describe_image_model"]
-            if model not in valid_describe_models:
-                raise ValidationError(f"Invalid describe_image_model: {model}. Valid options: {valid_describe_models}")
-        
-        if "generate_description_model" in update_data:
-            model = update_data["generate_description_model"]
-            if model not in valid_generate_models:
-                raise ValidationError(f"Invalid generate_description_model: {model}. Valid options: {valid_generate_models}")
-
 
 def get_settings_service(db: Session = Depends(get_db)) -> SettingsService:
     """Get settings service instance."""

@@ -54,7 +54,7 @@ class QwenModel(ImageDescriptionModel):
         
         return self._model, self._processor
     
-    async def describe_image(self, image_url: str, prompt: str = None, **kwargs) -> DescribeImageResponse:
+    async def describe_image(self, image_url: str, prompt: str = None) -> DescribeImageResponse:
         """Describe image using Qwen2.5-VL model."""
         logger.info(f"QwenModel: describing image from {image_url}")
         
