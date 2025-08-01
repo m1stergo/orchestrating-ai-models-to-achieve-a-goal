@@ -1,5 +1,5 @@
 from app.extract_web_content.schemas import ExtractWebContentResponse
-from app.extract_web_content.extractors.factory import ScraperFactory
+from app.extract_web_content.scrapers.factory import ScraperFactory
 
 
 async def extract_web_content(url: str) -> ExtractWebContentResponse:

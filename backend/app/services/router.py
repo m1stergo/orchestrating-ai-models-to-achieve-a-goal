@@ -253,7 +253,7 @@ async def services_health():
     # Check internal extract-webcontent feature
     try:
         # Simple test to verify the internal service is working
-        from app.extract_web_content.extractors.factory import ScraperFactory
+        from app.extract_web_content.scrapers.factory import ScraperFactory
         # If we can import and access the factory, the service is healthy
         services_status["extract-webcontent"] = {
             "status": "healthy",

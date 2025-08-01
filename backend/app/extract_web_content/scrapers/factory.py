@@ -2,6 +2,7 @@ from typing import Dict, Type, List
 from .base import WebScrapingStrategy
 from .alibaba import AlibabaScraper
 from .aliexpress import AliExpressScraper
+from .default import DefaultScraper
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,10 +39,9 @@ class ScraperFactory:
                     logger.info(f"Using {keyword} scraper for URL: {url}")
                     return scraper_class()
             
-            # No scraper found for this URL
-            supported_sites = ", ".join(cls._scrapers.keys())
-            error_msg = f"No scraper available for URL: {url}. Supported sites: {supported_sites}"
-            raise ValueError(error_msg)
+            # No specific scraper found, use default scraper
+            logger.info(f"No specific scraper found for URL: {url}, using default scraper")
+            return DefaultScraper()
             
         except Exception as e:
             logger.error(f"Error selecting scraper for URL {url}: {str(e)}")
