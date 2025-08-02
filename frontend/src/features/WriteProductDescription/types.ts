@@ -5,14 +5,14 @@
 /**
  * Schema for web content extraction request.
  */
-export interface ExtractSiteContentRequest {
+export interface ExtractWebContentRequest {
   url: string
 }
 
 /**
  * Schema for web content extraction response.
  */
-export interface ExtractSiteContentResponse {
+export interface ExtractWebContentResponse {
   url: string
   title: string
   description: string

@@ -5,21 +5,19 @@ import TabList from 'primevue/tablist'
 import Tab from 'primevue/tab'
 import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
-import Card from 'primevue/card'
-import Chip from 'primevue/chip';
 import ExtractContentFromWebsite from './ExtractContentFromWebsite.vue'
 import UploadImage from './UploadImage.vue'
-import type { ExtractSiteContentResponse, UploadImageResponse } from './types'
+import type { ExtractWebContentResponse, UploadImageResponse } from './types'
 import Skeleton from 'primevue/skeleton'
 import { useMutation } from '@pinia/colada'
-import { extractSiteContent, describeImage } from './api'
+import { describeImage } from './api'
 import { useToast } from 'primevue/usetoast'
 
 const toast = useToast()
 
 const loading = ref(false);
 
-const source = reactive<ExtractSiteContentResponse>({
+const source = reactive<ExtractWebContentResponse>({
     title: '',
     description: '',
     images: [],
@@ -39,7 +37,7 @@ const { mutate: describe } = useMutation({
 
 })
 
-function handleExtractContent(content: ExtractSiteContentResponse) {
+function handleExtractContent(content: ExtractWebContentResponse) {
     source.title = content.title
     source.description = content.description
     source.images = content.images

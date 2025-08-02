@@ -1,13 +1,13 @@
 import type { Product, ProductCreate, ProductUpdate } from './types'
 
-const API_URL = 'http://localhost:8000/api/v1/products'
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/v1/products`
 
 /**
  * Fetch all products from the API
  * @returns Promise with array of products
  */
 export async function getAllProducts(): Promise<Product[]> {
-  const response = await fetch(API_URL)
+  const response = await fetch(`${API_URL}/`)
   if (!response.ok) {
     throw new Error(`Failed to fetch products: ${response.statusText}`)
   }
@@ -33,7 +33,7 @@ export async function getProductById(id: number): Promise<Product> {
  * @returns Promise with the created product
  */
 export async function createProduct(product: ProductCreate): Promise<Product> {
-  const response = await fetch(API_URL, {
+  const response = await fetch(`${API_URL}/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

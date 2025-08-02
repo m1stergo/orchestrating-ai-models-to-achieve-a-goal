@@ -31,8 +31,9 @@ class UserSettingsInDB(UserSettingsBase):
 
 
 class UserSettingsResponse(UserSettingsInDB):
-    """Schema for user settings response."""
-    pass
+    """Schema for user settings response with available models."""
+    describe_image_models: list[str] = Field(default_factory=list, description="Available model names for image description")
+    generate_description_models: list[str] = Field(default_factory=list, description="Available model names for description generation")
 
 
 class AvailableModelsResponse(BaseModel):

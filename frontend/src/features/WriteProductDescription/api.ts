@@ -1,13 +1,11 @@
-import type { ExtractSiteContentRequest, ExtractSiteContentResponse, UploadImageResponse, DescribeImageResponse } from './types'
+import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageResponse, DescribeImageResponse } from './types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-
-const DESCRIBE_IMAGE_URL = `${API_BASE_URL}/api/v1/describe-image`
-const EXTRACT_SITE_CONTENT_URL = `${API_BASE_URL}/api/v1/extract-site-content/`
-const UPLOAD_IMAGE_URL = `${API_BASE_URL}/api/v1/upload-image/` 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const API_DESCRIBE_IMAGE_URL = import.meta.env.VITE_API_DESCRIBE_IMAGE_URL
+const API_EXTRACT_WEBCONTENT_URL = import.meta.env.VITE_API_BASE_URL
 
 export async function uploadImage(formData: FormData): Promise<UploadImageResponse> {
-  const response = await fetch(UPLOAD_IMAGE_URL, {
+  const response = await fetch(`${API_BASE_URL}/v1/upload-image/`, {
     method: 'POST',
     body: formData,
   })
@@ -18,7 +16,7 @@ export async function uploadImage(formData: FormData): Promise<UploadImageRespon
 }
 
 export async function describeImage(image: string): Promise<DescribeImageResponse> {
-  const response = await fetch(DESCRIBE_IMAGE_URL, {
+  const response = await fetch(`${API_DESCRIBE_IMAGE_URL}/v1/describe-image/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -31,15 +29,15 @@ export async function describeImage(image: string): Promise<DescribeImageRespons
   return response.json()
 }
 
-export async function extractSiteContent(url: string): Promise<ExtractSiteContentResponse> {
+export async function extractWebContent(url: string): Promise<ExtractWebContentResponse> {
   let formattedUrl = url;
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     formattedUrl = `https://${url}`;
   }
   
-  const request: ExtractSiteContentRequest = { url: formattedUrl }
+  const request: ExtractWebContentRequest = { url: formattedUrl }
   
-  const response = await fetch(EXTRACT_SITE_CONTENT_URL, {
+  const response = await fetch(`${API_EXTRACT_WEBCONTENT_URL}/v1/extract-webcontent/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -51,5 +49,5 @@ export async function extractSiteContent(url: string): Promise<ExtractSiteConten
     throw new Error(`Failed to extract content: ${response.statusText}`)
   }
 
-  return response.json() as Promise<ExtractSiteContentResponse>
+  return response.json() as Promise<ExtractWebContentResponse>
 }

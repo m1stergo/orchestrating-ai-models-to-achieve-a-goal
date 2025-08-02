@@ -2,8 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.products import router as products_router
-from app.upload_image import router as upload_image_router
-from app.services import router as services_router
+# Importaciones con nombres de carpetas que contienen guiones requieren una sintaxis especial
+import importlib
+# Using string literal for module with hyphen in directory name
+describe_image_router = importlib.import_module("app.describe-image.router").router
+# Using string literal for module with hyphen in directory name
+generate_description_router = importlib.import_module("app.generate-description.router").router
+upload_image_router = importlib.import_module("app.upload_image.router").router
 from app.settings import router as settings_router
 from app.config import settings
 from pathlib import Path
@@ -34,8 +39,9 @@ app.add_middleware(
 
 # Include routers
 app.include_router(products_router.router, prefix=f"{settings.API_V1_STR}/products", tags=["products"])
-app.include_router(upload_image_router.router, prefix=f"{settings.API_V1_STR}/upload-image", tags=["upload-image"])
-app.include_router(services_router.router, prefix=f"{settings.API_V1_STR}/services", tags=["services"])
+app.include_router(describe_image_router, prefix=f"{settings.API_V1_STR}/describe-image", tags=["describe-image"])
+app.include_router(generate_description_router, prefix=f"{settings.API_V1_STR}/generate-description", tags=["generate-description"])
+app.include_router(upload_image_router, prefix=f"{settings.API_V1_STR}/upload-image", tags=["upload-image"])
 app.include_router(settings_router.router, prefix=f"{settings.API_V1_STR}/settings", tags=["settings"])
 
 # Mount static files directory

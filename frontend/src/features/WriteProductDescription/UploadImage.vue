@@ -3,17 +3,15 @@ import FileUpload from 'primevue/fileupload'
 import { ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useMutation } from '@pinia/colada'
-import { uploadImage } from '@/features/DescribeImage/api'
+import { uploadImage } from '@/features/WriteProductDescription/api'
 
 const emit = defineEmits(['update:content', 'loading'])
 
-const { data, isLoading, mutateAsync: upload } = useMutation({
+const { mutateAsync: upload } = useMutation({
   mutation: uploadImage,
   onSuccess: (data) => {
-    setTimeout(() => {
-      emit('update:content', data)
-      emit('loading', false)
-    }, 5000)
+    emit('update:content', data)
+    emit('loading', false)
   },
   onError: () => {
     toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error extracting the content, please try again', life: 3000 })
@@ -52,10 +50,12 @@ watch(selectedFile, (newFile) => {
 
 <template>
 <div class="flex flex-col gap-2">
-    <div class="flex items-center gap-2">
+  <div class="flex items-center gap-2">
+    <div class="shrink-0">
       <FileUpload mode="basic" accept="image/*" :maxFileSize="1000000" @select="onFileSelect" :auto="true" chooseLabel="Choose image"/>
-      <img v-if="imagePreview" :src="imagePreview" class="rounded" alt="Preview" style="width: auto; max-height: 42px;" />
-      <p v-if="selectedFile">{{ selectedFile?.name }}</p>
     </div>
+    <img v-if="imagePreview" :src="imagePreview" class="rounded shrink-0" alt="Preview" style="width: auto; max-height: 42px;" />
+    <p v-if="selectedFile">{{ selectedFile?.name }}</p>
+  </div>
 </div>
 </template>

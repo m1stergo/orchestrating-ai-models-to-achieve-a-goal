@@ -1,14 +1,6 @@
 /**
  * Types for user settings management
- */
-
-/**
- * Available models response from backend
- */
-export interface AvailableModelsResponse {
-  describe_image_models: string[]
-  generate_description_models: string[]
-}
+ *
 
 /**
  * User settings base structure
@@ -16,6 +8,8 @@ export interface AvailableModelsResponse {
 export interface UserSettingsBase {
   describe_image_model: string
   generate_description_model: string
+  describe_image_models: string[]
+  generate_description_models: string[]
 }
 
 /**
@@ -38,12 +32,4 @@ export interface UserSettingsResponse extends UserSettingsBase {
   id: number
   created_at: string
   updated_at: string
-}
-
-/**
- * Settings form data for the UI
- */
-export interface SettingsFormData {
-  describe_image_model: string
-  generate_description_model: string
 }

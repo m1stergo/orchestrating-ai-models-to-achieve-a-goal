@@ -3,7 +3,6 @@ import { ref, nextTick, reactive, watch } from 'vue'
 
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
-import { DescribeImage } from '@/features/DescribeImage'
 import { WriteProductDescription } from '@/features/WriteProductDescription'
 import { useMutation, useQueryCache, useQuery } from '@pinia/colada'
 import { updateProduct, getProductById } from '@/entities/products/api'
@@ -76,7 +75,6 @@ watch(data, () => {
     {{ isLoading }}
     <div class="prose">
       <InputText v-model="product.name" placeholder="Name" />
-      <DescribeImage />
       <WriteProductDescription />
     </div>
     <Button type="submit" label="Submit" @click="handleSubmit" />

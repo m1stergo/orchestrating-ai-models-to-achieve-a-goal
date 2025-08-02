@@ -1,60 +1,24 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import Drawer from 'primevue/drawer'
 import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
-import { useUserSettings, useSettingsForm } from './composables'
 import { useQuery } from '@pinia/colada'
-import { getAvailableStrategies } from './api'  
+import { getSettings } from './api'  
+import Skeleton from 'primevue/skeleton'
 
 const visible = ref(true)
 
-const { data: strategies, isLoading: isLoadingStrategies, error: errorStrategies } = useQuery({
-  key: ['strategies'],
-  query: () => getAvailableStrategies(),
+const { data, isLoading, error } = useQuery({
+  key: ['settings'],
+  query: () => getSettings(),
 })
 
-// const visible = computed({
-//   get: () => props.visible,
-//   set: (value) => emit('update:visible', value)
-// })
-
-// Use the existing composables
-// const { settings, isLoading, error } = useUserSettings(props.userId)
-// const { 
-//   formData, 
-//   strategies, 
-//   isUpdating: isSaving, 
-//   initializeForm,
-//   submitForm: handleSubmit,
-//   resetForm: handleReset
-// } = useSettingsForm(props.userId)
-
-// // Create options from strategies
-// const describeImageOptions = computed(() => {
-//   if (!strategies.value?.describe_image_strategies) return []
-//   return strategies.value.describe_image_strategies.map((strategy) => ({
-//     label: strategy.name,
-//     value: strategy.name
-//   }))
-// })
-
-// const generateDescriptionOptions = computed(() => {
-//   if (!strategies.value?.generate_description_strategies) return []
-//   return strategies.value.generate_description_strategies.map((strategy) => ({
-//     label: strategy.name,
-//     value: strategy.name
-//   }))
-// })
-
-// Initialize form when settings are loaded
-// watch(() => settings.value, (newSettings: any) => {
-//   if (newSettings) {
-//     initializeForm()
-//   }
-// }, { immediate: true })
+const formData = ref({
+  describe_image_models: '',
+  generate_description_models: '',
+})
 </script>
 
 <template>
@@ -66,68 +30,50 @@ const { data: strategies, isLoading: isLoadingStrategies, error: errorStrategies
     class="settings-drawer"
     :style="{ width: '50rem' }"
   >
-    <div v-if="isLoadingStrategies" class="loading">
-      <ProgressSpinner />
-      <p>Loading models...</p>
+    <div v-if="isLoading" class="flex flex-col gap-2">
+      <Skeleton height="2rem"></Skeleton>
+      <Skeleton height="2rem"></Skeleton>
+      <Skeleton height="2rem"></Skeleton>
+      <Skeleton height="2rem"></Skeleton>
     </div>
 
-    <div v-else-if="errorStrategies" class="error">
+    <div v-else-if="error" class="error">
       <Message severity="error" :closable="false">
-        Error loading models: {{ errorStrategies.message }}
+        Error loading models: {{ error.message }}
       </Message>
     </div>
-
-    <!-- <form v-else @submit.prevent="handleSubmit" class="settings-form">
-      <div class="form-section">
+    <div v-else class="flex flex-col gap-4">
+      <div>
         <h4>Choose model for image description</h4>
-        <div class="field">
+        <div>
           <Dropdown
             id="describe-strategy"
-            v-model="formData.describe_image_strategy"
-            :options="describeImageOptions"
-            option-label="label"
-            option-value="value"
+            v-model="formData.describe_image_models"
+            :options="data?.describe_image_models"
             placeholder="Select a model"
             class="w-full"
           />
-          <small class="field-help">
+          <small>
             This model will be used to generate image descriptions.
           </small>
         </div>
       </div>
 
-      <div class="form-section">
+      <div>
         <h4>Choose model for product description</h4>
-        <div class="field">
+        <div>
           <Dropdown
             id="generate-strategy"
-            v-model="formData.generate_description_strategy"
-            :options="generateDescriptionOptions"
-            option-label="label"
-            option-value="value"
+            v-model="formData.generate_description_models"
+            :options="data?.generate_description_models"
             placeholder="Select a model"
             class="w-full"
           />
-          <small class="field-help">
+          <small>
             This model will be used to generate product descriptions.
           </small>
         </div>
       </div>
-
-      <div class="form-actions">
-        <Button 
-          type="button" 
-          label="Reset" 
-          severity="secondary" 
-          @click="handleReset"
-          :disabled="isSaving"
-        />
-        <Button 
-          type="submit" 
-          label="Save Settings" 
-          :loading="isSaving"
-        />
-      </div>
-    </form> -->
+    </div>
   </Drawer>
 </template>

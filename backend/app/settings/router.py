@@ -11,31 +11,16 @@ from app.exceptions import NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/settings", tags=["settings"])
-
-@router.get("/models", response_model=AvailableModelsResponse)
-async def get_available_models(
-    settings_service: SettingsService = Depends(get_settings_service)
-):
-    """Get all available models for both services."""
-    try:
-        models = await settings_service.get_available_models()
-        return AvailableModelsResponse(**models)
-    except Exception as e:
-        logger.error(f"Error getting available models: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get available models"
-        )
+router = APIRouter(tags=["settings"])
 
 @router.get("/", response_model=UserSettingsResponse)
 async def get_settings(
     settings_service: SettingsService = Depends(get_settings_service)
 ):
-    """Get global application settings."""
+    """Get application settings with available models."""
     try:
-        settings = settings_service.get_or_create_user_settings("default")
-        return UserSettingsResponse.model_validate(settings)
+        settings_with_models = await settings_service.get_settings_with_models()
+        return UserSettingsResponse.model_validate(settings_with_models)
     except Exception as e:
         logger.error(f"Error getting settings: {str(e)}")
         raise HTTPException(
@@ -48,9 +33,9 @@ async def update_settings(
     settings_data: UserSettingsUpdate,
     settings_service: SettingsService = Depends(get_settings_service)
 ):
-    """Update global application settings."""
+    """Update application settings."""
     try:
-        settings = settings_service.update_user_settings("default", settings_data)
+        settings = settings_service.update_settings(settings_data)
         return UserSettingsResponse.model_validate(settings)
     except NotFoundError as e:
         raise HTTPException(
@@ -75,7 +60,7 @@ async def reset_settings(
 ):
     """Reset settings to default values."""
     try:
-        settings_service.delete_user_settings("default")
+        settings_service.reset_settings()
         return None
     except NotFoundError as e:
         raise HTTPException(

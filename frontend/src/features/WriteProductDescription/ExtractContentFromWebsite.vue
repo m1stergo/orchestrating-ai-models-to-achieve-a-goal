@@ -1,20 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useMutation } from '@pinia/colada'
-import { extractSiteContent } from '@/features/DescribeImage/api'
+import { extractWebContent } from '@/features/WriteProductDescription/api'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 const toast = useToast()
 const siteUrl = ref('')
 const emit = defineEmits(['update:content', 'loading'])
-const { data, isLoading, mutateAsync: extract } = useMutation({
-  mutation: extractSiteContent,
+const { isLoading, mutateAsync: extract } = useMutation({
+  mutation: extractWebContent,
   onSuccess: (data) => {
-    setTimeout(() => {
-      emit('update:content', data)
-      emit('loading', false)
-    }, 5000)
+    emit('update:content', data)
+    emit('loading', false)
   },
   onError: () => {
     toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error extracting the content, please try again', life: 3000 })

@@ -7,19 +7,6 @@ from app.database import get_db
 
 router = APIRouter()
 
-# Duplicate route to handle both with and without trailing slash
-@router.get("", response_model=List[schemas.ProductResponse])
-async def read_products_no_slash(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
-    db: Session = Depends(get_db)
-):
-    """
-    Get all products with pagination (no trailing slash version).
-    """
-    products = await service.get_products(db, skip=skip, limit=limit)
-    return products
-
 @router.get("/", response_model=List[schemas.ProductResponse])
 async def read_products(
     skip: int = Query(0, ge=0),

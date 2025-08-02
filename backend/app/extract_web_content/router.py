@@ -5,7 +5,25 @@ from app.extract_web_content.service import extract_web_content
 router = APIRouter()
 
 
-@router.post("/", response_model=ExtractWebContentResponse)
+@router.post(
+    "/",
+    response_model=ExtractWebContentResponse,
+    summary="Extract Web Content",
+    description="""
+    Extract and parse content from web pages using internal scraping service.
+    
+    This endpoint uses an internal web scraping service to extract structured content
+    from web pages. It supports multiple e-commerce platforms and general web content.
+    
+    **Supported Platforms:**
+    - AliExpress product pages
+    - Alibaba product pages
+    - General web content
+    
+    **Input Requirements:**
+    - `url`: Valid HTTP/HTTPS URL to extract content from
+    """
+)
 async def extract_site_content_endpoint(request: ExtractWebContentRequest):
     """
     Endpoint to extract content from a website.

@@ -18,65 +18,97 @@ class SettingsService:
     def __init__(self, db: Session):
         self.db = db
     
-    def get_or_create_settings(self) -> UserSettings:
-        """Get global settings or create default if not exists."""
-        settings = self.db.query(UserSettings).first()
-        if not settings:
-            settings = UserSettings(
+    def _get_db_settings(self) -> UserSettings:
+        """Get settings from database or create default if not exists."""
+        db_settings = self.db.query(UserSettings).first()
+        if not db_settings:
+            db_settings = UserSettings(
                 describe_image_model="openai",
                 generate_description_model="openai"
             )
-            self.db.add(settings)
+            self.db.add(db_settings)
             self.db.commit()
-            self.db.refresh(settings)
-            logger.info("Created default global settings")
-        return settings
+            self.db.refresh(db_settings)
+            logger.info("Created default settings")
+        return db_settings
+        
+    async def get_settings_with_models(self) -> dict:
+        """Get settings with available models."""
+        # Get settings from database
+        db_settings = self._get_db_settings()
+        
+        # Get available models from services
+        models = await self._fetch_available_models()
+        
+        # Convert settings to dict and add models
+        return {
+            "id": db_settings.id,
+            "describe_image_model": db_settings.describe_image_model,
+            "generate_description_model": db_settings.generate_description_model,
+            "created_at": db_settings.created_at,
+            "updated_at": db_settings.updated_at,
+            "describe_image_models": models["describe_image_models"],
+            "generate_description_models": models["generate_description_models"]
+        }
+        
+    def update_settings(self, settings_data: UserSettingsUpdate) -> dict:
+        """Update settings and return the updated values."""
+        # Update the settings in database
+        db_settings = self._update_db_settings(settings_data)
+        
+        # Convert to dict for response
+        return {
+            "id": db_settings.id,
+            "describe_image_model": db_settings.describe_image_model,
+            "generate_description_model": db_settings.generate_description_model,
+            "created_at": db_settings.created_at,
+            "updated_at": db_settings.updated_at
+        }
+        
+    def reset_settings(self) -> None:
+        """Reset settings to default values."""
+        db_settings = self._get_db_settings()
+        
+        try:
+            db_settings.describe_image_model = "openai"
+            db_settings.generate_description_model = "openai"
+            
+            self.db.commit()
+            self.db.refresh(db_settings)
+            logger.info("Reset settings to defaults")
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error resetting settings: {str(e)}")
+            raise Exception("Failed to reset settings")
     
-    def update_settings(self, settings_data: UserSettingsUpdate) -> UserSettings:
-        """Update global settings."""
-        settings = self.get_or_create_settings()
+    def _update_db_settings(self, settings_data: UserSettingsUpdate) -> UserSettings:
+        """Update settings in database."""
+        db_settings = self._get_db_settings()
         
         # Update only provided fields
         update_data = settings_data.model_dump(exclude_unset=True)
         
         try:
             for field, value in update_data.items():
-                setattr(settings, field, value)
+                setattr(db_settings, field, value)
             
             self.db.commit()
-            self.db.refresh(settings)
-            logger.info("Updated global settings")
-            return settings
+            self.db.refresh(db_settings)
+            logger.info("Updated settings")
+            return db_settings
         except Exception as e:
             self.db.rollback()
             logger.error(f"Error updating settings: {str(e)}")
             raise Exception("Failed to update settings")
     
-    def reset_settings(self) -> UserSettings:
-        """Reset settings to default values."""
-        settings = self.get_or_create_settings()
-        
-        try:
-            settings.describe_image_model = "openai"
-            settings.generate_description_model = "openai"
-            
-            self.db.commit()
-            self.db.refresh(settings)
-            logger.info("Reset settings to defaults")
-            return settings
-        except Exception as e:
-            self.db.rollback()
-            logger.error(f"Error resetting settings: {str(e)}")
-            raise Exception("Failed to reset settings")
-    
-    async def get_available_models(self) -> Dict[str, List[str]]:
-        """Get available models from microservices."""
-        # Get models from describe-image service (with trailing slash)
+    async def _fetch_available_models(self) -> Dict[str, List[str]]:
+        """Fetch available models from microservices."""
+        # Get models from describe-image service
         describe_models = await self._get_models_from_service(
             f"{settings.DESCRIBE_IMAGE_SERVICE_URL}/models/"
         )
         
-        # Get models from generate-description service (with trailing slash)
+        # Get models from generate-description service
         generate_models = await self._get_models_from_service(
             f"{settings.GENERATE_DESCRIPTION_SERVICE_URL}/models/"
         )
@@ -94,9 +126,8 @@ class SettingsService:
                 response.raise_for_status()
                 data = response.json()
                 
-                # Expect all services to return array of strings: ["model1", "model2", ...]
+                # Expect services to return array of strings: ["model1", "model2", ...]
                 if isinstance(data, list):
-                    # Return the array of model names directly
                     return data
                 else:
                     logger.warning(f"Unexpected response format from {url}: expected array, got {type(data)}")
