@@ -41,6 +41,9 @@ frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
 
+# Backend
+backend/app/static/images
+
 # IDE
 .idea/
 .vscode/

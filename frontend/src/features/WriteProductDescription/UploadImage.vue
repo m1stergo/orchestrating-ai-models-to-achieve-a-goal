@@ -4,18 +4,17 @@ import { ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useMutation } from '@pinia/colada'
 import { uploadImage } from '@/features/WriteProductDescription/api'
+import ProgressSpinner from 'primevue/progressspinner'
 
-const emit = defineEmits(['update:content', 'loading'])
+const image = defineModel<string>()
 
-const { mutateAsync: upload } = useMutation({
+const { isLoading, mutateAsync: triggerUpload } = useMutation({
   mutation: uploadImage,
   onSuccess: (data) => {
-    emit('update:content', data)
-    emit('loading', false)
+    image.value = data.image_url
   },
   onError: () => {
     toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error extracting the content, please try again', life: 3000 })
-    emit('loading', false)
   },
 })
 
@@ -43,8 +42,7 @@ watch(selectedFile, (newFile) => {
   if (!newFile) return;
   const formData = new FormData();
   formData.append('file', newFile);
-  emit('loading', true)
-  upload(formData)
+  triggerUpload(formData)
 })
 </script>
 
@@ -52,10 +50,14 @@ watch(selectedFile, (newFile) => {
 <div class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
     <div class="shrink-0">
-      <FileUpload mode="basic" accept="image/*" :maxFileSize="1000000" @select="onFileSelect" :auto="true" chooseLabel="Choose image"/>
+      <FileUpload :disabled="isLoading" mode="basic" accept="image/*" :maxFileSize="1000000" @select="onFileSelect" :auto="true" chooseLabel="Choose image"/>
     </div>
     <img v-if="imagePreview" :src="imagePreview" class="rounded shrink-0" alt="Preview" style="width: auto; max-height: 42px;" />
     <p v-if="selectedFile">{{ selectedFile?.name }}</p>
+  </div>
+  <div v-if="isLoading" class="flex items-center gap-2">
+    <ProgressSpinner strokeWidth="4" style="width: 25px; height: 25px" />
+    <p class="text-sm w-full">Uploading image...</p>
   </div>
 </div>
 </template>

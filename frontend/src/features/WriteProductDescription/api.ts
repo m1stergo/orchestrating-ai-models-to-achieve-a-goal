@@ -1,8 +1,9 @@
-import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageResponse, DescribeImageResponse } from './types'
+import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageResponse, DescribeImageResponse, GenerateDescriptionResponse } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const API_DESCRIBE_IMAGE_URL = import.meta.env.VITE_API_DESCRIBE_IMAGE_URL
 const API_EXTRACT_WEBCONTENT_URL = import.meta.env.VITE_API_BASE_URL
+const API_GENERATE_DESCRIPTION_URL = import.meta.env.VITE_API_GENERATE_DESCRIPTION_URL
 
 export async function uploadImage(formData: FormData): Promise<UploadImageResponse> {
   const response = await fetch(`${API_BASE_URL}/v1/upload-image/`, {
@@ -15,16 +16,30 @@ export async function uploadImage(formData: FormData): Promise<UploadImageRespon
   return response.json()
 }
 
-export async function describeImage(image: string): Promise<DescribeImageResponse> {
+export async function describeImage(params: { image_url: string, model: string }): Promise<DescribeImageResponse> {
   const response = await fetch(`${API_DESCRIBE_IMAGE_URL}/v1/describe-image/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ image }),
+    body: JSON.stringify(params),
   })
   if (!response.ok) {
     throw new Error(`Failed to describe image: ${response.statusText}`)
+  }
+  return response.json()
+}
+
+export async function generateDescription(params: { text: string, model: string }): Promise<GenerateDescriptionResponse> {
+  const response = await fetch(`${API_GENERATE_DESCRIPTION_URL}/v1/generate-description/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to generate description: ${response.statusText}`)
   }
   return response.json()
 }

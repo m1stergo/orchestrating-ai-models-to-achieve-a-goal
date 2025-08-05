@@ -1,24 +1,39 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import Drawer from 'primevue/drawer'
 import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import { useQuery } from '@pinia/colada'
-import { getSettings } from './api'  
+import { useQuery, useMutation } from '@pinia/colada'
+import { getSettings, updateSettings } from './api'  
 import Skeleton from 'primevue/skeleton'
 
-const visible = ref(true)
+const visible = ref(false)
 
 const { data, isLoading, error } = useQuery({
   key: ['settings'],
   query: () => getSettings(),
 })
 
-const formData = ref({
-  describe_image_models: '',
-  generate_description_models: '',
+const { mutate: updateSettingsMutation } = useMutation({
+  mutation: updateSettings,
 })
+
+const describe_image_model = computed({
+  get: () => data.value?.describe_image_model,
+  set: (value) => {
+    updateSettingsMutation({ describe_image_model: value })
+  }
+})
+
+const generate_description_model = computed({
+  get: () => data.value?.generate_description_model,
+  set: (value) => {
+    updateSettingsMutation({ generate_description_model: value })
+  }
+})
+
+
 </script>
 
 <template>
@@ -48,7 +63,7 @@ const formData = ref({
         <div>
           <Dropdown
             id="describe-strategy"
-            v-model="formData.describe_image_models"
+            v-model="describe_image_model"
             :options="data?.describe_image_models"
             placeholder="Select a model"
             class="w-full"
@@ -64,7 +79,7 @@ const formData = ref({
         <div>
           <Dropdown
             id="generate-strategy"
-            v-model="formData.generate_description_models"
+            v-model="generate_description_model"
             :options="data?.generate_description_models"
             placeholder="Select a model"
             class="w-full"

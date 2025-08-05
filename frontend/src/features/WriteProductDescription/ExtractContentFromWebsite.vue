@@ -7,22 +7,23 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 const toast = useToast()
 const siteUrl = ref('')
-const emit = defineEmits(['update:content', 'loading'])
+const emit = defineEmits(['update:content'])
 const { isLoading, mutateAsync: extract } = useMutation({
   mutation: extractWebContent,
   onSuccess: (data) => {
     emit('update:content', data)
-    emit('loading', false)
   },
   onError: () => {
     toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error extracting the content, please try again', life: 3000 })
-    emit('loading', false)
   },
 })
 const handleSubmit = () => {
-  emit('loading', true)
   extract(siteUrl.value)
 }
+
+defineExpose({
+  isLoading,
+})
 </script>
 
 <template>
