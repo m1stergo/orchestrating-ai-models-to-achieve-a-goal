@@ -44,10 +44,11 @@ class ImageDescriptionModelFactory:
                 
                 if model.is_available():
                     logger.info(f"Using requested model: {model_name}")
+                    logger.info(f"Mode ES _______________: {model}")
                     return model
                 else:
                     logger.warning(f"Requested model '{model_name}' is not available, falling back to default")
-            
+            logger.info("LLEGA HASTA EL ERROR")
             # If no model is available
             raise ValueError("No image description model is available. Please check your configuration.")
             

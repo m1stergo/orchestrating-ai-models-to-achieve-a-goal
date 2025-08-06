@@ -1,26 +1,30 @@
-import httpx
 import logging
-import base64
+import requests
+from pathlib import Path
 from urllib.parse import urlparse
-from typing import Dict, Any
+from io import BytesIO
+from PIL import Image
 
+import google.generativeai as genai
 from schemas import DescribeImageResponse
 from .base import ImageDescriptionModel
 from config import settings
+import asyncio
+
 
 logger = logging.getLogger(__name__)
 
 class GeminiModel(ImageDescriptionModel):
-    """Model for image description using Google Vision API."""
+    """Model for image description using Google Gemini SDK with image resize."""
 
     def __init__(self):
         super().__init__()
         self.api_key = settings.GEMINI_API_KEY
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-        self.model = settings.GEMINI_MODEL
+        self.model_name = settings.GEMINI_MODEL  # ej: "gemini-1.5-pro-latest"
+        if self.is_available():
+            genai.configure(api_key=self.api_key)
 
     def is_available(self) -> bool:
-        """Check if Gemini API key is configured."""
         available = bool(self.api_key and self.api_key.strip())
         if not available:
             logger.warning("Gemini API key not found. Set GEMINI_API_KEY environment variable.")
@@ -33,96 +37,68 @@ class GeminiModel(ImageDescriptionModel):
         except Exception:
             return False
 
-    async def _download_image_as_base64(self, image_url: str) -> str:
-        """Download image from URL and convert to base64."""
+    def _download_and_resize_image(self, image_url: str, max_width: int = 512) -> tuple:
+        """Download image, resize if wider than max_width, return (mime_type, bytes)."""
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(image_url)
-                response.raise_for_status()
-                image_data = response.content
-                return base64.b64encode(image_data).decode('utf-8')
+            response = requests.get(image_url)
+            response.raise_for_status()
+            mime_type = response.headers.get("Content-Type", "image/jpeg").split(";")[0].strip()
+
+            img = Image.open(BytesIO(response.content))
+
+            if img.width > max_width:
+                ratio = max_width / float(img.width)
+                new_height = int(img.height * ratio)
+                img = img.resize((max_width, new_height), Image.LANCZOS)
+
+                # Convert to JPEG to ensure compatibility
+                output = BytesIO()
+                img.convert("RGB").save(output, format="JPEG", quality=90)
+                return "image/jpeg", output.getvalue()
+
+            return mime_type, response.content
+
         except Exception as e:
-            logger.error(f"Error downloading image: {str(e)}")
+            logger.error(f"Error downloading or resizing image: {str(e)}")
             raise
 
+
     async def describe_image(self, image_url: str, prompt: str = None) -> DescribeImageResponse:
-        """Describe image using Google Gemini Pro Vision API."""
+        return await asyncio.to_thread(self._describe_image_sync, image_url, prompt)
+
+    def _describe_image_sync(self, image_url: str, prompt: str = None) -> DescribeImageResponse:
+        """Describe image using Google Gemini API via SDK."""
         logger.info(f"GeminiModel: describing image from {image_url}")
 
         if not self.is_available():
-            raise ValueError("Gemini API key is not configured. Set GEMINI_API_KEY environment variable.")
+            raise ValueError("Gemini API key is not configured.")
 
         if not self.is_valid_url(image_url):
             raise ValueError("Invalid image URL")
 
-        # Default prompt: load from file if not provided
         if prompt is None:
-            from pathlib import Path
             PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "default.txt"
             prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
         try:
-            # Download and encode image
-            base64_image = await self._download_image_as_base64(image_url)
+            mime_type, image_data = self._download_and_resize_image(image_url, max_width=512)
 
-            # Prepare the request payload for Gemini API
-            payload = {
-                "contents": [
-                    {
-                        "parts": [
-                            {
-                                "text": prompt
-                            },
-                            {
-                                "inlineData": {
-                                    "mimeType": "image/jpeg",
-                                    "data": base64_image
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
+            model = genai.GenerativeModel(self.model_name)
+            result = model.generate_content(
+                [prompt, {"mime_type": mime_type, "data": image_data}],
+                generation_config={"max_output_tokens": 500}
+            )
 
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post(
-                    f"{self.base_url}/models/{self.model}:generateContent",
-                    json=payload,
-                    params={"key": self.api_key}
-                )
-                response.raise_for_status()
-                result = response.json()
+            # Log finish reason
+            if hasattr(result, "candidates") and result.candidates:
+                finish_reason = getattr(result.candidates[0], "finish_reason", None)
+                if finish_reason and finish_reason != "STOP":
+                    logger.warning(f"Generation stopped: {finish_reason}")
 
-                # Extract the generated text
-                description = self._parse_response(result)
-                
-                logger.info("GeminiModel: description generated successfully")
-                return DescribeImageResponse(description=description)
+            description = result.text.strip() if result.text else "No response generated"
+            logger.info("GeminiModel: description generated successfully")
+            return DescribeImageResponse(description=description)
 
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Gemini API error: {e.response.status_code} - {e.response.text}")
-            raise Exception(f"Gemini API error: {e.response.status_code}")
         except Exception as e:
             logger.error(f"GeminiModel error: {str(e)}")
             raise
-
-    def _parse_response(self, result: Dict[str, Any]) -> str:
-        """Parse response from Gemini API response."""
-        try:
-            candidates = result.get("candidates", [])
-            if not candidates:
-                return "No response generated"
-
-            content = candidates[0].get("content", {})
-            parts = content.get("parts", [])
-            
-            if not parts:
-                return "No response generated"
-
-            output = parts[0].get("text", "No response generated")
-            return output.strip()
-
-        except Exception as e:
-            logger.error(f"Error parsing response: {str(e)}")
-            return f"Error processing response: {str(e)}"
-

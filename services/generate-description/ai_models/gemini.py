@@ -1,92 +1,67 @@
-import httpx
 import logging
-from typing import Dict, Any
+import asyncio
+import google.generativeai as genai
+
+from typing import Optional
 from .base import BaseGenerateDescriptionModel
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 class GeminiModel(BaseGenerateDescriptionModel):
-    """Model for text generation using Google Gemini API."""
+    """Model for text generation using Google Gemini SDK."""
 
     def __init__(self):
         super().__init__()
         self.api_key = settings.GEMINI_API_KEY
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-        self.model = settings.GEMINI_MODEL
+        self.model_name = settings.GEMINI_MODEL  # ej: "gemini-1.5-pro-latest"
+        self._model = None
+
+        if self.is_available():
+            genai.configure(api_key=self.api_key)
+            self._model = genai.GenerativeModel(self.model_name)
 
     def is_available(self) -> bool:
-        """Check if Gemini API key is configured."""
-        available = bool(self.api_key and self.api_key.strip())
-        if not available:
+        ok = bool(self.api_key and self.api_key.strip())
+        if not ok:
             logger.warning("Gemini API key not found. Set GEMINI_API_KEY environment variable.")
-        return available
+        return ok
 
     async def generate_description(self, text: str, prompt: str) -> str:
-        """Generate description using Google Gemini."""
-        logger.info(f"GeminiModel: generating description for input text")
+        """Generate description using Google Gemini SDK."""
+        logger.info("GeminiModel: generating description for input text")
 
         if not self.is_available():
             raise ValueError("Gemini API key is not configured. Set GEMINI_API_KEY environment variable.")
 
-        # Combine the prompt with the input text
+        # Armamos el prompt final igual que en tu versión HTTP
         full_prompt = f"{prompt}\n\nText to process:\n{text}"
 
-        payload = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": full_prompt}
-                    ]
-                }
-            ],
-            "generationConfig": {
+        # Ejecutamos la llamada del SDK (sincrónica) en un thread para no bloquear
+        try:
+            result_text = await asyncio.to_thread(self._generate_sync, full_prompt)
+            logger.info("GeminiModel: description generated successfully")
+            return result_text.strip() if result_text else "No response generated"
+        except Exception as e:
+            logger.error(f"GeminiModel error: {e}")
+            raise
+
+    def _generate_sync(self, full_prompt: str) -> str:
+        """Llamada síncrona al SDK. Se ejecuta en thread desde generate_description."""
+        if self._model is None:
+            genai.configure(api_key=self.api_key)
+            self._model = genai.GenerativeModel(self.model_name)
+
+        # Config de generación similar a tu payload original
+        result = self._model.generate_content(
+            full_prompt,
+            generation_config={
                 "temperature": 0.7,
                 "topK": 40,
                 "topP": 0.95,
-                "maxOutputTokens": 1000,
-            }
-        }
+                "max_output_tokens": 1000,
+            },
+        )
 
-        headers = {"Content-Type": "application/json"}
-
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(
-                    f"{self.base_url}/models/{self.model}:generateContent",
-                    headers=headers,
-                    json=payload,
-                    params={"key": self.api_key}
-                )
-                response.raise_for_status()
-                result = response.json()
-                
-                # Extract the generated text
-                description = self._parse_response(result)
-                logger.info("GeminiModel: description generated successfully")
-                return description
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Gemini API error: {e.response.status_code} - {e.response.text}")
-            raise Exception(f"Gemini API error: {e.response.status_code}")
-        except Exception as e:
-            logger.error(f"GeminiModel error: {str(e)}")
-            raise
-
-    def _parse_response(self, result: Dict[str, Any]) -> str:
-        """Parse response from Gemini API response."""
-        try:
-            candidates = result.get("candidates", [])
-            if not candidates:
-                return "No response generated"
-            
-            content = candidates[0].get("content", {})
-            parts = content.get("parts", [])
-
-            if not parts:
-                return "No response generated"
-            
-            output = parts[0].get("text", "No response generated")
-            return output.strip()
-        except Exception as e:
-            logger.error(f"Error parsing response: {str(e)}")
-            return f"Error processing response: {str(e)}"
+        # El SDK ya expone .text con el mejor candidato
+        return (result.text or "").strip()

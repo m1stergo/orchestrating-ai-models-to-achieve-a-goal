@@ -22,7 +22,8 @@ dependencies = [
     "transformers (==4.54.1)",
     "accelerate (==1.9.0)",
     "torch (==2.7.1+cu128)",
-    "torchvision (==0.22.1+cu128)"
+    "torchvision (==0.22.1+cu128)",
+    "google-generativeai (>=0.8.5,<0.9.0)"
 ]
 
 

@@ -21,6 +21,7 @@ async def describe_image(
     try:
         # Get model from request
         model = ImageDescriptionModelFactory.get_model(request.model)
+        logger.info(f"Model: {model}")
         logger.info(f"Using model: {model.model_name}")
         
         # Check if model is available
