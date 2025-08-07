@@ -19,34 +19,33 @@ class QwenModel(ImageDescriptionModel):
         self._processor = None
         self.max_width = max_width
 
-    def is_available(self) -> bool:
-        try:
-            from transformers import Qwen2_5_VLForConditionalGeneration  # noqa: F401
-            from qwen_vl_utils import process_vision_info  # noqa: F401
-            return True
-        except ImportError:
-            return False
-
-    def _load_qwen_model(self):
+    async def is_loaded(self):
+        """Ensures that the model is loaded asynchronously."""
         if self._model is None or self._processor is None:
             logger.info("Loading Qwen2.5-VL model...")
             model_name = "Qwen/Qwen2.5-VL-7B-Instruct"
 
-            self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-                model_name,
-                torch_dtype=torch.bfloat16,          # si tu GPU no soporta bfloat16, podés usar "auto"
-                device_map="auto",
-                trust_remote_code=True,
-                low_cpu_mem_usage=True,
-                max_memory={0: "14GB", "cpu": "8GB"}
-            )
-            self._processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
+            # Execute model loading in a separate thread to avoid blocking
+            import asyncio
+            await asyncio.to_thread(self._load_model_sync, model_name)
             logger.info("Qwen2.5-VL model loaded successfully")
 
         return self._model, self._processor
+        
+    def _load_model_sync(self, model_name):
+        """Loads the model synchronously (to be executed in a separate thread)."""
+        self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+            model_name,
+            torch_dtype=torch.bfloat16,          # if your GPU doesn't support bfloat16, you can use "auto"
+            device_map="auto",
+            trust_remote_code=True,
+            low_cpu_mem_usage=True,
+            max_memory={0: "14GB", "cpu": "8GB"}
+        )
+        self._processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
 
     def _download_and_resize_image(self, image_url: str) -> Image.Image:
-        """Descarga la imagen y la redimensiona a max_width si hace falta."""
+        """Downloads the image and resizes it to max_width if necessary."""
         resp = requests.get(image_url)
         resp.raise_for_status()
         img = Image.open(BytesIO(resp.content)).convert("RGB")
@@ -61,7 +60,7 @@ class QwenModel(ImageDescriptionModel):
     async def describe_image(self, image_url: str, prompt: str = None) -> DescribeImageResponse:
         logger.info(f"QwenModel: describing image from {image_url}")
         try:
-            model, processor = self._load_qwen_model()
+            model, processor = await self.is_loaded()
 
             image = self._download_and_resize_image(image_url)
 

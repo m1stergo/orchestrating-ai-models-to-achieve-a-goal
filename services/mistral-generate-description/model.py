@@ -39,7 +39,7 @@ class MistralModel(BaseGenerateDescriptionModel):
         if not self.is_available():
             raise Exception("Transformers library not available")
 
-        await self._ensure_loaded()
+        await self.is_loaded()
 
         # Construimos el prompt final con chat template si existe
         input_text = self._build_chat_prompt(text, prompt)
@@ -53,7 +53,7 @@ class MistralModel(BaseGenerateDescriptionModel):
             logger.error(f"Error in Mistral generation: {str(e)}")
             raise Exception(f"Mistral model failed: {str(e)}")
 
-    async def _ensure_loaded(self):
+    async def is_loaded(self):
         if self.model is not None and self.tokenizer is not None:
             return
 

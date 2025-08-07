@@ -1,10 +1,9 @@
 from fastapi import APIRouter, HTTPException, Body
-import httpx
-from app.config import settings
 from .schemas import (
     DescribeImageRequest,
     DescribeImageResponse,
 )
+from .service import describe_image
 
 router = APIRouter()
 
@@ -38,8 +37,8 @@ router = APIRouter()
     description="""
     Generate a detailed description of an image using AI vision models.
     
-    This endpoint acts as a proxy to the describe-image microservice, automatically
-    selecting the user's preferred AI model (OpenAI GPT-4 Vision, Google Gemini Vision, or Qwen-VL).
+    This endpoint uses adapter pattern to select the appropriate AI model
+    (OpenAI GPT-4 Vision, Google Gemini Vision, or Qwen-VL).
     
     **Supported Models:**
     - `openai`: GPT-4 Vision (high accuracy, detailed descriptions)
@@ -57,15 +56,7 @@ async def describe_image_proxy(
     )
 ):
     try:
-        # Direct proxy to the microservice
-        async with httpx.AsyncClient(timeout=300.0) as client:
-            response = await client.post(
-                f"{settings.DESCRIBE_IMAGE_SERVICE_URL}/describe-image/",
-                json=request.model_dump()
-            )
-            response.raise_for_status()
-            return response.json()
-    except httpx.RequestError as e:
-        raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        # Call the service directly using the adapter pattern
+        return await describe_image(request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error describing image: {str(e)}")
