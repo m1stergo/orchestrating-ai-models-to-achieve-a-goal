@@ -105,12 +105,12 @@ class SettingsService:
         """Fetch available models from microservices."""
         # Get models from describe-image service
         describe_models = await self._get_models_from_service(
-            f"{settings.DESCRIBE_IMAGE_SERVICE_URL}/models/"
+            f"{settings.DESCRIBE_IMAGE_QWEN_URL}/models/"
         )
         
         # Get models from generate-description service
         generate_models = await self._get_models_from_service(
-            f"{settings.GENERATE_DESCRIPTION_SERVICE_URL}/models/"
+            f"{settings.GENERATE_DESCRIPTION_MISTRAL_URL}/models/"
         )
         
         return {

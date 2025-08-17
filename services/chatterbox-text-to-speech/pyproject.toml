@@ -1,0 +1,24 @@
+[project]
+name = "chatterbox-tts-service"
+version = "0.1.0"
+description = "Chatterbox TTS service"
+authors = [
+    {name = "etow", email = "elias.qlr@gmail.com"}
+]
+readme = "readme.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.116.1",
+    "pydantic-settings>=2.0.0",
+    "uvicorn[standard]==0.35.0",
+    "transformers==4.46.3",
+    "requests"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"

@@ -4,17 +4,16 @@ import requests
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from qwen_vl_utils import process_vision_info
 import torch
-from schemas import DescribeImageResponse
-from .base import ImageDescriptionModel
+from .schemas import DescribeImageResponse
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-class QwenModel(ImageDescriptionModel):
+class QwenModel:
     """ModelImageDescriptionModel for image description using Qwen2.5-VL model (local)."""
 
     def __init__(self, max_width: int = 512):
-        super().__init__()
         self._model = None
         self._processor = None
         self.max_width = max_width
@@ -57,7 +56,7 @@ class QwenModel(ImageDescriptionModel):
 
         return img
 
-    async def describe_image(self, image_url: str, prompt: str = None) -> DescribeImageResponse:
+    async def describe_image(self, image_url: str, prompt: str = None) -> str:
         logger.info(f"QwenModel: describing image from {image_url}")
         try:
             model, processor = await self.is_loaded()
@@ -65,11 +64,10 @@ class QwenModel(ImageDescriptionModel):
             image = self._download_and_resize_image(image_url)
 
             if prompt is None:
-                from pathlib import Path
-                PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "default.txt"
+                PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "default.txt"
                 prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
-            # Usamos el PIL.Image ya redimensionado en el mensaje
+            # Use PIL.Image (already resized) in message
             messages = [
                 {
                     "role": "user",
@@ -102,7 +100,7 @@ class QwenModel(ImageDescriptionModel):
 
             description = output_text[0].strip() if output_text else "No description generated"
             logger.info("QwenModel: description generated successfully")
-            return DescribeImageResponse(description=description)
+            return description
 
         except Exception as e:
             logger.error(f"QwenModel error: {str(e)}")

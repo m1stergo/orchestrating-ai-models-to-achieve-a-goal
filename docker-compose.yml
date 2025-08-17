@@ -17,8 +17,8 @@ services:
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres
       - DATABASE_NAME=orchestration_db
-      - DESCRIBE_IMAGE_SERVICE_URL=http://describe-image-service:8001
-      - GENERATE_DESCRIPTION_SERVICE_URL=http://generate-description-service:8003
+      - DESCRIBE_IMAGE_QWEN_URL=http://describe-image-service:8001
+      - GENERATE_DESCRIPTION_MISTRAL_URL=http://generate-description-service:8003
     volumes:
       - ./backend:/app
     networks:

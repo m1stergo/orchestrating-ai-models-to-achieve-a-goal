@@ -67,15 +67,8 @@ async def generate_description_proxy(
     )
 ):
     try:
-        # Direct proxy to the microservice
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                f"{settings.GENERATE_DESCRIPTION_SERVICE_URL}/generate-description/",
-                json=request.model_dump()
-            )
-            response.raise_for_status()
-            return response.json()
-    except httpx.RequestError as e:
-        raise HTTPException(status_code=503, detail=f"Service unavailable: {str(e)}")
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        # Call the service directly using the adapter pattern
+        from .service import generate_description
+        return await generate_description(request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating description: {str(e)}")

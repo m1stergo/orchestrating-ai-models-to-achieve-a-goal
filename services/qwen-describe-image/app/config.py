@@ -7,7 +7,8 @@ from pathlib import Path
 def get_version() -> str:
     """Read version from pyproject.toml"""
     try:
-        pyproject_path = Path(__file__).parent / "pyproject.toml"
+        # qwen-describe-image/app/core/config.py -> up to service root
+        pyproject_path = Path(__file__).resolve().parents[2] / "pyproject.toml"
         with open(pyproject_path, "rb") as f:
             pyproject_data = tomllib.load(f)
         return pyproject_data["project"]["version"]
@@ -22,6 +23,7 @@ class Settings(BaseSettings):
     API_TITLE: str = "Describe Image Service"
     API_DESCRIPTION: str = "AI service for image description and analysis"
     API_VERSION: str = get_version()
+    PORT: int = 8000
     
     # External API Keys
     OPENAI_API_KEY: Optional[str] = None

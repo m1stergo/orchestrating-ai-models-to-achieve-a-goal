@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from schemas import GenerateDescriptionRequest, GenerateDescriptionResponse
-from service import generate_description
+from .schemas import GenerateDescriptionRequest, GenerateDescriptionResponse
+from .service import generate_description
 
 router = APIRouter()
 

@@ -5,16 +5,10 @@ import logging
 import asyncio
 from typing import List
 
-from schemas import GenerateDescriptionRequest, GenerateDescriptionResponse
-from adapters.factory import TextGenerationAdapterFactory
+from .schemas import GenerateDescriptionRequest, GenerateDescriptionResponse
+from .adapters.factory import TextGenerationAdapterFactory
 
 logger = logging.getLogger(__name__)
-
-# Semaphore to limit concurrent inference requests
-# Adjust the value based on your GPU memory and model requirements
-MAX_CONCURRENT_INFERENCES = 1
-semaphore = asyncio.Semaphore(MAX_CONCURRENT_INFERENCES)
-
 
 async def generate_description(
     request: GenerateDescriptionRequest
@@ -29,15 +23,11 @@ async def generate_description(
         GenerateDescriptionResponse: The generated description result
     """
     try:
-        # Get the correct adapter for text generation
+        logger.info(f"Generating description for text: {request.text}")
         adapter = TextGenerationAdapterFactory.get_adapter(request.model)
-        
-        # Use semaphore to limit concurrent inferences
-        async with semaphore:
-            # Use the adapter's generate_text method
-            result = await adapter.generate_text(request.text, request.prompt)
+        result = await adapter.generate_text(request.text, request.prompt)
         logger.info("Text generation completed successfully")
-        return GenerateDescriptionResponse(text=result)
+        return GenerateDescriptionResponse(description=result)
     except Exception as e:
         logger.error(f"Error generating description: {str(e)}")
         raise Exception(f"Text generation failed: {str(e)}")

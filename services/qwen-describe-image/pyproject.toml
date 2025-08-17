@@ -1,7 +1,7 @@
 [project]
-name = "describe-image-service"
+name = "qwen-describe-image"
 version = "0.1.0"
-description = "AI service for image description and analysis"
+description = "Qwen service for image description and analysis"
 authors = [
     {name = "etow",email = "elias.qlr@gmail.com"}
 ]
@@ -12,7 +12,6 @@ dependencies = [
     "fastapi (==0.116.1)",
     "httpx (==0.24.0)",
     "numpy (==1.26.4)",
-    "openai (==1.97.1)",
     "pillow (==11.0.0)",
     "pydantic-settings (>=2.0.0)",
     "qwen-vl-utils (==0.0.11)",
@@ -22,8 +21,7 @@ dependencies = [
     "transformers (==4.54.1)",
     "accelerate (==1.9.0)",
     "torch (==2.7.1+cu128)",
-    "torchvision (==0.22.1+cu128)",
-    "google-generativeai (>=0.8.5,<0.9.0)"
+    "torchvision (==0.22.1+cu128)"
 ]
 
 

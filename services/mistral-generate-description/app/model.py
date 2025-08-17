@@ -2,8 +2,6 @@ import logging
 import asyncio
 from typing import Any, Optional
 
-from .base import BaseGenerateDescriptionModel
-
 logger = logging.getLogger(__name__)
 
 try:
@@ -15,11 +13,10 @@ except ImportError:
     logger.warning("Transformers not available. Mistral model will be disabled.")
 
 
-class MistralModel(BaseGenerateDescriptionModel):
+class MistralModel:
     """Local Mistral model for text generation (aligned with other providers)."""
 
     def __init__(self):
-        super().__init__()
         from config import settings
         # Puedes usar: "mistralai/Mistral-7B-Instruct-v0.3" o el que prefieras
         self.model_name = getattr(settings, "MISTRAL_MODEL", "mistralai/Mistral-7B-Instruct-v0.1")

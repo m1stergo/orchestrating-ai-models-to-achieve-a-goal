@@ -31,15 +31,36 @@ class Settings(BaseSettings):
     IMAGES_DIR: Path = Path("app/static/images")
     STATIC_URL: str = "http://localhost:8000/static"
     
+    # Audio storage settings
+    AUDIO_DIR: Path = Path("app/static/audio")
+    AUDIO_URL: str = "http://localhost:8000/static"
+    
     # Microservice base URLs with API prefix
-    DESCRIBE_IMAGE_SERVICE_URL: str = "http://localhost:8001/api/v1"
-    GENERATE_DESCRIPTION_SERVICE_URL: str = "http://localhost:8002/api/v1"
+    DESCRIBE_IMAGE_QWEN_URL: str = "http://localhost:8001/api/v1"
+    GENERATE_DESCRIPTION_MISTRAL_URL: str = "http://localhost:8002/api/v1"
+    CHATTERBOX_TTS_URL: str = "http://localhost:8003"
+    
+    # API Keys for external services
+    OPENAI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
+    OPENAI_VISION_MODEL: Optional[str] = None
+    GEMINI_VISION_MODEL: Optional[str] = None
+    QWEN_VISION_MODEL: Optional[str] = None
+    OPENAI_TEXT_MODEL: Optional[str] = None
+    GEMINI_TEXT_MODEL: Optional[str] = None
+    MISTRAL_TEXT_MODEL: Optional[str] = None
     
     # Computed property for image URL construction
     @property
     def images_url(self) -> str:
         """Get the full URL path for images."""
         return f"{self.STATIC_URL}/images"
+    
+    # Computed property for audio URL construction
+    @property
+    def audio_url(self) -> str:
+        """Get the full URL path for audio files."""
+        return f"{self.AUDIO_URL}/audio"
     
     class Config:
         env_file = ".env"

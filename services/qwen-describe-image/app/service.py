@@ -1,31 +1,18 @@
 import logging
 import asyncio
 
-from schemas import DescribeImageRequest, DescribeImageResponse
+from .schemas import DescribeImageRequest, DescribeImageResponse
+from .shared import model_instance, model_loaded
 
 logger = logging.getLogger(__name__)
-
-# Import the global model instance from main.py
-from main import model_instance, model_loaded
 
 # Semaphore to limit concurrent inference requests
 # Adjust the value based on your GPU memory and model requirements
 MAX_CONCURRENT_INFERENCES = 1
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_INFERENCES)
 
-# Hardcoded prompt template
-PROMPT_TEMPLATE = """
-You are a professional e-commerce copywriter. Write a compelling product description based on the information below.
 
-{text}
-
-Write a clear, persuasive, English description of the product.
-"""
-
-
-async def describe_image(
-    request: DescribeImageRequest
-) -> DescribeImageResponse:
+async def describe_image(request: DescribeImageRequest) -> DescribeImageResponse:
     """
     Describe an image using the preloaded adapter with concurrency control.
     

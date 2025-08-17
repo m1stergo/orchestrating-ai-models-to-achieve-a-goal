@@ -1,12 +1,10 @@
 import logging
 import asyncio
 
-from schemas import GenerateDescriptionRequest, GenerateDescriptionResponse
+from .schemas import GenerateDescriptionRequest, GenerateDescriptionResponse
+from .shared import model_instance, model_loaded
 
 logger = logging.getLogger(__name__)
-
-# Global model instance (shared with main.py)
-from main import model_instance, model_loaded
 
 # Semaphore to limit concurrent inference requests
 # Adjust the value based on your GPU memory and model requirements

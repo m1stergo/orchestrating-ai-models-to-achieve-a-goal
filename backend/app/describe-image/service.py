@@ -4,8 +4,8 @@ Service for image description using AI models.
 import logging
 from typing import List
 
-from schemas import DescribeImageRequest, DescribeImageResponse
-from adapters.factory import ImageDescriptionAdapterFactory
+from .schemas import DescribeImageRequest, DescribeImageResponse
+from .adapters.factory import ImageDescriptionAdapterFactory
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,8 @@ async def describe_image(
         DescribeImageResponse: The image description result
     """
     try:
-        # Get the correct adapter for image description
+        logger.info(f"Generating description for image: {request.image_url}")
         adapter = ImageDescriptionAdapterFactory.get_adapter(request.model)
-        
-        # Use the adapter's describe_image method
         result = await adapter.describe_image(request.image_url, request.prompt)
         logger.info("Image description completed successfully")
         return DescribeImageResponse(description=result)

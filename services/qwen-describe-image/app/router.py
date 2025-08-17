@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from schemas import DescribeImageRequest, DescribeImageResponse
-from service import describe_image
+from .schemas import DescribeImageRequest, DescribeImageResponse
+from .service import describe_image
 
 router = APIRouter()
 
@@ -21,6 +21,3 @@ async def describe_image_endpoint(request: DescribeImageRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to describe image: {str(e)}")
-
-
-# Endpoint /models eliminado para mantener consistencia con el patrón de microservicio
