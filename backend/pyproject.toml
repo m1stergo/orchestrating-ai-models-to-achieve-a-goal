@@ -45,7 +45,8 @@ dependencies = [
     "wheel (==0.45.1)",
     "openai (>=1.99.2,<2.0.0)",
     "google-generativeai (>=0.8.5,<0.9.0)",
-    "aiohttp (>=3.12.15,<4.0.0)"
+    "aiohttp (>=3.12.15,<4.0.0)",
+    "aiofiles (>=24.1.0,<25.0.0)"
 ]
 
 

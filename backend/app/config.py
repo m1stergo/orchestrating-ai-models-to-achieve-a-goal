@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     IMAGES_DIR: Path = Path("app/static/images")
     STATIC_URL: str = "http://localhost:8000/static"
     
+    # Voice models configuration
+    VOICE_MODELS_CONFIG: Path = Path("app/config/voice_models.json")
+    
     # Audio storage settings
     AUDIO_DIR: Path = Path("app/static/audio")
     AUDIO_URL: str = "http://localhost:8000/static"
@@ -38,7 +41,7 @@ class Settings(BaseSettings):
     # Microservice base URLs with API prefix
     DESCRIBE_IMAGE_QWEN_URL: str = "http://localhost:8001/api/v1"
     GENERATE_DESCRIPTION_MISTRAL_URL: str = "http://localhost:8002/api/v1"
-    CHATTERBOX_TTS_URL: str = "http://localhost:8003"
+    TTS_CHATTERBOX_URL: str = "http://localhost:8003/api/v1"
     
     # API Keys for external services
     OPENAI_API_KEY: Optional[str] = None

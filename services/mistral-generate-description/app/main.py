@@ -60,36 +60,6 @@ app.add_middleware(
 # Include router
 app.include_router(router, prefix="/api/v1", tags=["generate-description"])
 
-@app.get("/healthz")
-async def readiness_check():
-    """
-    Readiness probe endpoint that checks if the model is loaded.
-    Used by Kubernetes/RunPod to determine if the pod is ready to serve requests.
-    """
-    global model_loaded
-    return {
-        "status": "ready" if model_loaded else "loading",
-        "loaded": model_loaded,
-        "service": "generate-description"
-    }
-
-@app.get("/warmup")
-async def warmup():
-    """
-    Endpoint to trigger model loading if not already loaded.
-    Useful for manual warmup after deployment.
-    """
-    global model_instance, model_loaded
-    
-    if model_loaded:
-        return {"status": "already_loaded"}
-    
-    try:
-        await model_instance.is_loaded()
-        model_loaded = True
-        return {"status": "loaded_successfully"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

@@ -2,7 +2,7 @@ import './app/assets/main.css'
 import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
-import Aura from '@primeuix/themes/aura'
+import AuraNoirPreset from './app/theme'
 import 'primeicons/primeicons.css'
 
 import { createApp } from 'vue'
@@ -19,7 +19,7 @@ app.use(ConfirmationService)
 app.use(ToastService)
 app.use(PrimeVue, {
   theme: {
-    preset: Aura,
+    preset: AuraNoirPreset,
     options: {
       cssLayer: {
         name: 'primevue',

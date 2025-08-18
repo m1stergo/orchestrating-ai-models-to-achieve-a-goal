@@ -4,6 +4,7 @@ from .schemas import (
     DescribeImageResponse,
 )
 from .service import describe_image
+from typing import List
 
 router = APIRouter()
 
@@ -60,3 +61,13 @@ async def describe_image_proxy(
         return await describe_image(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error describing image: {str(e)}")
+
+@router.get(
+    "/models",
+    response_model=List[str],
+    summary="Get Available Models",
+    description="Get list of available models for image description"
+)
+async def get_available_models():
+    """Get available models for image description."""
+    return ["openai", "gemini", "qwen"]

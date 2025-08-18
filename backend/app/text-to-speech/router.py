@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Body
 from .schemas import (
     TextToSpeechRequest,
-    TextToSpeechResponse
+    TextToSpeechResponse,
+    VoiceModelsResponse
 )
 from pydantic import BaseModel
 from typing import Dict, Any
@@ -87,3 +88,18 @@ async def get_available_models():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting models: {str(e)}")
+
+@router.get(
+    "/voices",
+    response_model=VoiceModelsResponse,
+    summary="Get Available Voice Models",
+    description="Get a list of available voice models for voice cloning from the configuration file."
+)
+async def get_available_voices():
+    """Get available voice models."""
+    try:
+        from .service import list_available_voices
+        voices = await list_available_voices()
+        return VoiceModelsResponse(voices=voices, count=len(voices))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting voices: {str(e)}")

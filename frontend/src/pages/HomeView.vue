@@ -2,7 +2,7 @@
 import ProductsTable from './ProductsTable.vue'
 import { CreateProduct } from '@/features/CreateProduct'
 import Toolbar from 'primevue/toolbar'
-import { SetSettings } from '@/features/SetSettings'
+import { UserSettings } from '@/features/UserSettings'
 </script>
 
 <template>
@@ -13,7 +13,7 @@ import { SetSettings } from '@/features/SetSettings'
 
     <template #end>
       <CreateProduct />
-      <SetSettings />
+      <UserSettings />
     </template>
 </Toolbar>
   <main class="p-4 h-full">

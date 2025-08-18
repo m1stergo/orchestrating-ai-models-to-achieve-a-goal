@@ -7,7 +7,7 @@ from typing import Optional
 
 from openai import OpenAI
 from app.config import settings
-from .base import TextGenerationAdapter, ImageDescriptionAdapter
+from .base import TextGenerationAdapter, ImageDescriptionAdapter, ECOMMERCE_COPYWRITER_PROMPT, REEL_PROMOTIONAL_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,8 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
         if not self.is_available():
             raise ValueError("OpenAI API key is not configured.")
 
-        full_prompt = f"{prompt}\n\nText to process:\n{text}"
+        # Use the shared e-commerce copywriter prompt, ignoring the passed prompt parameter
+        full_prompt = f"{ECOMMERCE_COPYWRITER_PROMPT}\n\nText to process:\n{text}"
 
         try:
             result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
@@ -43,6 +44,21 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
             return result_text
         except Exception as e:
             logger.error(f"OpenAI text generation error: {e}")
+            raise
+
+    async def generate_reel_script(self, text: str) -> str:
+        """Generate a promotional reel script using OpenAI's text model."""
+        if not self.is_available():
+            raise ValueError("OpenAI API key is not configured.")
+
+        full_prompt = f"{REEL_PROMOTIONAL_PROMPT}\n\nOriginal text:\n{text}"
+
+        try:
+            result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
+            logger.info("OpenAI model generated reel script successfully")
+            return result_text
+        except Exception as e:
+            logger.error(f"OpenAI reel script generation error: {e}")
             raise
 
     async def describe_image(self, image_url: str, prompt: Optional[str] = None) -> str:

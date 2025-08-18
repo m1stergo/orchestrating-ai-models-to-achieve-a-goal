@@ -102,15 +102,15 @@ class SettingsService:
             raise Exception("Failed to update settings")
     
     async def _fetch_available_models(self) -> Dict[str, List[str]]:
-        """Fetch available models from microservices."""
-        # Get models from describe-image service
+        """Fetch available models from internal backend services."""
+        # Get models from describe-image service (internal backend endpoint)
         describe_models = await self._get_models_from_service(
-            f"{settings.DESCRIBE_IMAGE_QWEN_URL}/models/"
+            f"{settings.BASE_URL}{settings.API_V1_STR}/describe-image/models"
         )
         
-        # Get models from generate-description service
+        # Get models from generate-description service (internal backend endpoint)
         generate_models = await self._get_models_from_service(
-            f"{settings.GENERATE_DESCRIPTION_MISTRAL_URL}/models/"
+            f"{settings.BASE_URL}{settings.API_V1_STR}/generate-description/models"
         )
         
         return {

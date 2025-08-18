@@ -21,3 +21,35 @@ async def describe_image_endpoint(request: DescribeImageRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to describe image: {str(e)}")
+
+
+@router.get("/healthz")
+async def readiness_check():
+    """
+    Readiness probe endpoint that checks if the model is loaded.
+    Used by Kubernetes/RunPod to determine if the pod is ready to serve requests.
+    """
+    from .shared import model_loaded
+    return {
+        "status": "ready" if model_loaded else "loading",
+        "loaded": model_loaded,
+        "service": "describe-image"
+    }
+
+
+@router.get("/warmup")
+async def warmup():
+    """
+    Endpoint to trigger model loading if not already loaded.
+    Useful for manual warmup after deployment.
+    """
+    from .shared import model_instance, model_loaded
+    
+    if model_loaded:
+        return {"status": "already_loaded"}
+    
+    try:
+        await model_instance.is_loaded()
+        return {"status": "loaded_successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load model: {str(e)}")

@@ -29,3 +29,30 @@ export interface UploadImageResponse {
 export interface DescribeImageResponse {
   description: string 
 }
+
+export interface UploadAudioResponse {
+  audio_url: string
+  filename: string
+}
+
+export interface GenerateDescriptionResponse {
+  description: string
+}
+
+export interface VoiceModel {
+  name: string
+  audio_url: string
+}
+
+export interface VoiceModelsResponse {
+  voices: VoiceModel[]
+  count: number
+}
+
+export interface GenerateReelResponse {
+  text: string
+}
+
+export interface TextToSpeechResponse {
+  audio_url: string
+}

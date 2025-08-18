@@ -14,7 +14,7 @@ class TextToSpeechAdapter(ABC):
         pass
 
     @abstractmethod
-    async def generate_speech(self, text: str, audio_prompt_url: Optional[str] = None) -> dict:
+    async def generate_speech(self, text: str, audio_prompt_url: Optional[str] = None) -> bytes:
         """
         Generate speech from text using the TTS model.
         
@@ -23,6 +23,6 @@ class TextToSpeechAdapter(ABC):
             audio_prompt_url: Optional URL to audio prompt file for voice cloning
             
         Returns:
-            dict: Response containing audio_url and optional duration
+            bytes: Audio data as WAV bytes
         """
         pass

@@ -3,10 +3,12 @@ import httpx
 from app.config import settings
 from .schemas import (
     GenerateDescriptionRequest,
-    GenerateDescriptionResponse
+    GenerateDescriptionResponse,
+    GenerateReelRequest,
+    GenerateReelResponse
 )
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 class ServicesHealthResponse(BaseModel):
     services: Dict[str, Any]
@@ -72,3 +74,75 @@ async def generate_description_proxy(
         return await generate_description(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating description: {str(e)}")
+
+@router.post(
+    "/reel",
+    response_model=GenerateReelResponse,
+    responses={
+        200: {
+            "description": "Reel script generated successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "text": "Wait, you NEED to see this! This isn't just any smartphone - it's your new best friend! Black, sleek, and absolutely stunning with that massive screen that'll make you never want to look away. Plus those cameras? They're basically professional-level magic in your pocket! Ready to upgrade your life? Link in bio! #TechTok #SmartphoneGoals"
+                    }
+                }
+            }
+        },
+        503: {
+            "description": "Service unavailable",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Service unavailable: Connection timeout",
+                        "service": "generate-reel"
+                    }
+                }
+            }
+        }
+    },
+    summary="Generate Promotional Reel Script",
+    description="""
+    Transform marketing text into an engaging script for Reels/TikTok promotional videos.
+    
+    This endpoint converts formal marketing copy into conversational, energetic content
+    optimized for short-form social media videos under 30 seconds.
+    
+    **Supported models:**
+    - `openai`: GPT-4 (creative, engaging scripts)
+    - `mistral`: Mistral AI (balanced, versatile content)
+    - `gemini`: Google Gemini (balanced, versatile content)
+    
+    **Output Features:**
+    - Strong attention-grabbing hook
+    - Natural, conversational tone
+    - Short, punchy sentences
+    - Social media expressions
+    - Clear call-to-action
+    """
+)
+async def generate_reel_script_proxy(
+    request: GenerateReelRequest = Body(
+        ...,
+        example={
+            "text": "Premium smartphone with elegant black finish, large touchscreen display, and advanced multi-camera system for professional photos.",
+            "model": "openai"
+        }
+    )
+):
+    try:
+        # Call the service directly using the adapter pattern
+        from .service import generate_reel_script
+        return await generate_reel_script(request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating reel script: {str(e)}")
+
+@router.get(
+    "/models",
+    response_model=List[str],
+    summary="Get Available Models",
+    description="Get list of available models for description generation"
+)
+async def get_available_models():
+    """Get available models for description generation."""
+    return ["openai", "gemini", "mistral"]
