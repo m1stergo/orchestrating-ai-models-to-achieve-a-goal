@@ -11,6 +11,7 @@ generate_description_router = importlib.import_module("app.generate-description.
 text_to_speech_router = importlib.import_module("app.text-to-speech.router").router
 upload_image_router = importlib.import_module("app.upload_image.router").router
 upload_audio_router = importlib.import_module("app.upload_audio.router").router
+from app.export import router as export_router
 from app.settings import router as settings_router
 from app.extract_web_content import router as extract_web_content_router
 from app.config import settings
@@ -49,6 +50,7 @@ app.include_router(extract_web_content_router.router, prefix=f"{settings.API_V1_
 app.include_router(describe_image_router, prefix=f"{settings.API_V1_STR}/describe-image", tags=["describe-image"])
 app.include_router(generate_description_router, prefix=f"{settings.API_V1_STR}/generate-description", tags=["generate-description"])
 app.include_router(text_to_speech_router, prefix=f"{settings.API_V1_STR}/text-to-speech", tags=["text-to-speech"])
+app.include_router(export_router.router, prefix=f"{settings.API_V1_STR}/export", tags=["export"])
 
 # Mount static files directory
 static_dir = Path("app/static")

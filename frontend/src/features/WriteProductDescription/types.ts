@@ -14,7 +14,6 @@ export interface ExtractWebContentRequest {
  */
 export interface ExtractWebContentResponse {
   url: string
-  title: string
   description: string
   images: string[]
 }
@@ -55,4 +54,10 @@ export interface GenerateReelResponse {
 
 export interface TextToSpeechResponse {
   audio_url: string
+}
+
+export enum Status {
+  PENDING = 'pending',
+  SUCCESS = 'success',
+  ERROR = 'error'
 }

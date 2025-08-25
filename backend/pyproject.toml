@@ -1,11 +1,10 @@
 [project]
-name = "ai-catalog-writer"
+name = "app"
 version = "0.1.0"
 description = "Automated product content creation for modern e-commerce."
 authors = [
     {name = "Elias Torres",email = "elias.qlr@gmail.com"}
 ]
-readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "annotated-types (==0.7.0)",
@@ -46,7 +45,8 @@ dependencies = [
     "openai (>=1.99.2,<2.0.0)",
     "google-generativeai (>=0.8.5,<0.9.0)",
     "aiohttp (>=3.12.15,<4.0.0)",
-    "aiofiles (>=24.1.0,<25.0.0)"
+    "aiofiles (>=24.1.0,<25.0.0)",
+    "alembic (>=1.13.0,<2.0.0)"
 ]
 
 

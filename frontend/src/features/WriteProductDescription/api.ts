@@ -77,7 +77,7 @@ export async function getAvailableVoices(): Promise<VoiceModelsResponse> {
   return response.json()
 }
 
-export async function generateReelScript(params: { text: string, model: string }): Promise<GenerateReelResponse> {
+export async function generatePromotionalAudioScript(params: { text: string, model: string }): Promise<GenerateReelResponse> {
   const response = await fetch(`${API_BASE_URL}/v1/generate-description/reel`, {
     method: 'POST',
     headers: {

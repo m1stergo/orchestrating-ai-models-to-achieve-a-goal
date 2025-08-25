@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     AUDIO_DIR: Path = Path("app/static/audio")
     AUDIO_URL: str = "http://localhost:8000/static"
     
+    # Export storage settings
+    EXPORTS_DIR: Path = Path("app/static/exports")
+    
     # Microservice base URLs with API prefix
     DESCRIBE_IMAGE_QWEN_URL: str = "http://localhost:8001/api/v1"
     GENERATE_DESCRIPTION_MISTRAL_URL: str = "http://localhost:8002/api/v1"

@@ -3,31 +3,29 @@
  */
 export interface ProductBase {
   name: string;
-  description?: string;
+  sku?: string;
+  description: string;
+  keywords?: string[];
+  category?: string;
   images?: string[];
+  audio_description?: string;
   audio?: string;
 }
 
 /**
- * Interface for creating a new product
+ * Product creation interface - used when creating new products
  */
 export interface ProductCreate extends ProductBase {}
 
 /**
- * Interface for updating an existing product
- * All fields are optional for partial updates
+ * Product update interface - used when updating existing products
  */
-export interface ProductUpdate {
+export interface ProductUpdate extends ProductBase {
   id: number;
-  name?: string;
-  description?: string;
-  images?: string[];
-  audio?: string;
 }
 
 /**
  * Complete product interface with all properties
- * This is what we receive from the API
  */
 export interface Product extends ProductBase {
   id: number;

@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { ref, nextTick, reactive, useTemplateRef } from 'vue'
+import { ref, nextTick } from 'vue'
 import Drawer from 'primevue/drawer'
 import { WriteProductDescription } from '@/features/WriteProductDescription'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { createProduct } from '@/entities/products/api'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
+import type { ProductCreate } from '@/entities/products/types'
+
 const queryCache = useQueryCache()
+
 const toast = useToast()
-const writeProductDescriptionRef = useTemplateRef('writeProductDescriptionRef')
 const {
   mutateAsync,
 } = useMutation({
@@ -28,20 +30,19 @@ const {
 
 const visible = ref(true)
 
-const product = reactive({
-  name: '',
+const product = ref<ProductCreate>({
+  name: 'Untitled Product',
+  sku: '',
   description: '',
+  keywords: [],
+  category: '',
   images: [],
+  audio_description: '',
   audio: '',
 })
 
 const handleSubmit = async () => {
-  await mutateAsync({
-    name: product.name || 'prueba',
-    description: product.description || 'prueba',
-    images: product.images || ['prueba'],
-    audio: product.audio || 'prueba',
-  })
+  await mutateAsync(product.value)
   visible.value = false
 }
 </script>
@@ -49,7 +50,13 @@ const handleSubmit = async () => {
 <template>
   <Button icon="pi pi-sparkles" label="Write product description" size="small" outlined severity="primary" @click="() => visible = true" />
   <Drawer v-model:visible="visible" header="Write product description" position="right" class="w-1/2" :pt="{ content: { class: 'flex flex-col gap-2' } }">
-    <WriteProductDescription ref="writeProductDescriptionRef" @update:content="product.description = $event" />
-    <Button :disabled="writeProductDescriptionRef?.isLoading || writeProductDescriptionRef?.source.description === ''" type="submit" label="Submit" @click="handleSubmit" class="mt-auto" />
+    <WriteProductDescription v-model="product" />
+    <Button 
+      :disabled="!product.name || !product.description" 
+      type="submit" 
+      label="Submit" 
+      @click="handleSubmit" 
+      class="mt-auto" 
+    />
   </Drawer>
 </template>

@@ -13,6 +13,7 @@ const visible = ref(false)
 const { data, isLoading, error } = useQuery({
   key: ['settings'],
   query: () => getSettings(),
+  refetchOnWindowFocus: false,
 })
 
 const { mutate: updateSettingsMutation } = useMutation({

@@ -55,9 +55,13 @@ async def create_product(db: Session, product: schemas.ProductCreate) -> models.
         Created product
     """
     db_product = models.Product(
+        sku=product.sku,
         name=product.name,
         description=product.description,
+        keywords=product.keywords,
+        category=product.category,
         images=product.images,
+        audio_description=product.audio_description,
         audio=product.audio
     )
     db.add(db_product)

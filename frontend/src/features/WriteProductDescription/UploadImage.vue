@@ -50,14 +50,10 @@ watch(selectedFile, (newFile) => {
 <div class="flex flex-col gap-2">
   <div class="flex items-center gap-2">
     <div class="shrink-0">
-      <FileUpload :disabled="isLoading" mode="basic" accept="image/*" :maxFileSize="1000000" @select="onFileSelect" :auto="true" chooseLabel="Choose image"/>
+      <FileUpload :loading="isLoading" :disabled="isLoading" mode="basic" accept="image/*" :maxFileSize="1000000" @select="onFileSelect" :auto="true" chooseLabel="Choose image" class="p-button-outlined"/>
     </div>
     <img v-if="imagePreview" :src="imagePreview" class="rounded shrink-0" alt="Preview" style="width: auto; max-height: 42px;" />
     <p v-if="selectedFile">{{ selectedFile?.name }}</p>
-  </div>
-  <div v-if="isLoading" class="flex items-center gap-2">
-    <ProgressSpinner strokeWidth="4" style="width: 25px; height: 25px" />
-    <p class="text-sm w-full">Uploading image...</p>
   </div>
 </div>
 </template>
