@@ -1,4 +1,5 @@
-import type { Product, ProductCreate, ProductUpdate } from './types'
+import type { CreateProductFormData, UpdateProductFormData } from './schema'
+import type { Product } from './types'
 
 const API_URL = `${import.meta.env.VITE_API_BASE_URL}/v1/products`
 
@@ -32,7 +33,7 @@ export async function getProductById(id: number): Promise<Product> {
  * @param product - Product data
  * @returns Promise with the created product
  */
-export async function createProduct(product: ProductCreate): Promise<Product> {
+export async function createProduct(product: CreateProductFormData): Promise<Product> {
   const response = await fetch(`${API_URL}/`, {
     method: 'POST',
     headers: {
@@ -51,7 +52,7 @@ export async function createProduct(product: ProductCreate): Promise<Product> {
  * @param product - Updated product data
  * @returns Promise with the updated product
  */
-export async function updateProduct(product: ProductUpdate): Promise<Product> {
+export async function updateProduct(product: UpdateProductFormData): Promise<Product> {
   const response = await fetch(`${API_URL}/${product.id}`, {
     method: 'PUT',
     headers: {

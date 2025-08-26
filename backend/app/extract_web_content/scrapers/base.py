@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Any
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlparse
 
 
 class WebScrapingStrategy(ABC):
@@ -15,6 +16,22 @@ class WebScrapingStrategy(ABC):
         resp = requests.get(url, headers=self.headers)
         resp.raise_for_status()
         return BeautifulSoup(resp.content, "lxml")
+    
+    def normalize_url(self, url: str, base_url: str) -> str:
+        """Normalize URL to ensure it has proper protocol."""
+        if not url:
+            return ""
+        
+        # Handle protocol-relative URLs (//example.com/image.jpg)
+        if url.startswith("//"):
+            parsed_base = urlparse(base_url)
+            return f"{parsed_base.scheme}:{url}"
+        
+        # Handle relative URLs
+        if not url.startswith(("http://", "https://")):
+            return urljoin(base_url, url)
+        
+        return url
     
     @abstractmethod
     def extract_title(self, soup: BeautifulSoup) -> str:
@@ -40,9 +57,17 @@ class WebScrapingStrategy(ABC):
         """Main method to extract all content using the strategy."""
         soup = self.get_soup(url)
         
+        # Extract raw content
+        raw_image_url = self.extract_main_image(soup)
+        raw_media_images = self.extract_media_images(soup)
+        
+        # Normalize URLs
+        normalized_image_url = self.normalize_url(raw_image_url, url)
+        normalized_media_images = [self.normalize_url(img_url, url) for img_url in raw_media_images]
+        
         return {
             "title": self.extract_title(soup),
             "description": self.extract_description(soup),
-            "image_url": self.extract_main_image(soup),
-            "media_images": self.extract_media_images(soup)
+            "image_url": normalized_image_url,
+            "media_images": normalized_media_images
         }

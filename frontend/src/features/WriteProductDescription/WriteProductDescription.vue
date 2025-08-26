@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, useTemplateRef } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 import { Status } from './types'
-import type { Product } from '@/entities/products'
+import { useProductForm } from '@/composables/useProductForm'
 import { useQuery } from '@pinia/colada'
 import { getSettings } from '../UserSettings/api'
 import Stepper from 'primevue/stepper'
@@ -12,31 +12,25 @@ import ExtractContent from './ExtractContent.vue'
 import ProductDescription from './ProductDescription.vue'
 import PromotionalAudio from './PromotionalAudio.vue'
 
-const product = defineModel<Product>({required: true})
+const props = defineProps<{ step?: number }>()
+
+const form = useProductForm()
 
 // get user settings
-const { data: settings, isLoading: isLoadingSettings } = useQuery({
+const { data: settings } = useQuery({
   key: ['settings'],
   query: () => getSettings(),
   refetchOnWindowFocus: false,
 })
 
-const isEditMode = computed(() => !!product.value?.id)
-
-const activeStep = ref(isEditMode.value ? 2 : 1)
+const activeStep = ref(props.step || 1)
 
 // Extract content status
 const extractContentStatus = ref<Status>(Status.PENDING)
 const productDescriptionStatus = ref<Status>(Status.PENDING)
-const promotionalAudioStatus = ref<Status>(Status.PENDING)
 
-
-const isLoading = computed(() => {
-    return isLoadingSettings.value || extractContentStatus.value === Status.PENDING || productDescriptionStatus.value === Status.PENDING || promotionalAudioStatus.value === Status.PENDING
-})
 
 const productDescription = useTemplateRef('productDescription')
-const promotionalAudio = useTemplateRef('promotionalAudio')
 
 
 function handleProductDescriptionStatusUpdate(status: Status) {
@@ -47,9 +41,8 @@ function handleExtractContentStatusUpdate(status: Status) {
     extractContentStatus.value = status
     if (status === Status.SUCCESS) {
         activeStep.value = 2
-        // productDescription.value?.generateDescription()
+        productDescription.value?.generateDescription()
     }
-
 }
 </script>
 
@@ -61,28 +54,25 @@ function handleExtractContentStatusUpdate(status: Status) {
                 <StepPanel>
                     <ExtractContent 
                         ref="extractContent" 
-                        v-model="product" 
                         :model="settings?.describe_image_model"
                         @update:status="handleExtractContentStatusUpdate"
                     />
                 </StepPanel>
             </StepItem>
             <StepItem :value="2">
-                <Step>Product description</Step>
+                <Step :disabled="extractContentStatus !== Status.SUCCESS && form.values.description === ''">Product description</Step>
                 <StepPanel>
                     <ProductDescription 
                         ref="productDescription" 
-                        v-model="product" 
                         :model="settings?.describe_image_model" 
                         @update:status="handleProductDescriptionStatusUpdate" 
                     />
                 </StepPanel>
             </StepItem>
             <StepItem :value="3">
-                <Step :disabled="!product.description">Promotional audio</Step>
+                <Step :disabled="!form.values.description">Promotional audio</Step>
                 <StepPanel>
                     <PromotionalAudio 
-                        v-model="product" 
                         :model="settings?.describe_image_model" 
                     />
                 </StepPanel>

@@ -4,7 +4,7 @@ Mistral adapter for text generation
 import logging
 import aiohttp
 from app.config import settings
-from .base import TextGenerationAdapter, ECOMMERCE_COPYWRITER_PROMPT, REEL_PROMOTIONAL_PROMPT
+from .base import TextGenerationAdapter, ECOMMERCE_COPYWRITER_PROMPT, PROMOTIONAL_AUDIO_SCRIPT_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +64,8 @@ class MistralAdapter(TextGenerationAdapter):
             logger.error(f"Mistral adapter error: {str(e)}")
             raise
 
-    async def generate_reel_script(self, text: str) -> str:
-        """Generate a promotional reel script using the Mistral model microservice."""
+    async def generate_promotional_audio_script(self, text: str) -> str:
+        """Generate a promotional audio script using the Mistral model microservice."""
         if not self.is_available():
             raise ValueError("Mistral service URL is not configured.")
 
@@ -83,10 +83,10 @@ class MistralAdapter(TextGenerationAdapter):
                     logger.error(f"Failed to check Mistral service health: {str(e)}")
                     return "Service health check failed. The service may be down."
 
-                # Call the generate-text endpoint with reel prompt
+                # Call the generate-text endpoint with promotional audio script prompt
                 payload = {
                     "text": text,
-                    "prompt": REEL_PROMOTIONAL_PROMPT  # Use reel promotional prompt
+                    "prompt": PROMOTIONAL_AUDIO_SCRIPT_PROMPT  # Use promotional audio script prompt
                 }
                 
                 async with session.post(f"{self.service_url}/generate-text", json=payload) as resp:
@@ -97,12 +97,12 @@ class MistralAdapter(TextGenerationAdapter):
                     
                     result = await resp.json()
                     script = result.get("text", "")
-                    logger.info("Mistral service generated reel script successfully")
+                    logger.info("Mistral service generated promotional audio script successfully")
                     return script
 
         except aiohttp.ClientError as e:
             logger.error(f"Mistral service connection error: {str(e)}")
             return f"Service connection error: {str(e)}"
         except Exception as e:
-            logger.error(f"Mistral reel script generation error: {str(e)}")
+            logger.error(f"Mistral promotional audio script generation error: {str(e)}")
             raise

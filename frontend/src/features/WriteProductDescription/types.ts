@@ -13,6 +13,7 @@ export interface ExtractWebContentRequest {
  * Schema for web content extraction response.
  */
 export interface ExtractWebContentResponse {
+  title: string
   url: string
   description: string
   images: string[]
@@ -48,7 +49,7 @@ export interface VoiceModelsResponse {
   count: number
 }
 
-export interface GenerateReelResponse {
+export interface GeneratePromotionalAudioScriptResponse {
   text: string
 }
 

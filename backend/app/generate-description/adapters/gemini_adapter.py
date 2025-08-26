@@ -6,7 +6,7 @@ import asyncio
 import google.generativeai as genai
 
 from app.config import settings
-from .base import TextGenerationAdapter, ECOMMERCE_COPYWRITER_PROMPT, REEL_PROMOTIONAL_PROMPT
+from .base import TextGenerationAdapter, ECOMMERCE_COPYWRITER_PROMPT, PROMOTIONAL_AUDIO_SCRIPT_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -46,21 +46,21 @@ class GeminiAdapter(TextGenerationAdapter):
             logger.error(f"Gemini text generation error: {e}")
             raise
 
-    async def generate_reel_script(self, text: str) -> str:
-        """Generate a promotional reel script using Gemini's text model."""
-        logger.info("Gemini generating reel script for input text")
+    async def generate_promotional_audio_script(self, text: str) -> str:
+        """Generate a promotional audio script using Gemini's text model."""
+        logger.info("Gemini generating promotional audio script for input text")
 
         if not self.is_available():
             raise ValueError("Gemini API key is not configured.")
 
-        full_prompt = f"{REEL_PROMOTIONAL_PROMPT}\n\nOriginal text:\n{text}"
+        full_prompt = f"{PROMOTIONAL_AUDIO_SCRIPT_PROMPT}\n\nOriginal text:\n{text}"
 
         try:
             result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
-            logger.info("Gemini reel script generated successfully")
+            logger.info("Gemini promotional audio script generated successfully")
             return result_text.strip() if result_text else "No response generated"
         except Exception as e:
-            logger.error(f"Gemini reel script generation error: {e}")
+            logger.error(f"Gemini promotional audio script generation error: {e}")
             raise
 
     def generate_text_sync(self, full_prompt: str) -> str:

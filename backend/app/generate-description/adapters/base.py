@@ -5,13 +5,16 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 # Shared prompt for e-commerce product description generation
-ECOMMERCE_COPYWRITER_PROMPT = """You are a professional e-commerce copywriter. Write a clear and persuasive product description based strictly on the information below. Keep it concise and to the point, avoiding unnecessary fluff."""
+ECOMMERCE_COPYWRITER_PROMPT = """You are a professional e-commerce copywriter. 
+Write a concise and to the point product description based strictly on the information below. 
+Avoid unnecessary fluff."""
 
 # Shared prompt for promotional reel/TikTok script generation
-REEL_PROMOTIONAL_PROMPT = """Create a short description for a Reels/TikTok promotional video.
+PROMOTIONAL_AUDIO_SCRIPT_PROMPT = """Create a short description for a Reels/TikTok promotional video.
 The result should sound natural, conversational, and energetic, with short, punchy sentences that grab attention in the first few seconds.
 Include a strong hook at the beginning, a simple middle part, and a call-to-action at the end.
-Avoid being too formal, use common social media expressions, and keep the length suitable for a video under 30 seconds."""
+Avoid being too formal, use common social media expressions, and keep the length suitable for a video under 30 seconds.
+Do not use emojis!"""
 
 
 class ImageDescriptionAdapter(ABC):
@@ -60,7 +63,7 @@ class TextGenerationAdapter(ABC):
         pass
 
     @abstractmethod
-    async def generate_reel_script(self, text: str) -> str:
+    async def generate_promotional_audio_script(self, text: str) -> str:
         """
         Generate a promotional reel/TikTok script from marketing text.
         
@@ -68,6 +71,6 @@ class TextGenerationAdapter(ABC):
             text: Input marketing text to transform
             
         Returns:
-            str: Generated reel script
+            str: Generated promotional audio script
         """
         pass

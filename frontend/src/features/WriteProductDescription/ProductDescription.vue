@@ -2,13 +2,15 @@
 import { watch } from 'vue'
 import { useMutation } from '@pinia/colada'
 import { generateDescription } from './api'
-import type { Product } from '@/entities/products'
+import { useProductForm } from '@/composables/useProductForm'
 import { useToast } from 'primevue/usetoast'
 import { Status } from './types'
 import Skeleton from 'primevue/skeleton'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import Chips from 'primevue/chips'
+import AutoComplete from 'primevue/autocomplete'
+import Message from 'primevue/message'
+
 
 const emit = defineEmits(['update:status'])
     
@@ -16,17 +18,50 @@ const props = defineProps<{ model?: string }>()
 
 const toast = useToast()
 
-const product = defineModel<Product>({required: true})
+const form = useProductForm()
 
 const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenerateDescription } = useMutation({
   mutation: generateDescription,
   onSuccess: (data) => {
-    product.value.description = data.description
+    const parsedData = parseDescriptionResponse(data.description)
+    form.setValues({
+      name: parsedData.title || form?.values.name,
+      description: parsedData.description,
+      keywords: parsedData.keywords || form?.values.keywords,
+      category: parsedData.category || form?.values.category,
+    })
   },
   onError: () => {
     toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error generating the description, please try again', life: 3000 });
   },
 })
+
+function parseDescriptionResponse(description: string) {
+  try {
+    // Try to parse as JSON
+    const parsed = JSON.parse(description)
+    
+    // Validate that it has the expected structure
+    if (typeof parsed === 'object' && parsed !== null) {
+      return {
+        title: parsed.title || '',
+        description: parsed.description || description,
+        keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+        category: parsed.category || ''
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to parse description as JSON:', error)
+  }
+  
+  // Fallback: return original description with empty other fields
+  return {
+    title: '',
+    description: description,
+    keywords: [],
+    category: ''
+  }
+}
 
 watch(statusGenerateDescription, () => {
     if (statusGenerateDescription.value === Status.SUCCESS) {
@@ -43,23 +78,20 @@ watch(statusGenerateDescription, () => {
 defineExpose({
     isLoading,
     generateDescription: () => {
-        if (!product.value.description || !props.model) return
-        triggerGenerateDescription({ text: product.value.description, model: props.model })
+        if (!form?.values.description || !props.model) return
+        triggerGenerateDescription({ text: form?.values.description, model: props.model })
     }
 })
 </script>
 <template>
     <!-- Show image after analysis, then description generation -->
-    <div v-if="product?.images && product.images.length > 0" class="flex flex-col gap-2">
+    <div v-if="form?.values.images && form.values.images.length > 0" class="flex flex-col gap-2">
         <!-- Show the image -->
-        <div class="flex gap-2">
-            <div v-if="product?.images?.length > 0">
-                <div v-for="image in product?.images" :key="image">
-                    <img :src="image" alt="Image" class="w-24 rounded">
-                </div>
+        <div v-if="form?.values.images?.length > 0" class="flex gap-2 flex-wrap">
+            <div v-for="image in form?.values.images" :key="image">
+                <img :src="image" alt="Image" class="w-24 rounded">
             </div>
         </div>
-
         <!-- Show description generation skeleton or final description -->
         <div v-if="isLoading">
             <div class="flex flex-col gap-2">
@@ -68,34 +100,71 @@ defineExpose({
             </div>
         </div>
         <div v-else class="flex flex-col gap-4">
-            <!-- SKU -->
+            <!-- SKU Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">SKU</label>
-                <InputText v-model="product.sku" placeholder="Enter product SKU" />
+                <label class="text-sm font-medium text-gray-700">SKU *</label>
+                <InputText 
+                    :modelValue="form.values.sku" 
+                    @update:modelValue="form.setFieldValue('sku', $event)"
+                    placeholder="Enter product SKU" 
+                    :invalid="!!form.errors.value.sku"
+                />
+                <Message v-if="form.errors.value.sku" severity="error" :closable="false" size="small" variant="simple">
+                    {{ form.errors.value.sku }}
+                </Message>
             </div>
 
-            <!-- Product Name -->
+            <!-- Product Name Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Product Name</label>
-                <InputText v-model="product.name" placeholder="Enter product name" />
+                <label class="text-sm font-medium text-gray-700">Product Name *</label>
+                <InputText 
+                    :modelValue="form?.values.name" 
+                    @update:modelValue="form.setFieldValue('name', $event)"
+                    placeholder="Enter product name" 
+                    :invalid="!!form.errors.value.name"
+                />
+                <Message v-if="form.errors.value.name" severity="error" :closable="false" size="small" variant="simple">
+                    {{ form.errors.value.name }}
+                </Message>
             </div>
 
-            <!-- Description -->
+            <!-- Description Field -->
             <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Description</label>
-                <Textarea v-model="product.description" placeholder="Enter product description" class="border border-gray-300 rounded-md p-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"/>
+                <label class="text-sm font-medium text-gray-700">Description *</label>
+                <Textarea 
+                    :modelValue="form?.values.description" 
+                    @update:modelValue="form.setFieldValue('description', $event)"
+                    placeholder="Enter product description" 
+                    class="border border-gray-300 rounded-md p-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    :invalid="!!form.errors.value.description"
+                    autoResize
+                />
+                <Message v-if="form.errors.value.description" severity="error" :closable="false" size="small" variant="simple">
+                    {{ form.errors.value.description }}
+                </Message>
             </div>
 
-            <!-- Keywords -->
+            <!-- Keywords Field -->
             <div class="flex flex-col gap-2">
                 <label class="text-sm font-medium text-gray-700">Keywords</label>
-                <Chips v-model="product.keywords" placeholder="Add keywords and press Enter" />
+                <AutoComplete 
+                    :modelValue="form?.values.keywords" 
+                    @update:modelValue="form.setFieldValue('keywords', $event)"
+                    placeholder="Add keywords and press Enter"
+                    :multiple="true"
+                    :typeahead="false"
+                    :suggestions="[]"
+                />
             </div>
 
             <!-- Category -->
             <div class="flex flex-col gap-2">
                 <label class="text-sm font-medium text-gray-700">Category</label>
-                <InputText v-model="product.category" placeholder="Enter product category" />
+                <InputText 
+                    :modelValue="form?.values.category" 
+                    @update:modelValue="form.setFieldValue('category', $event)"
+                    placeholder="Enter product category" 
+                />
             </div>
         </div>
     </div>

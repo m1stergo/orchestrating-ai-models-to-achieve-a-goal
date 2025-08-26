@@ -2,5 +2,8 @@
 export { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct } from './api'
 
 // Export types
-export type { Product, ProductBase, ProductCreate, ProductUpdate } from './types'
-export { isProduct } from './types'
+export type { Product, ProductFormData } from './types'
+
+// Export Zod schemas and types
+export { ProductSchema, CreateProductSchema, UpdateProductSchema } from './schema'
+export type { CreateProductFormData, UpdateProductFormData } from './schema'

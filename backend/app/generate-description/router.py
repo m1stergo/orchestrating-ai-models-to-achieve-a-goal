@@ -4,8 +4,8 @@ from app.config import settings
 from .schemas import (
     GenerateDescriptionRequest,
     GenerateDescriptionResponse,
-    GenerateReelRequest,
-    GenerateReelResponse
+    GeneratePromotionalAudioScriptRequest,
+    GeneratePromotionalAudioScriptResponse
 )
 from pydantic import BaseModel
 from typing import Dict, Any, List
@@ -76,11 +76,11 @@ async def generate_description_proxy(
         raise HTTPException(status_code=500, detail=f"Error generating description: {str(e)}")
 
 @router.post(
-    "/reel",
-    response_model=GenerateReelResponse,
+    "/promotional-audio-script",
+    response_model=GeneratePromotionalAudioScriptResponse,
     responses={
         200: {
-            "description": "Reel script generated successfully",
+            "description": "Promotional audio script generated successfully",
             "content": {
                 "application/json": {
                     "example": {
@@ -95,13 +95,13 @@ async def generate_description_proxy(
                 "application/json": {
                     "example": {
                         "detail": "Service unavailable: Connection timeout",
-                        "service": "generate-reel"
+                        "service": "generate-promotional-audio-script"
                     }
                 }
             }
         }
     },
-    summary="Generate Promotional Reel Script",
+    summary="Generate Promotional Audio Script",
     description="""
     Transform marketing text into an engaging script for Reels/TikTok promotional videos.
     
@@ -121,8 +121,8 @@ async def generate_description_proxy(
     - Clear call-to-action
     """
 )
-async def generate_reel_script_proxy(
-    request: GenerateReelRequest = Body(
+async def generate_promotional_audio_script_proxy(
+    request: GeneratePromotionalAudioScriptRequest = Body(
         ...,
         example={
             "text": "Premium smartphone with elegant black finish, large touchscreen display, and advanced multi-camera system for professional photos.",
@@ -132,10 +132,10 @@ async def generate_reel_script_proxy(
 ):
     try:
         # Call the service directly using the adapter pattern
-        from .service import generate_reel_script
-        return await generate_reel_script(request)
+        from .service import generate_promotional_audio_script
+        return await generate_promotional_audio_script(request)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating reel script: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating promotional audio script: {str(e)}")
 
 @router.get(
     "/models",

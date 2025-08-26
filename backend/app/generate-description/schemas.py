@@ -9,9 +9,9 @@ class GenerateDescriptionRequest(BaseModel):
 class GenerateDescriptionResponse(BaseModel):
     description: str = Field(..., description="Generated product description")
 
-class GenerateReelRequest(BaseModel):
-    text: str = Field(..., description="Marketing text to transform into reel script")
+class GeneratePromotionalAudioScriptRequest(BaseModel):
+    text: str = Field(..., description="Marketing text to transform into promotional audio script")
     model: Optional[str] = Field(None, description="Preferred model: 'openai', 'gemini', or 'mistral'")
     
-class GenerateReelResponse(BaseModel):
-    text: str = Field(..., description="Generated reel/TikTok script")
+class GeneratePromotionalAudioScriptResponse(BaseModel):
+    text: str = Field(..., description="Generated promotional audio script")

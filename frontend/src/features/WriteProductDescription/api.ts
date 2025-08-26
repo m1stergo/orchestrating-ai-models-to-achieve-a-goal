@@ -1,4 +1,4 @@
-import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageResponse, DescribeImageResponse, GenerateDescriptionResponse, VoiceModelsResponse, GenerateReelResponse, TextToSpeechResponse } from './types'
+import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageResponse, DescribeImageResponse, GenerateDescriptionResponse, VoiceModelsResponse, GeneratePromotionalAudioScriptResponse, TextToSpeechResponse } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -77,8 +77,8 @@ export async function getAvailableVoices(): Promise<VoiceModelsResponse> {
   return response.json()
 }
 
-export async function generatePromotionalAudioScript(params: { text: string, model: string }): Promise<GenerateReelResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/generate-description/reel`, {
+export async function generatePromotionalAudioScript(params: { text: string, model: string }): Promise<GeneratePromotionalAudioScriptResponse> {
+  const response = await fetch(`${API_BASE_URL}/v1/generate-description/promotional-audio-script`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ export async function generatePromotionalAudioScript(params: { text: string, mod
     body: JSON.stringify(params),
   })
   if (!response.ok) {
-    throw new Error(`Failed to generate reel script: ${response.statusText}`)
+    throw new Error(`Failed to generate promotional audio script: ${response.statusText}`)
   }
   return response.json()
 }

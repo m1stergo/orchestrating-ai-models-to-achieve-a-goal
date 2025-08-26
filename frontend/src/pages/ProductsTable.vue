@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
+import MultiSelect from 'primevue/multiselect'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { EditProduct } from '@/features/EditProduct'
@@ -6,25 +8,71 @@ import { DeleteProduct } from '@/features/DeleteProduct'
 import { getAllProducts } from '@/entities/products'
 import { useQuery } from '@pinia/colada'
 import { AudioPlayer } from '@/shared/ui/AudioPlayer'
+
 const { state: products } = useQuery({
   key: ['products'],
   query: getAllProducts,
   refetchOnWindowFocus: false,
 })
+
+const columns = ref([
+    {field: 'description', header: 'Description'},
+    {field: 'images', header: 'Images'},
+    {field: 'audio_description', header: 'Audio Description'},
+    {field: 'audio', header: 'Audio'},
+    {field: 'category', header: 'Category'},
+    {field: 'keywords', header: 'Keywords'},
+
+]);
+const selectedColumnsList = ref(columns.value);
+const selectedColumns = computed(() => selectedColumnsList.value.map(col => col.field));
+const onToggle = (selected: any) => {
+    selectedColumnsList.value = columns.value.filter(col => selected.includes(col));
+};
+
 </script>
 
 <template>
   <DataTable :value="products.data" scrollable scrollHeight="600px">
+    <template #header>
+        <div style="text-align:left">
+            <MultiSelect :modelValue="selectedColumnsList" :options="columns" optionLabel="header" @update:modelValue="onToggle"
+                display="chip" placeholder="Select Columns" />
+        </div>
+    </template>
     <Column field="sku" header="SKU" style="min-width: 120px"></Column>
-    <Column field="name" header="Name" style="min-width: 150px"></Column>
-    <Column field="description" header="Description" style="min-width: 200px">
+    <Column field="name" header="Name" style="min-width: 150px" alignFrozen="left" frozen ></Column>
+    <Column field="description" header="Description" style="min-width: 200px" v-if="selectedColumns.includes('description')">
       <template #body="slotProps">
         <div class="max-w-xs truncate" :title="slotProps.data.description">
           {{ slotProps.data.description || 'No description' }}
         </div>
       </template>
     </Column>
-    <Column header="Keywords" style="min-width: 150px">
+    <Column header="Images" style="min-width: 100px" v-if="selectedColumns.includes('images')">
+      <template #body="slotProps">
+        <img v-if="slotProps.data.images?.[0]" :src="slotProps.data.images[0]" :alt="slotProps.data.name" class="w-16 h-16 object-cover rounded" />
+        <span v-else class="text-gray-400 text-sm">No image</span>
+      </template>
+    </Column>
+    <Column header="Audio Description" style="min-width: 150px" v-if="selectedColumns.includes('audio_description')">
+      <template #body="slotProps">
+        <div v-if="slotProps.data.audio_description" class="max-w-xs truncate" :title="slotProps.data.audio_description">
+          {{ slotProps.data.audio_description }}
+        </div>
+        <span v-else class="text-gray-400 text-sm">No audio description</span>
+      </template>
+    </Column>
+    <Column header="Audio" style="min-width: 100px" v-if="selectedColumns.includes('audio')">
+      <template #body="slotProps">
+        <div v-if="slotProps.data.audio">
+          <AudioPlayer :audio="slotProps.data.audio" />
+        </div>
+        <span v-else class="text-gray-400 text-sm">No audio</span>
+      </template>
+    </Column>
+    <Column field="category" header="Category" style="min-width: 150px" v-if="selectedColumns.includes('category')"></Column>
+    <Column header="Keywords" style="min-width: 150px" v-if="selectedColumns.includes('keywords')">
       <template #body="slotProps">
         <div v-if="slotProps.data.keywords?.length" class="flex flex-wrap gap-1">
           <span v-for="keyword in slotProps.data.keywords.slice(0, 3)" :key="keyword" 
@@ -38,29 +86,7 @@ const { state: products } = useQuery({
         <span v-else class="text-gray-400 text-sm">No keywords</span>
       </template>
     </Column>
-    <Column header="Images" style="min-width: 100px">
-      <template #body="slotProps">
-        <img v-if="slotProps.data.images?.[0]" :src="slotProps.data.images[0]" :alt="slotProps.data.name" class="w-16 h-16 object-cover rounded" />
-        <span v-else class="text-gray-400 text-sm">No image</span>
-      </template>
-    </Column>
-    <Column header="Audio Description" style="min-width: 150px">
-      <template #body="slotProps">
-        <div v-if="slotProps.data.audio_description" class="max-w-xs truncate" :title="slotProps.data.audio_description">
-          {{ slotProps.data.audio_description }}
-        </div>
-        <span v-else class="text-gray-400 text-sm">No audio description</span>
-      </template>
-    </Column>
-    <Column header="Audio" style="min-width: 100px">
-      <template #body="slotProps">
-        <div v-if="slotProps.data.audio">
-          <AudioPlayer :audio="slotProps.data.audio" />
-        </div>
-        <span v-else class="text-gray-400 text-sm">No audio</span>
-      </template>
-    </Column>
-    <Column field="actions" header="Actions" style="min-width: 120px">
+    <Column field="actions" header="Actions" style="min-width: 120px" alignFrozen="right" frozen>
       <template #body="slotProps">    
           <EditProduct v-if="slotProps.data.id" :id="slotProps.data.id" />
           <DeleteProduct v-if="slotProps.data.id" :id="slotProps.data.id" />

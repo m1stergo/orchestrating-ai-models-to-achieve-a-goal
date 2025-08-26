@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import UploadImage from './UploadImage.vue'
 import type { ExtractWebContentResponse } from './types'
 import { useMutation } from '@pinia/colada'
@@ -11,22 +11,24 @@ import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import { Status } from './types'
-import type { Product } from '@/entities/products'
+import { useProductForm } from '@/composables/useProductForm'
 
-const product = defineModel<Product>({required: true})
 const props = defineProps<{ model?: string }>()
 
 const emit = defineEmits(['update:status'])
 
+const form = useProductForm()
+
 const website = ref<ExtractWebContentResponse>({
+    title: '',
     description: '',
     images: [],
     url: '',
 })
 
 const contentSourceOptions = [
+  { name: 'Image', value: 'image' },
   { name: 'Website URL', value: 'website' },
-  { name: 'Image', value: 'image' }
 ]
 const selectedContentSource = ref(contentSourceOptions[0])
 
@@ -47,19 +49,17 @@ const { mutateAsync: triggerDescribeImage, isLoading: isLoadingDescribeImage, st
   mutation: describeImage,
   onSuccess: (data) => {
     if (selectedContentSource.value.value === 'website') {
-      product.value = {
-        ...product.value,
-        description: data.description!,
+      form.setValues({
+        description: 'Listing description: ' + extractWebContentData.value?.title + ' ' + 'Image description: ' +  data.description!,
         images: extractWebContentData.value?.images!,
         // url: extractWebContentData.value?.url!
-      }
+      })
     } else {
-      product.value = {
-        ...product.value,
+      form.setValues({
         description: data.description!,
         images: [uploadedImage.value],
         // url: ''
-      }
+      })
     }
   },
   onError: () => {
@@ -70,7 +70,7 @@ const { mutateAsync: triggerDescribeImage, isLoading: isLoadingDescribeImage, st
 
 async function extractContent() {
     // Check if content already exists and ask for confirmation
-    if (product.value.description) {
+    if (form.values.description) {
         confirm.require({
             message: 'This will overwrite the existing product description. Are you sure you want to continue?',
             header: 'Confirm Regeneration',
@@ -112,6 +112,7 @@ async function performExtraction() {
 
 watch(statusDescribeImage, () => {
     if (statusDescribeImage.value === Status.SUCCESS) {
+        console.log('Extract content success')
         emit('update:status', Status.SUCCESS)
     }
     if (statusDescribeImage.value === Status.ERROR) {
@@ -137,7 +138,7 @@ watch(statusDescribeImage, () => {
   <div class="py-6">
     <Button 
       class="w-full"
-      :severity="product.description ? 'primary' : 'help'" 
+      :severity="form.values.description ? 'primary' : 'help'" 
       variant="outlined"
       :disabled="!uploadedImage && !website.url" 
       :loading="isLoadingExtractWebContent || isLoadingDescribeImage" 

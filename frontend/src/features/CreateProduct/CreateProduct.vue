@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, provide } from 'vue'
 import Drawer from 'primevue/drawer'
 import { WriteProductDescription } from '@/features/WriteProductDescription'
 import { useMutation, useQueryCache } from '@pinia/colada'
 import { createProduct } from '@/entities/products/api'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
-import type { ProductCreate } from '@/entities/products/types'
+import { useForm } from 'vee-validate';
+import { toTypedSchema } from '@vee-validate/zod';
+import { CreateProductSchema, type CreateProductFormData } from '@/entities/products';
 
 const queryCache = useQueryCache()
 
 const toast = useToast()
+
 const {
   mutateAsync,
 } = useMutation({
@@ -28,10 +31,14 @@ const {
   }
 })
 
-const visible = ref(true)
+const visible = ref(false)
 
-const product = ref<ProductCreate>({
-  name: 'Untitled Product',
+const validationSchema = toTypedSchema(CreateProductSchema)
+
+const form = useForm({
+  validationSchema,
+  initialValues: {
+  name: '',
   sku: '',
   description: '',
   keywords: [],
@@ -39,24 +46,34 @@ const product = ref<ProductCreate>({
   images: [],
   audio_description: '',
   audio: '',
+},
 })
 
-const handleSubmit = async () => {
-  await mutateAsync(product.value)
+provide('form', form)
+
+const onSubmit = form.handleSubmit((values) => {
+  mutateAsync(values as CreateProductFormData)
   visible.value = false
+})
+
+function onClose() {
+  form.resetForm()
 }
+
 </script>
 
 <template>
   <Button icon="pi pi-sparkles" label="Write product description" size="small" outlined severity="primary" @click="() => visible = true" />
-  <Drawer v-model:visible="visible" header="Write product description" position="right" class="w-1/2" :pt="{ content: { class: 'flex flex-col gap-2' } }">
-    <WriteProductDescription v-model="product" />
-    <Button 
-      :disabled="!product.name || !product.description" 
-      type="submit" 
-      label="Submit" 
-      @click="handleSubmit" 
-      class="mt-auto" 
-    />
+  <Drawer v-model:visible="visible" header="Write product description" position="right" class="w-1/2" :pt="{ content: { class: 'flex flex-col gap-2' } }" @hide="onClose">
+    <WriteProductDescription />
+    <template #footer>
+      <Button 
+        :disabled="Object.keys(form.errors.value).length > 0" 
+        type="submit" 
+        label="Submit" 
+        class="w-full" 
+        @click="onSubmit" 
+      />
+    </template>
   </Drawer>
 </template>

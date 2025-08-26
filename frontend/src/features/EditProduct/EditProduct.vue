@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref, nextTick, reactive, watch, computed } from 'vue'
+import { ref, nextTick, provide, watch } from 'vue'
 
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
+import Skeleton from 'primevue/skeleton'
 import { WriteProductDescription } from '@/features/WriteProductDescription'
 import { useMutation, useQueryCache, useQuery } from '@pinia/colada'
 import { updateProduct, getProductById } from '@/entities/products/api'
 import { useToast } from 'primevue/usetoast'
-import InputText from 'primevue/inputtext'
-import type { ProductUpdate } from '@/entities/products/types'
+import { useForm } from 'vee-validate';
+import { toTypedSchema } from '@vee-validate/zod';
+import { UpdateProductSchema } from '@/entities/products';
+import type { ProductFormData, UpdateProductFormData } from '@/entities/products'
 
 const props = defineProps<{ id: number }>()
 const queryCache = useQueryCache()
@@ -40,8 +43,11 @@ const {
 
 const visible = ref(false)
 
-const product = ref<ProductUpdate>({
-  id: props.id,
+const validationSchema = toTypedSchema(UpdateProductSchema)
+
+const form = useForm({
+  validationSchema,
+  initialValues: {
   name: '',
   sku: '',
   description: '',
@@ -50,45 +56,49 @@ const product = ref<ProductUpdate>({
   images: [],
   audio_description: '',
   audio: '',
+},
 })
 
+provide('form', form)
 
-const handleSubmit = async () => {
-  await mutateAsync({
-    id: props.id,
-    name: product.value.name,
-    sku: product.value.sku,
-    description: product.value.description,
-    keywords: product.value.keywords,
-    category: product.value.category,
-    images: product.value.images,
-    audio_description: product.value.audio_description,
-    audio: product.value.audio,
-  })
-  visible.value = false
-}
+const onSubmit = form.handleSubmit((values) => {
+  mutateAsync(values as UpdateProductFormData)
+})
 
 watch(data, () => {
-  if (data.value) {
-    product.value = data.value
-  }
+  form.setValues(data.value as ProductFormData)
 })
 </script>
 
 <template>
   <Button icon="pi pi-pencil" rounded text size="small" @click="() => visible = true"/>
   <Drawer v-model:visible="visible" header="Edit Product" position="right" class="w-1/2" @show="refresh()">
-    <div v-if="isLoading" class="flex justify-center p-4">
-      Loading product data...
+    <div v-if="isLoading" class="flex flex-col gap-4">
+      <div class="flex flex-col gap-2">
+        <Skeleton height="1rem" />
+        <Skeleton height="3rem" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <Skeleton height="1rem" />
+        <Skeleton height="3rem" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <Skeleton height="1rem" />
+        <Skeleton height="3rem" />
+      </div>
     </div>
     <div v-else class="flex flex-col gap-4">
-      <WriteProductDescription v-model="product" />
+       <WriteProductDescription :step="2"/>
+    </div>
+    
+    <template #footer>
       <Button 
-        :disabled="!product.name || !product.description" 
+        :disabled="Object.keys(form.errors.value).length > 0" 
         type="submit" 
         label="Update Product" 
-        @click="handleSubmit" 
+        class="w-full" 
+        @click="onSubmit" 
       />
-    </div>
+    </template>
   </Drawer>
 </template>
