@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Float
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -11,6 +11,9 @@ class UserSettings(Base):
     id = Column(Integer, primary_key=True, index=True)
     describe_image_model = Column(String, nullable=False, default="openai")
     generate_description_model = Column(String, nullable=False, default="openai")
+    generate_description_prompt = Column(Text, nullable=True)
+    generate_promotional_audio_script_prompt = Column(Text, nullable=True)
+    categories = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

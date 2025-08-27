@@ -4,6 +4,8 @@ import Drawer from 'primevue/drawer'
 import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
+import Textarea from 'primevue/textarea'
+import AutoComplete from 'primevue/autocomplete'
 import { useQuery, useMutation } from '@pinia/colada'
 import { getSettings, updateSettings } from './api'  
 import Skeleton from 'primevue/skeleton'
@@ -34,7 +36,26 @@ const generate_description_model = computed({
   }
 })
 
+const generate_description_prompt = computed({
+  get: () => data.value?.generate_description_prompt,
+  set: (value) => {
+    updateSettingsMutation({ generate_description_prompt: value })
+  }
+})
 
+const generate_promotional_audio_script_prompt = computed({
+  get: () => data.value?.generate_promotional_audio_script_prompt,
+  set: (value) => {
+    updateSettingsMutation({ generate_promotional_audio_script_prompt: value })
+  }
+})
+
+const categories = computed({
+  get: () => data.value?.categories,
+  set: (value) => {
+    updateSettingsMutation({ categories: value })
+  }
+})
 </script>
 
 <template>
@@ -44,7 +65,7 @@ const generate_description_model = computed({
     header="Settings" 
     position="right" 
     class="settings-drawer"
-    :style="{ width: '50rem' }"
+    :style="{ width: '60rem' }"
   >
     <div v-if="isLoading" class="flex flex-col gap-2">
       <Skeleton height="2rem"></Skeleton>
@@ -58,38 +79,96 @@ const generate_description_model = computed({
         Error loading models: {{ error.message }}
       </Message>
     </div>
-    <div v-else class="flex flex-col gap-4">
-      <div>
-        <h4>Choose model for image description</h4>
-        <div>
-          <Dropdown
-            id="describe-strategy"
-            v-model="describe_image_model"
-            :options="data?.describe_image_models"
-            placeholder="Select a model"
-            class="w-full"
-          />
-          <small>
-            This model will be used to generate image descriptions.
-          </small>
+    <div v-else class="flex flex-col gap-6">
+      <!-- AI Models Section -->
+      <div class="pb-4">
+        <h3 class="text-lg font-semibold mb-4">AI Models</h3>
+        
+        <div class="flex flex-col gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Image Description Model</label>
+            <Dropdown
+              id="describe-strategy"
+              v-model="describe_image_model"
+              :options="data?.describe_image_models"
+              placeholder="Select a model"
+              class="w-full"
+            />
+            <small class="text-gray-600">
+              This model will be used to generate image descriptions.
+            </small>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-2">Product Description Model</label>
+            <Dropdown
+              id="generate-strategy"
+              v-model="generate_description_model"
+              :options="data?.generate_description_models"
+              placeholder="Select a model"
+              class="w-full"
+            />
+            <small class="text-gray-600">
+              This model will be used to generate product descriptions.
+            </small>
+          </div>
         </div>
       </div>
 
-      <div>
-        <h4>Choose model for product description</h4>
-        <div>
-          <Dropdown
-            id="generate-strategy"
-            v-model="generate_description_model"
-            :options="data?.generate_description_models"
-            placeholder="Select a model"
-            class="w-full"
-          />
-          <small>
-            This model will be used to generate product descriptions.
-          </small>
+      <!-- Prompts Section -->
+      <div class="pb-4">
+        <h3 class="text-lg font-semibold mb-4">Custom Prompts</h3>
+        
+        <div class="flex flex-col gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Product Description Prompt</label>
+            <Textarea
+              v-model="generate_description_prompt"
+              placeholder="Enter custom prompt for product description generation..."
+              rows="3"
+              class="w-full"
+            />
+            <small class="text-gray-600">
+              Custom prompt template for generating product descriptions.
+            </small>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-2">Promotional Audio Script Prompt</label>
+            <Textarea
+              v-model="generate_promotional_audio_script_prompt"
+              placeholder="Enter custom prompt for promotional audio script generation..."
+              rows="3"
+              class="w-full"
+            />
+            <small class="text-gray-600">
+              Custom prompt template for generating promotional audio scripts.
+            </small>
+          </div>
         </div>
       </div>
+
+      <!-- Product Management Section -->
+      <div class="pb-4">
+        <h3 class="text-lg font-semibold mb-4">Product Management</h3>
+        
+        <div class="flex flex-col gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Product Categories</label>
+            <AutoComplete
+              v-model="categories"
+              multiple
+              placeholder="Add categories..."
+              class="w-full"
+              :typeahead="false"
+            />
+            <small class="text-gray-600">
+              Define the available product categories for the organization. These will be used to infer the category from the product descriptions.
+            </small>
+          </div>
+        </div>
+      </div>
+
     </div>
   </Drawer>
 </template>

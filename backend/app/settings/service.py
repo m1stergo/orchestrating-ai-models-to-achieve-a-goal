@@ -45,6 +45,9 @@ class SettingsService:
             "id": db_settings.id,
             "describe_image_model": db_settings.describe_image_model,
             "generate_description_model": db_settings.generate_description_model,
+            "generate_description_prompt": db_settings.generate_description_prompt,
+            "generate_promotional_audio_script_prompt": db_settings.generate_promotional_audio_script_prompt,
+            "categories": db_settings.categories,
             "created_at": db_settings.created_at,
             "updated_at": db_settings.updated_at,
             "describe_image_models": models["describe_image_models"],
@@ -61,6 +64,9 @@ class SettingsService:
             "id": db_settings.id,
             "describe_image_model": db_settings.describe_image_model,
             "generate_description_model": db_settings.generate_description_model,
+            "generate_description_prompt": db_settings.generate_description_prompt,
+            "generate_promotional_audio_script_prompt": db_settings.generate_promotional_audio_script_prompt,
+            "categories": db_settings.categories,
             "created_at": db_settings.created_at,
             "updated_at": db_settings.updated_at
         }
@@ -72,6 +78,9 @@ class SettingsService:
         try:
             db_settings.describe_image_model = "openai"
             db_settings.generate_description_model = "openai"
+            db_settings.generate_description_prompt = None
+            db_settings.generate_promotional_audio_script_prompt = None
+            db_settings.categories = None
             
             self.db.commit()
             self.db.refresh(db_settings)

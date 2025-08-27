@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 
 class ProductBase(BaseModel):
@@ -12,6 +12,7 @@ class ProductBase(BaseModel):
     images: Optional[List[str]] = Field(None, description="List of image URLs")
     audio_description: Optional[str] = Field(None, description="Audio description")
     audio: Optional[str] = Field(None, description="Audio URL")
+    audio_config: Optional[Dict[str, str]] = Field(None, description="Audio configuration settings")
 
 
 class ProductCreate(ProductBase):
@@ -29,6 +30,7 @@ class ProductUpdate(BaseModel):
     images: Optional[List[str]] = Field(None, description="List of image URLs")
     audio_description: Optional[str] = Field(None, description="Audio description")
     audio: Optional[str] = Field(None, description="Audio URL")
+    audio_config: Optional[Dict[str, str]] = Field(None, description="Audio configuration settings")
 
 
 class ProductInDB(ProductBase):

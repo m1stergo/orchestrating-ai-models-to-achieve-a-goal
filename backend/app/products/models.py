@@ -16,6 +16,7 @@ class Product(Base):
     images = Column(JSON, nullable=True)  # Array of URL strings
     audio_description = Column(Text, nullable=True)
     audio = Column(String, nullable=True)  # URL string
+    audio_config = Column(JSON, nullable=True)  # Record<string, string> for audio configurations
     
     def __repr__(self):
         return f"<Product(id={self.id}, sku='{self.sku}', name='{self.name}')>"

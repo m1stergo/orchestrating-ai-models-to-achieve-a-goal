@@ -7,7 +7,7 @@ from typing import Optional
 
 from openai import OpenAI
 from app.config import settings
-from .base import TextGenerationAdapter, ImageDescriptionAdapter, ECOMMERCE_COPYWRITER_PROMPT, PROMOTIONAL_AUDIO_SCRIPT_PROMPT
+from .base import TextGenerationAdapter, ImageDescriptionAdapter, PROMOTIONAL_AUDIO_SCRIPT_PROMPT
 
 logger = logging.getLogger(__name__)
 

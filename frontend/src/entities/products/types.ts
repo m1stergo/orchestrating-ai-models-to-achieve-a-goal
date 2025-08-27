@@ -11,6 +11,7 @@ export interface Product {
   images?: string[];
   audio_description?: string;
   audio?: string;
+  audio_config?: Record<string, string>;
 }
 
 /**
@@ -26,4 +27,5 @@ export interface ProductFormData {
   images?: string[];
   audio_description?: string;
   audio?: string;
+  audio_config?: Record<string, string>;
 }
