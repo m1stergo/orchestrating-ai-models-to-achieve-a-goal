@@ -13,7 +13,7 @@ export async function uploadImage(formData: FormData): Promise<UploadImageRespon
   return response.json()
 }
 
-export async function describeImage(params: { image_url: string, model: string }): Promise<DescribeImageResponse> {
+export async function describeImage(params: { image_url: string, model?: string, prompt?: string }): Promise<DescribeImageResponse> {
   const response = await fetch(`${API_BASE_URL}/v1/describe-image/`, {
     method: 'POST',
     headers: {
@@ -27,7 +27,7 @@ export async function describeImage(params: { image_url: string, model: string }
   return response.json()
 }
 
-export async function generateDescription(params: { text: string, model: string }): Promise<GenerateDescriptionResponse> {
+export async function generateDescription(params: { text: string, model: string, prompt?: string, categories?: string[] }): Promise<GenerateDescriptionResponse> {
   const response = await fetch(`${API_BASE_URL}/v1/generate-description/`, {
     method: 'POST',
     headers: {
@@ -77,7 +77,7 @@ export async function getAvailableVoices(): Promise<VoiceModelsResponse> {
   return response.json()
 }
 
-export async function generatePromotionalAudioScript(params: { text: string, model: string }): Promise<GeneratePromotionalAudioScriptResponse> {
+export async function generatePromotionalAudioScript(params: { text: string, model: string, prompt?: string }): Promise<GeneratePromotionalAudioScriptResponse> {
   const response = await fetch(`${API_BASE_URL}/v1/generate-description/promotional-audio-script`, {
     method: 'POST',
     headers: {

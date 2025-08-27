@@ -2,19 +2,8 @@
 Base adapter interfaces for AI models.
 """
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, List
 
-# Shared prompt for e-commerce product description generation
-ECOMMERCE_COPYWRITER_PROMPT = """You are a professional e-commerce copywriter. 
-Write a concise and to the point product description based strictly on the information below. 
-Avoid unnecessary fluff."""
-
-# Shared prompt for promotional reel/TikTok script generation
-PROMOTIONAL_AUDIO_SCRIPT_PROMPT = """Create a short description for a Reels/TikTok promotional video.
-The result should sound natural, conversational, and energetic, with short, punchy sentences that grab attention in the first few seconds.
-Include a strong hook at the beginning, a simple middle part, and a call-to-action at the end.
-Avoid being too formal, use common social media expressions, and keep the length suitable for a video under 30 seconds.
-Do not use emojis!"""
 
 
 class ImageDescriptionAdapter(ABC):
@@ -49,13 +38,14 @@ class TextGenerationAdapter(ABC):
         pass
 
     @abstractmethod
-    async def generate_text(self, text: str, prompt: str) -> str:
+    async def generate_text(self, text: str, prompt: str, categories: Optional[List[str]] = None) -> str:
         """
-        Generate text based on input text and prompt.
+        Generate text from input text using the model.
         
         Args:
             text: Input text to process
             prompt: Prompt to guide the generation
+            categories: Optional list of available product categories
             
         Returns:
             str: Generated text
@@ -63,12 +53,13 @@ class TextGenerationAdapter(ABC):
         pass
 
     @abstractmethod
-    async def generate_promotional_audio_script(self, text: str) -> str:
+    async def generate_promotional_audio_script(self, text: str, prompt: Optional[str] = None) -> str:
         """
         Generate a promotional reel/TikTok script from marketing text.
         
         Args:
             text: Input marketing text to transform
+            prompt: Optional custom prompt for script generation
             
         Returns:
             str: Generated promotional audio script

@@ -2,8 +2,9 @@
 import { ref, watch } from 'vue'
 import UploadImage from './UploadImage.vue'
 import type { ExtractWebContentResponse } from './types'
-import { useMutation } from '@pinia/colada'
+import { useMutation, useQuery } from '@pinia/colada'
 import { describeImage, extractWebContent } from './api'
+import { getSettings } from '@/features/UserSettings/api'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import ConfirmPopup from 'primevue/confirmpopup'
@@ -18,6 +19,12 @@ const props = defineProps<{ model?: string }>()
 const emit = defineEmits(['update:status'])
 
 const form = useProductForm()
+
+const { data: userSettings } = useQuery({
+  key: ['settings'],
+  query: () => getSettings(),
+  refetchOnWindowFocus: false,
+})
 
 const website = ref<ExtractWebContentResponse>({
     title: '',
@@ -100,12 +107,14 @@ async function performExtraction() {
         await triggerExtractWebContent(website.value.url)
         await triggerDescribeImage({
             image_url: extractWebContentData.value?.images[0]!,
-            model: props.model || ''
+            model: props.model,
+            prompt: userSettings.value?.describe_image_prompt
         })
     } else if (uploadedImage.value) {
         await triggerDescribeImage({
             image_url: uploadedImage.value,
-            model: props.model || ''
+            model: props.model,
+            prompt: userSettings.value?.describe_image_prompt
         })
     }
 }

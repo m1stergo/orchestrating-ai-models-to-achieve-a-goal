@@ -36,7 +36,7 @@ export interface UploadAudioResponse {
 }
 
 export interface GenerateDescriptionResponse {
-  description: string
+  text: string
 }
 
 export interface VoiceModel {

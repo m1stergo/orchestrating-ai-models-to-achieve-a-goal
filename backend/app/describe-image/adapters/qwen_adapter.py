@@ -4,6 +4,7 @@ Qwen adapter for image description
 import logging
 import aiohttp
 from typing import Optional
+
 from app.config import settings
 from .base import ImageDescriptionAdapter
 
@@ -14,6 +15,18 @@ class QwenAdapter(ImageDescriptionAdapter):
     def __init__(self):
         self.service_url = settings.QWEN_SERVICE_URL
         self.timeout = aiohttp.ClientTimeout(total=60)  # 60 seconds timeout for inference
+    
+    def _get_image_description_prompt(self, custom_prompt: Optional[str] = None) -> str:
+        """Get image description prompt template."""
+        if custom_prompt and custom_prompt.strip():
+            return custom_prompt
+            
+        return """Analyze the main product in the image provided. Focus exclusively on the product itself. Based on your visual analysis of the product, complete the following template. If any field cannot be determined from the image, state "Not visible" or "Unknown".
+
+Image description: A brief but comprehensive visual description of the item, detailing its color, shape, material, and texture.
+Product type: What is the object?
+Material: What is it made of? Be specific if possible (e.g., "leather," "plastic," "wood").
+Keywords: List relevant keywords that describe the item's appearance or function."""
 
     def is_available(self) -> bool:
         """Check if the Qwen service URL is available."""
@@ -27,8 +40,8 @@ class QwenAdapter(ImageDescriptionAdapter):
         if not self.is_available():
             raise ValueError("Qwen service URL is not configured.")
 
-        if prompt is None:
-            prompt = "Describe this image in detail."
+        # Use custom prompt or default
+        final_prompt = self._get_image_description_prompt(prompt)
 
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
@@ -47,7 +60,7 @@ class QwenAdapter(ImageDescriptionAdapter):
                 # Call the describe-image endpoint
                 payload = {
                     "image_url": image_url,
-                    "prompt": prompt
+                    "prompt": final_prompt
                 }
                 
                 async with session.post(f"{self.service_url}/describe-image", json=payload) as resp:

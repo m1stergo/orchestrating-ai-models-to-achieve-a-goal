@@ -8,6 +8,7 @@
 export interface UserSettingsBase {
   describe_image_model: string
   generate_description_model: string
+  describe_image_prompt?: string
   generate_description_prompt?: string
   generate_promotional_audio_script_prompt?: string
   categories?: string[]
@@ -26,6 +27,7 @@ export interface UserSettingsCreate extends UserSettingsBase {}
 export interface UserSettingsUpdate {
   describe_image_model?: string
   generate_description_model?: string
+  describe_image_prompt?: string
   generate_description_prompt?: string
   generate_promotional_audio_script_prompt?: string
   categories?: string[]

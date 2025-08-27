@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { watch } from 'vue'
-import { useMutation } from '@pinia/colada'
+import { useMutation, useQuery } from '@pinia/colada'
 import { generateDescription } from './api'
 import { useProductForm } from '@/composables/useProductForm'
+import { getSettings } from '@/features/UserSettings/api'
 import { useToast } from 'primevue/usetoast'
 import { Status } from './types'
 import Skeleton from 'primevue/skeleton'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import AutoComplete from 'primevue/autocomplete'
+import Select from 'primevue/select'
 import Message from 'primevue/message'
 
 
@@ -20,10 +22,16 @@ const toast = useToast()
 
 const form = useProductForm()
 
+const { data: userSettings } = useQuery({
+  key: ['settings'],
+  query: () => getSettings(),
+  refetchOnWindowFocus: false,
+})
+
 const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenerateDescription } = useMutation({
   mutation: generateDescription,
   onSuccess: (data) => {
-    const parsedData = parseDescriptionResponse(data.description)
+    const parsedData = parseDescriptionResponse(data.text)
     form.setValues({
       name: parsedData.title || form?.values.name,
       description: parsedData.description,
@@ -79,7 +87,12 @@ defineExpose({
     isLoading,
     generateDescription: () => {
         if (!form?.values.description || !props.model) return
-        triggerGenerateDescription({ text: form?.values.description, model: props.model })
+        triggerGenerateDescription({ 
+            text: form?.values.description, 
+            model: props.model,
+            prompt: userSettings.value?.generate_description_prompt || undefined,
+            categories: userSettings.value?.categories || undefined
+        })
     }
 })
 </script>
@@ -160,10 +173,11 @@ defineExpose({
             <!-- Category -->
             <div class="flex flex-col gap-2">
                 <label class="text-sm font-medium text-gray-700">Category</label>
-                <InputText 
+                <Select 
                     :modelValue="form?.values.category" 
                     @update:modelValue="form.setFieldValue('category', $event)"
-                    placeholder="Enter product category" 
+                    :options="userSettings?.categories || []"
+                    placeholder="Select product category" 
                 />
             </div>
         </div>

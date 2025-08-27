@@ -11,6 +11,7 @@ class UserSettings(Base):
     id = Column(Integer, primary_key=True, index=True)
     describe_image_model = Column(String, nullable=False, default="openai")
     generate_description_model = Column(String, nullable=False, default="openai")
+    describe_image_prompt = Column(Text, nullable=True)
     generate_description_prompt = Column(Text, nullable=True)
     generate_promotional_audio_script_prompt = Column(Text, nullable=True)
     categories = Column(JSON, nullable=True)

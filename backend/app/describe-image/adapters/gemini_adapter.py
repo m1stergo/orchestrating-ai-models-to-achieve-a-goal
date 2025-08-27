@@ -8,6 +8,7 @@ import google.generativeai as genai
 
 from app.config import settings
 from .base import ImageDescriptionAdapter
+from ..shared.prompts import get_image_description_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class GeminiAdapter(ImageDescriptionAdapter):
         if self.is_available():
             genai.configure(api_key=self.api_key)
             self.model = genai.GenerativeModel(self.model_name)
+    
 
     def is_available(self) -> bool:
         """Check if the Gemini API key is available."""
@@ -36,11 +38,11 @@ class GeminiAdapter(ImageDescriptionAdapter):
         if not self.is_available():
             raise ValueError("Gemini API key is not configured.")
 
-        if prompt is None:
-            prompt = "Describe this image in detail."
+        # Use custom prompt or default
+        final_prompt = get_image_description_prompt(prompt)
 
         try:
-            result_text = await asyncio.to_thread(self.describe_image_sync, image_url, prompt)
+            result_text = await asyncio.to_thread(self.describe_image_sync, image_url, final_prompt)
             logger.info("Gemini model described image successfully")
             return result_text
         except Exception as e:

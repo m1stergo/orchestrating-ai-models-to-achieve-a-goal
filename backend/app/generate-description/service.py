@@ -24,9 +24,9 @@ async def generate_description(
     try:
         logger.info(f"Generating description for text: {request.text}")
         adapter = TextGenerationAdapterFactory.get_adapter(request.model)
-        result = await adapter.generate_text(request.text, request.prompt)
+        result = await adapter.generate_text(request.text, request.prompt, request.categories)
         logger.info("Text generation completed successfully")
-        return GenerateDescriptionResponse(description=result)
+        return GenerateDescriptionResponse(text=result)
     except Exception as e:
         logger.error(f"Error generating description: {str(e)}")
         raise Exception(f"Text generation failed: {str(e)}")
@@ -47,7 +47,7 @@ async def generate_promotional_audio_script(
     try:
         logger.info(f"Generating promotional audio script for text: {request.text[:50]}...")
         adapter = TextGenerationAdapterFactory.get_adapter(request.model)
-        result = await adapter.generate_promotional_audio_script(request.text)
+        result = await adapter.generate_promotional_audio_script(request.text, request.prompt)
         logger.info("Promotional audio script generation completed successfully")
         return GeneratePromotionalAudioScriptResponse(text=result)
     except Exception as e:

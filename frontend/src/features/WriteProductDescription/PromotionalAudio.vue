@@ -8,10 +8,17 @@ import Skeleton from 'primevue/skeleton'
 import Textarea from 'primevue/textarea'
 import { AudioPlayer } from '@/shared/ui/AudioPlayer'
 import { useProductForm } from '@/composables/useProductForm'
+import { getSettings } from '@/features/UserSettings/api'
 
 const props = defineProps<{ model?: string }>()
 
 const form = useProductForm()
+
+const { data: userSettings } = useQuery({
+  key: ['settings'],
+  query: () => getSettings(),
+  refetchOnWindowFocus: false,
+})
 
 const toast = useToast()
 
@@ -35,7 +42,11 @@ const { data: voices } = useQuery({
 
 // Promotional audio script mutation
 const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoadingGeneratePromotionalAudioScript } = useMutation({
-  mutation: () => generatePromotionalAudioScript({ text: form?.values.description || '', model: props.model!}),
+  mutation: () => generatePromotionalAudioScript({ 
+    text: form?.values.description || '', 
+    model: props.model!,
+    prompt: userSettings.value?.generate_promotional_audio_script_prompt || undefined
+  }),
   onSuccess: (data) => {
     form.setFieldValue('audio_description', data.text)
     dirty.value = false

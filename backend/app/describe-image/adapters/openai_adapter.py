@@ -11,6 +11,7 @@ from pathlib import Path
 from openai import OpenAI
 from app.config import settings
 from .base import ImageDescriptionAdapter
+from ..shared.prompts import get_image_description_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class OpenAIAdapter(ImageDescriptionAdapter):
 
         if self.is_available():
             self.model = OpenAI(api_key=self.api_key)
+    
 
     def is_available(self) -> bool:
         """Check if the OpenAI API key is available."""
@@ -38,13 +40,13 @@ class OpenAIAdapter(ImageDescriptionAdapter):
         if not self.is_available():
             raise ValueError("OpenAI API key is not configured.")
 
-        if prompt is None:
-            prompt = "Describe this image in detail."
+        # Use custom prompt or default
+        final_prompt = get_image_description_prompt(prompt)
 
         try:
             # Always convert to base64 for better reliability
             image_data = await self._convert_image_to_base64(image_url)
-            result_text = await asyncio.to_thread(self.describe_image_sync, image_data, prompt)
+            result_text = await asyncio.to_thread(self.describe_image_sync, image_data, final_prompt)
             
             logger.info("OpenAI model described image successfully")
             return result_text

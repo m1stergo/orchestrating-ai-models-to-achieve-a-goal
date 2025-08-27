@@ -36,6 +36,13 @@ const generate_description_model = computed({
   }
 })
 
+const describe_image_prompt = computed({
+  get: () => data.value?.describe_image_prompt,
+  set: (value) => {
+    updateSettingsMutation({ describe_image_prompt: value })
+  }
+})
+
 const generate_description_prompt = computed({
   get: () => data.value?.generate_description_prompt,
   set: (value) => {
@@ -121,6 +128,19 @@ const categories = computed({
         
         <div class="flex flex-col gap-4">
           <div>
+            <label class="block text-sm font-medium mb-2">Image Description Prompt</label>
+            <Textarea
+              v-model="describe_image_prompt"
+              placeholder="Enter custom prompt for image description generation..."
+              rows="3"
+              class="w-full"
+            />
+            <small class="text-gray-600">
+              Prompt template for describing images.  
+            </small>
+          </div>
+
+          <div>
             <label class="block text-sm font-medium mb-2">Product Description Prompt</label>
             <Textarea
               v-model="generate_description_prompt"
@@ -129,7 +149,7 @@ const categories = computed({
               class="w-full"
             />
             <small class="text-gray-600">
-              Custom prompt template for generating product descriptions.
+              Prompt template for generating product descriptions.
             </small>
           </div>
 
@@ -142,7 +162,7 @@ const categories = computed({
               class="w-full"
             />
             <small class="text-gray-600">
-              Custom prompt template for generating promotional audio scripts.
+              Prompt template for generating promotional audio scripts.
             </small>
           </div>
         </div>

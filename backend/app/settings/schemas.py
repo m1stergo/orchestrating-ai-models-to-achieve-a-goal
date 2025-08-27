@@ -7,6 +7,7 @@ class UserSettingsBase(BaseModel):
     """Base schema for User Settings."""
     describe_image_model: str = Field(default="openai", description="Preferred model for image description")
     generate_description_model: str = Field(default="openai", description="Preferred model for description generation")
+    describe_image_prompt: Optional[str] = Field(None, description="Custom prompt for image description generation")
     generate_description_prompt: Optional[str] = Field(None, description="Custom prompt for product description generation")
     generate_promotional_audio_script_prompt: Optional[str] = Field(None, description="Custom prompt for promotional audio script generation")
     categories: Optional[List[str]] = Field(None, description="Available product categories")
@@ -21,6 +22,7 @@ class UserSettingsUpdate(BaseModel):
     """Schema for updating user settings."""
     describe_image_model: Optional[str] = Field(None, description="Preferred model for image description")
     generate_description_model: Optional[str] = Field(None, description="Preferred model for description generation")
+    describe_image_prompt: Optional[str] = Field(None, description="Custom prompt for image description generation")
     generate_description_prompt: Optional[str] = Field(None, description="Custom prompt for product description generation")
     generate_promotional_audio_script_prompt: Optional[str] = Field(None, description="Custom prompt for promotional audio script generation")
     categories: Optional[List[str]] = Field(None, description="Available product categories")

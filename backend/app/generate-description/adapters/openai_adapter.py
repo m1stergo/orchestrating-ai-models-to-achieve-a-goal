@@ -3,11 +3,12 @@ OpenAI adapter for text generation and image description.
 """
 import logging
 import asyncio
-from typing import Optional
-
 from openai import OpenAI
+from typing import Optional, List
+
 from app.config import settings
-from .base import TextGenerationAdapter, ImageDescriptionAdapter, PROMOTIONAL_AUDIO_SCRIPT_PROMPT
+from .base import TextGenerationAdapter, ImageDescriptionAdapter
+from ..shared.prompts import get_product_description_prompt, get_promotional_audio_script_prompt, build_final_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -30,46 +31,35 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
             logger.warning("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
         return available
 
-    async def generate_text(self, text: str, prompt: str) -> str:
+    async def generate_text(self, text: str, prompt: Optional[str] = None, categories: Optional[List[str]] = None) -> str:
         """Generate text using OpenAI's text model."""
         if not self.is_available():
             raise ValueError("OpenAI API key is not configured.")
 
-        # Use structured JSON prompt for product description
-        json_prompt = """Based on the provided text, create a comprehensive product description and return a JSON response with the following structure:
-{
-  "title": "Inferred product title/name",
-  "description": "Detailed product description",
-  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "category": "Suggested product category"
-}
+        prompt_template = get_product_description_prompt(prompt)
+        final_prompt = build_final_prompt(prompt_template, text, categories)
 
-Please ensure:
-- The title is concise and descriptive
-- The description is detailed and highlights key features
-- Keywords are relevant for search and marketing
-- Category is a general product classification from this list: [clothing, electronics, health, home, jewelry, sports, toys]
-- Response must be valid JSON only, no additional text"""
-
-        full_prompt = f"{json_prompt}\n\nText to process:\n{text}"
-
+        logger.info(f"Final prompt: {final_prompt}")
         try:
-            result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
+            result_text = await asyncio.to_thread(self.generate_text_sync, final_prompt)
             logger.info("OpenAI model generated text successfully")
             return result_text
         except Exception as e:
             logger.error(f"OpenAI text generation error: {e}")
             raise
 
-    async def generate_promotional_audio_script(self, text: str) -> str:
+
+    async def generate_promotional_audio_script(self, text: str, prompt: Optional[str] = None) -> str:
         """Generate a promotional audio script using OpenAI's text model."""
         if not self.is_available():
             raise ValueError("OpenAI API key is not configured.")
 
-        full_prompt = f"{PROMOTIONAL_AUDIO_SCRIPT_PROMPT}\n\nOriginal text:\n{text}"
+        prompt_template = get_promotional_audio_script_prompt(prompt)
+        final_prompt = build_final_prompt(prompt_template, text)
 
+        logger.info(f"Final promotional audio script prompt: {final_prompt}")
         try:
-            result_text = await asyncio.to_thread(self.generate_promotional_audio_script_sync, full_prompt)
+            result_text = await asyncio.to_thread(self.generate_promotional_audio_script_sync, final_prompt)
             logger.info("OpenAI model generated promotional audio script successfully")
             return result_text
         except Exception as e:

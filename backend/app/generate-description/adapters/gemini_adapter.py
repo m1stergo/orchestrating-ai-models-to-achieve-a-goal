@@ -4,9 +4,11 @@ Gemini adapter for text generation.
 import logging
 import asyncio
 import google.generativeai as genai
+from typing import Optional, List
 
 from app.config import settings
-from .base import TextGenerationAdapter, ECOMMERCE_COPYWRITER_PROMPT, PROMOTIONAL_AUDIO_SCRIPT_PROMPT
+from .base import TextGenerationAdapter
+from ..shared.prompts import get_product_description_prompt, get_promotional_audio_script_prompt, build_final_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +30,15 @@ class GeminiAdapter(TextGenerationAdapter):
             logger.warning("Gemini API key not found. Set GEMINI_API_KEY environment variable.")
         return ok
 
-    async def generate_text(self, text: str, prompt: str) -> str:
+    async def generate_text(self, text: str, prompt: Optional[str] = None, categories: Optional[List[str]] = None) -> str:
         """Generate text using Gemini's text model."""
         logger.info("Gemini generating text for input text")
 
         if not self.is_available():
             raise ValueError("Gemini API key is not configured.")
 
-        # Use the shared e-commerce copywriter prompt, ignoring the passed prompt parameter
-        full_prompt = f"{ECOMMERCE_COPYWRITER_PROMPT}\n\nText to process:\n{text}"
+        prompt_template = get_product_description_prompt(prompt)
+        full_prompt = build_final_prompt(prompt_template, text, categories)
 
         try:
             result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
@@ -46,14 +48,15 @@ class GeminiAdapter(TextGenerationAdapter):
             logger.error(f"Gemini text generation error: {e}")
             raise
 
-    async def generate_promotional_audio_script(self, text: str) -> str:
+    async def generate_promotional_audio_script(self, text: str, prompt: Optional[str] = None) -> str:
         """Generate a promotional audio script using Gemini's text model."""
         logger.info("Gemini generating promotional audio script for input text")
 
         if not self.is_available():
             raise ValueError("Gemini API key is not configured.")
 
-        full_prompt = f"{PROMOTIONAL_AUDIO_SCRIPT_PROMPT}\n\nOriginal text:\n{text}"
+        prompt_template = get_promotional_audio_script_prompt(prompt)
+        full_prompt = build_final_prompt(prompt_template, text)
 
         try:
             result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
