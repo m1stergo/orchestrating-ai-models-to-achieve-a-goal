@@ -48,8 +48,6 @@ export async function describeImageHealthCheck(model: string): Promise<{ status:
 }
   
 export async function generateDescriptionHealthCheck(model: string): Promise<{ status: string, message: string, details?: any }> {
-  console.log('requestea')
-  
   const response = await fetch(`${API_BASE_URL}/v1/generate-description/healthz`, {
       method: 'POST',
       headers: {
@@ -58,8 +56,6 @@ export async function generateDescriptionHealthCheck(model: string): Promise<{ s
       body: JSON.stringify({ model })
     })
 
-    console.log('response', response)
-    
     // For health checks, we should handle all response codes and return the JSON
     // HTTP 200 = healthy, HTTP 202 = loading, HTTP 503 = unhealthy/error
     if (response.ok || response.status === 202 || response.status === 503) {

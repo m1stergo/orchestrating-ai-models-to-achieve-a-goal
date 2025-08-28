@@ -117,7 +117,6 @@ async function performExtraction() {
 
 watch(statusDescribeImage, () => {
     if (statusDescribeImage.value === Status.SUCCESS) {
-        console.log('Extract content success')
         emit('update:status', Status.SUCCESS)
     }
     if (statusDescribeImage.value === Status.ERROR) {

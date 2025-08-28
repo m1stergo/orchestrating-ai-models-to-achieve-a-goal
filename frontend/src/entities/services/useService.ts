@@ -132,10 +132,8 @@ export function useService(serviceName: ServiceName) {
         if (generateDescriptionHealthCheckInterval) {
            return
         }
-
         // Execute immediately first time (like do-while)
         const executeHealthCheck = () => {
-            console.log('healthCheck', 'generateDescription')
             triggerGenerateDescriptionHealthCheck(model)
         }
         
@@ -150,10 +148,8 @@ export function useService(serviceName: ServiceName) {
         if (describeImageHealthCheckInterval) {
             return
         }
-
         // Execute immediately first time (like do-while)
         const executeHealthCheck = () => {
-            console.log('healthCheck', 'describeImage')
             triggerDescribeImageHealthCheck(model)
         }
         
@@ -172,6 +168,8 @@ export function useService(serviceName: ServiceName) {
             services.value['describeImage'].isSuccess = false
             services.value['describeImage'].retryCount = 0
             services.value['describeImage'].isWarmingUp = false
+            clearInterval(describeImageHealthCheckInterval)
+            describeImageHealthCheckInterval = null
             healthCheckDescribeImage(model.value)
         }
         if (serviceName === 'generateDescription') {
@@ -180,6 +178,8 @@ export function useService(serviceName: ServiceName) {
             services.value['generateDescription'].isSuccess = false
             services.value['generateDescription'].retryCount = 0
             services.value['generateDescription'].isWarmingUp = false
+            clearInterval(generateDescriptionHealthCheckInterval)
+            generateDescriptionHealthCheckInterval = null
             healthCheckGenerateDescription(model.value)
         }
     })
