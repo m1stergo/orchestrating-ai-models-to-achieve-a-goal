@@ -43,7 +43,7 @@ const { data: voices } = useQuery({
 // Promotional audio script mutation
 const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoadingGeneratePromotionalAudioScript } = useMutation({
   mutation: () => generatePromotionalAudioScript({ 
-    text: form?.values.description || '', 
+    text: form?.values.image_description + ' ' + form?.values.description, 
     model: props.model!,
     prompt: userSettings.value?.generate_promotional_audio_script_prompt || undefined
   }),

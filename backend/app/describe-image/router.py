@@ -3,7 +3,7 @@ from .schemas import (
     DescribeImageRequest,
     DescribeImageResponse,
 )
-from .service import describe_image
+from .service import describe_image, warmup_qwen_service
 from typing import List
 
 router = APIRouter()
@@ -60,7 +60,25 @@ async def describe_image_proxy(
         # Call the service directly using the adapter pattern
         return await describe_image(request)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error describing image: {str(e)}")
+        error_message = str(e)
+        # Check for specific Qwen errors and return appropriate status codes
+        if "QWEN_NOT_READY" in error_message or "QWEN_SERVICE_DOWN" in error_message:
+            raise HTTPException(status_code=503, detail=error_message)
+        else:
+            raise HTTPException(status_code=500, detail=f"Error describing image: {error_message}")
+
+@router.post(
+    "/warmup",
+    summary="Warmup Qwen Model",
+    description="Trigger warmup of the Qwen model service. Returns status of the warmup process."
+)
+async def warmup_qwen():
+    """Warmup the Qwen model service."""
+    try:
+        result = await warmup_qwen_service()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Warmup failed: {str(e)}")
 
 @router.get(
     "/models",

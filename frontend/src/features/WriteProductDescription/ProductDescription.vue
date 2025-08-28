@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { watch, ref } from 'vue'
 import { useMutation, useQuery } from '@pinia/colada'
-import { generateDescription } from './api'
+import { generateDescription, warmupMistralModel } from './api'
 import { useProductForm } from '@/composables/useProductForm'
 import { getSettings } from '@/features/UserSettings/api'
 import { useToast } from 'primevue/usetoast'
@@ -12,6 +12,7 @@ import Textarea from 'primevue/textarea'
 import AutoComplete from 'primevue/autocomplete'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 
 
 const emit = defineEmits(['update:status'])
@@ -22,15 +23,25 @@ const toast = useToast()
 
 const form = useProductForm()
 
+// Auto-retry state for Mistral
+const retryAttempts = ref(0)
+const maxRetryAttempts = 3
+const isAutoRetrying = ref(false)
+const hasExecutedWarmup = ref(false)
+
 const { data: userSettings } = useQuery({
   key: ['settings'],
   query: () => getSettings(),
   refetchOnWindowFocus: false,
 })
 
-const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenerateDescription } = useMutation({
+const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenerateDescription, error: errorGenerateDescription } = useMutation({
   mutation: generateDescription,
   onSuccess: (data) => {
+    // Reset retry state on success
+    retryAttempts.value = 0
+    isAutoRetrying.value = false
+    
     const parsedData = parseDescriptionResponse(data.text)
     form.setValues({
       name: parsedData.title || form?.values.name,
@@ -39,8 +50,20 @@ const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenera
       category: parsedData.category || form?.values.category,
     })
   },
-  onError: () => {
-    toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error generating the description, please try again', life: 3000 });
+})
+
+const { mutateAsync: triggerWarmupMistral } = useMutation({
+  mutation: warmupMistralModel,
+  onSuccess: () => {
+    hasExecutedWarmup.value = true
+  },
+  onError: (error) => {
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Warmup Error', 
+      detail: error.message, 
+      life: 3000 
+    })
   },
 })
 
@@ -71,6 +94,47 @@ function parseDescriptionResponse(description: string) {
   }
 }
 
+// Function to perform retry with recursive logic
+async function performRetryWithWarmup() {
+  if (retryAttempts.value >= maxRetryAttempts) {
+    isAutoRetrying.value = false
+    toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error generating the description, please try again', life: 3000 });
+    emit('update:status', Status.ERROR)
+    return
+  }
+
+  // Execute warmup if not done yet
+  if (!hasExecutedWarmup.value) {
+    await triggerWarmupMistral()
+  }
+  
+  // Wait 20 seconds before retrying
+  setTimeout(async () => {
+    try {
+      await triggerGenerateDescription({ 
+        text: form?.values.image_description!, 
+        model: props.model!,
+        prompt: userSettings.value?.generate_description_prompt || undefined,
+        categories: userSettings.value?.categories || undefined
+      })
+    } catch (retryError) {
+      // Recursively retry if still within attempts
+      retryAttempts.value++
+      await performRetryWithWarmup()
+    }
+  }, 20000) // 20 seconds
+}
+
+// Watch for errors in generate description to handle auto-retry for Mistral
+watch(errorGenerateDescription, async (error) => {
+  if (!error || isAutoRetrying.value) return
+  if (props.model === 'mistral' && retryAttempts.value < maxRetryAttempts) {
+    isAutoRetrying.value = true
+    retryAttempts.value++
+    await performRetryWithWarmup()
+  }
+})
+
 watch(statusGenerateDescription, () => {
     if (statusGenerateDescription.value === Status.SUCCESS) {
         emit('update:status', Status.SUCCESS)
@@ -86,9 +150,9 @@ watch(statusGenerateDescription, () => {
 defineExpose({
     isLoading,
     generateDescription: () => {
-        if (!form?.values.description || !props.model) return
+        if (!form?.values.image_description || !props.model) return
         triggerGenerateDescription({ 
-            text: form?.values.description, 
+            text: form?.values.image_description, 
             model: props.model,
             prompt: userSettings.value?.generate_description_prompt || undefined,
             categories: userSettings.value?.categories || undefined
@@ -105,8 +169,15 @@ defineExpose({
                 <img :src="image" alt="Image" class="w-24 rounded">
             </div>
         </div>
+        <Message v-if="model === 'mistral' && isAutoRetrying && !isLoading" severity="warn" class="flex justify-center">
+            <div class="flex items-center gap-2 justify-center text-center">
+                <ProgressSpinner class="w-6 h-6" />
+                Mistral model is warming up, please wait a few seconds...
+            </div>
+        </Message>  
         <!-- Show description generation skeleton or final description -->
-        <div v-if="isLoading">
+        <div v-else-if="isLoading">
+            <p class="text-sm">Generating product description...</p>
             <div class="flex flex-col gap-2">
                 <Skeleton height="2rem"></Skeleton>
                 <Skeleton height="4rem"></Skeleton>

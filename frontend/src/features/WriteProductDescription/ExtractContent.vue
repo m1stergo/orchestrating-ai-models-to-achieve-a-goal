@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import UploadImage from './UploadImage.vue'
 import type { ExtractWebContentResponse } from './types'
 import { useMutation, useQuery } from '@pinia/colada'
-import { describeImage, extractWebContent } from './api'
+import { describeImage, extractWebContent, warmupQwenModel } from './api'
 import { getSettings } from '@/features/UserSettings/api'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -11,6 +11,8 @@ import ConfirmPopup from 'primevue/confirmpopup'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
+import ProgressSpinner from 'primevue/progressspinner'
+import Message from 'primevue/message'
 import { Status } from './types'
 import { useProductForm } from '@/composables/useProductForm'
 
@@ -44,6 +46,12 @@ const confirm = useConfirm();
 
 const uploadedImage = ref('')
 
+// Auto-retry state
+const retryAttempts = ref(0)
+const maxRetryAttempts = 3
+const isAutoRetrying = ref(false)
+const hasExecutedWarmup = ref(false)
+
 const { data: extractWebContentData, mutateAsync: triggerExtractWebContent, isLoading: isLoadingExtractWebContent } = useMutation({
   mutation: extractWebContent,
   onError: () => {
@@ -52,26 +60,24 @@ const { data: extractWebContentData, mutateAsync: triggerExtractWebContent, isLo
   },
 })
 
-const { mutateAsync: triggerDescribeImage, isLoading: isLoadingDescribeImage, status: statusDescribeImage } = useMutation({
+const { mutateAsync: triggerDescribeImage, isLoading: isLoadingDescribeImage, status: statusDescribeImage, error: errorDescribeImage } = useMutation({
   mutation: describeImage,
   onSuccess: (data) => {
+    // Reset retry state on success
+    retryAttempts.value = 0
+    isAutoRetrying.value = false
+    
     if (selectedContentSource.value.value === 'website') {
       form.setValues({
-        description: 'Listing description: ' + extractWebContentData.value?.title + ' ' + 'Image description: ' +  data.description!,
+        image_description: 'Listing description: ' + extractWebContentData.value?.title + ' ' + 'Image description: ' +  data.description!,
         images: extractWebContentData.value?.images!,
-        // url: extractWebContentData.value?.url!
       })
     } else {
       form.setValues({
-        description: data.description!,
+        image_description: data.description!,
         images: [uploadedImage.value],
-        // url: ''
       })
     }
-  },
-  onError: () => {
-    toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error describing the image, please try again', life: 3000 });
-    emit('update:status', Status.ERROR)
   },
 })
 
@@ -119,6 +125,49 @@ async function performExtraction() {
     }
 }
 
+const { mutateAsync: triggerWarmupQwen } = useMutation({
+  mutation: warmupQwenModel,
+  onSuccess: () => {
+    hasExecutedWarmup.value = true
+  },
+  onError: (error) => {
+    toast.add({ 
+      severity: 'error', 
+      summary: 'Warmup Error', 
+      detail: error.message, 
+      life: 3000 
+    })
+  },
+})
+
+// Watch for errors in describe image to handle auto-retry
+watch(errorDescribeImage, async (error) => {
+  if (!error || isAutoRetrying.value) return
+  if (props.model === 'qwen' && retryAttempts.value < maxRetryAttempts) {
+    isAutoRetrying.value = true
+    retryAttempts.value++
+    
+    // Execute warmup if not done yet
+    if (!hasExecutedWarmup.value) {
+      await triggerWarmupQwen()
+    }
+    
+    // Wait 30 seconds before retrying
+    setTimeout(async () => {
+      try {
+        performExtraction()
+      } catch (retryError) {
+        // If this was the last attempt, show final error
+        if (retryAttempts.value >= maxRetryAttempts) {
+          isAutoRetrying.value = false
+          toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error describing the image, please try again', life: 3000 });
+          emit('update:status', Status.ERROR)
+        }
+      }
+    }, 20000) // 20 seconds
+  }
+})
+
 watch(statusDescribeImage, () => {
     if (statusDescribeImage.value === Status.SUCCESS) {
         console.log('Extract content success')
@@ -144,6 +193,7 @@ watch(statusDescribeImage, () => {
       <InputText v-if="selectedContentSource.value === 'website'" v-model="website.url" placeholder="Enter a URL" />
       <UploadImage v-if="selectedContentSource.value === 'image'" v-model="uploadedImage" />
   </div>
+
   <div class="py-6">
     <Button 
       class="w-full"
@@ -155,4 +205,10 @@ watch(statusDescribeImage, () => {
       @click="extractContent" />
     <ConfirmPopup></ConfirmPopup>
   </div>
+  <Message  v-if="model === 'qwen' && isAutoRetrying && !isLoadingDescribeImage" severity="warn" class="flex justify-center">
+    <div class="flex items-center gap-2 justify-center text-center">
+      <ProgressSpinner class="w-6 h-6" />
+      Qwen model is warming up, please wait a few seconds...
+    </div>
+  </Message>
 </template>

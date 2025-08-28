@@ -2,7 +2,9 @@
 Service for text generation using AI models.
 """
 import logging
+import aiohttp
 from typing import List
+from app.config import settings
 
 from .schemas import GenerateDescriptionRequest, GenerateDescriptionResponse, GeneratePromotionalAudioScriptRequest, GeneratePromotionalAudioScriptResponse
 from .adapters.factory import TextGenerationAdapterFactory
@@ -53,6 +55,52 @@ async def generate_promotional_audio_script(
     except Exception as e:
         logger.error(f"Error generating promotional audio script: {str(e)}")
         raise Exception(f"Promotional audio script generation failed: {str(e)}")
+
+
+async def warmup_mistral_service() -> dict:
+    """
+    Warmup the Mistral service by calling its warmup endpoint.
+    
+    Returns:
+        Dict with warmup status and information
+    """
+    try:
+        timeout = aiohttp.ClientTimeout(total=10)  # Short timeout for warmup call
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            warmup_url = f"{settings.GENERATE_DESCRIPTION_MISTRAL_URL}/warmup"
+            
+            async with session.get(warmup_url) as resp:
+                if resp.status == 200:
+                    result = await resp.json()
+                    logger.info(f"Mistral warmup successful: {result}")
+                    return {
+                        "status": "success",
+                        "message": "Mistral service warmup initiated successfully",
+                        "details": result
+                    }
+                else:
+                    error_text = await resp.text()
+                    logger.error(f"Mistral warmup failed: {resp.status}, {error_text}")
+                    return {
+                        "status": "error",
+                        "message": f"Warmup failed with status {resp.status}",
+                        "details": error_text
+                    }
+                    
+    except aiohttp.ClientError as e:
+        logger.error(f"Mistral warmup connection error: {str(e)}")
+        return {
+            "status": "error",
+            "message": "Could not connect to Mistral service",
+            "details": str(e)
+        }
+    except Exception as e:
+        logger.error(f"Mistral warmup error: {str(e)}")
+        return {
+            "status": "error", 
+            "message": "Warmup failed",
+            "details": str(e)
+        }
 
 
 async def get_available_models() -> List[str]:

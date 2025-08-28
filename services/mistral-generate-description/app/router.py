@@ -44,13 +44,14 @@ async def warmup():
     Endpoint to trigger model loading if not already loaded.
     Useful for manual warmup after deployment.
     """
-    from .shared import model_instance, model_loaded
+    from . import shared
     
-    if model_loaded:
+    if shared.model_loaded:
         return {"status": "already_loaded"}
     
     try:
-        await model_instance.is_loaded()
+        await shared.model_instance.is_loaded()
+        shared.model_loaded = True
         return {"status": "loaded_successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load model: {str(e)}")

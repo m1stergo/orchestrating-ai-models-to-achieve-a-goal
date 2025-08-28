@@ -6,11 +6,14 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Textarea from 'primevue/textarea'
 import AutoComplete from 'primevue/autocomplete'
-import { useQuery, useMutation } from '@pinia/colada'
+import { useQuery, useMutation, useQueryCache } from '@pinia/colada'
 import { getSettings, updateSettings } from './api'  
 import Skeleton from 'primevue/skeleton'
+// import { type UserSettingsResponse } from './types'
 
 const visible = ref(false)
+
+const queryCache = useQueryCache()
 
 const { data, isLoading, error } = useQuery({
   key: ['settings'],
@@ -18,8 +21,13 @@ const { data, isLoading, error } = useQuery({
   refetchOnWindowFocus: false,
 })
 
+// const localData = ref<UserSettingsResponse | null>(null);
+
 const { mutate: updateSettingsMutation } = useMutation({
   mutation: updateSettings,
+  // onSettled: () => {
+  //   queryCache.invalidateQueries({ key: ['settings'] })
+  // }
 })
 
 const describe_image_model = computed({
@@ -134,6 +142,8 @@ const categories = computed({
               placeholder="Enter custom prompt for image description generation..."
               rows="3"
               class="w-full"
+              autoResize
+              debounce="300"
             />
             <small class="text-gray-600">
               Prompt template for describing images.  
@@ -147,6 +157,8 @@ const categories = computed({
               placeholder="Enter custom prompt for product description generation..."
               rows="3"
               class="w-full"
+              autoResize
+              debounce="300"
             />
             <small class="text-gray-600">
               Prompt template for generating product descriptions.
@@ -160,6 +172,8 @@ const categories = computed({
               placeholder="Enter custom prompt for promotional audio script generation..."
               rows="3"
               class="w-full"
+              autoResize
+              debounce="300"
             />
             <small class="text-gray-600">
               Prompt template for generating promotional audio scripts.

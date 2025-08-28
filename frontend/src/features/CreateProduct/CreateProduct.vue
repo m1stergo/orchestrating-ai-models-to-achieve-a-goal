@@ -46,6 +46,7 @@ const form = useForm({
   images: [],
   audio_description: '',
   audio: '',
+  image_description: '',
 },
 })
 

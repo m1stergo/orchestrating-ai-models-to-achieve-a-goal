@@ -64,7 +64,7 @@ function handleExtractContentStatusUpdate(status: Status) {
                 <StepPanel>
                     <ProductDescription 
                         ref="productDescription" 
-                        :model="settings?.describe_image_model" 
+                        :model="settings?.generate_description_model" 
                         @update:status="handleProductDescriptionStatusUpdate" 
                     />
                 </StepPanel>
@@ -73,7 +73,7 @@ function handleExtractContentStatusUpdate(status: Status) {
                 <Step :disabled="!form.values.description">Promotional audio</Step>
                 <StepPanel>
                     <PromotionalAudio 
-                        :model="settings?.describe_image_model" 
+                        :model="settings?.generate_description_model" 
                     />
                 </StepPanel>
             </StepItem>

@@ -6,6 +6,7 @@ from qwen_vl_utils import process_vision_info
 import torch
 from .schemas import DescribeImageResponse
 import logging
+import time
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -21,18 +22,25 @@ class QwenModel:
     async def is_loaded(self):
         """Ensures that the model is loaded asynchronously."""
         if self._model is None or self._processor is None:
-            logger.info("Loading Qwen2.5-VL model...")
+            start_time = time.time()
+            logger.info("Loading Qwen2.5-VL model... This may take several minutes.")
             model_name = "Qwen/Qwen2.5-VL-7B-Instruct"
 
             # Execute model loading in a separate thread to avoid blocking
             import asyncio
+            logger.info("Starting model download and initialization...")
             await asyncio.to_thread(self._load_model_sync, model_name)
-            logger.info("Qwen2.5-VL model loaded successfully")
+            
+            total_time = time.time() - start_time
+            logger.info(f"Qwen2.5-VL model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes)")
 
         return self._model, self._processor
         
     def _load_model_sync(self, model_name):
         """Loads the model synchronously (to be executed in a separate thread)."""
+        model_start = time.time()
+        logger.info(f"Downloading model {model_name}...")
+        
         self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             model_name,
             torch_dtype=torch.bfloat16,          # if your GPU doesn't support bfloat16, you can use "auto"
@@ -41,7 +49,15 @@ class QwenModel:
             low_cpu_mem_usage=True,
             max_memory={0: "14GB", "cpu": "8GB"}
         )
+        model_time = time.time() - model_start
+        logger.info(f"Model downloaded and loaded in {model_time:.2f} seconds ({model_time/60:.2f} minutes)")
+        
+        processor_start = time.time()
+        logger.info("Loading processor...")
         self._processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
+        processor_time = time.time() - processor_start
+        logger.info(f"Processor loaded in {processor_time:.2f} seconds")
+        logger.info("Model initialization complete")
 
     def _download_and_resize_image(self, image_url: str) -> Image.Image:
         """Downloads the image and resizes it to max_width if necessary."""

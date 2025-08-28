@@ -28,4 +28,5 @@ export interface ProductFormData {
   audio_description?: string;
   audio?: string;
   audio_config?: Record<string, string>;
+  image_description?: string
 }

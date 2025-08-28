@@ -34,6 +34,8 @@ async def lifespan(app: FastAPI):
         logger.info("Model preloaded successfully")
     except Exception as e:
         logger.error(f"Failed to preload model: {str(e)}")
+        # Set model_loaded to False so health check reflects actual state
+        model_loaded = False
     
     yield
     

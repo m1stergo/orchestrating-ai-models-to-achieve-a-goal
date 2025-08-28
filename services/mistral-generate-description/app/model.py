@@ -17,7 +17,7 @@ class MistralModel:
     """Local Mistral model for text generation (aligned with other providers)."""
 
     def __init__(self):
-        from config import settings
+        from app.config import settings
         # Puedes usar: "mistralai/Mistral-7B-Instruct-v0.3" o el que prefieras
         self.model_name = getattr(settings, "MISTRAL_MODEL", "mistralai/Mistral-7B-Instruct-v0.1")
         self.model: Optional[Any] = None
@@ -59,9 +59,13 @@ class MistralModel:
 
         logger.info(f"Loading Mistral model: {self.model_name}")
         try:
+            from app.config import settings
+            token = settings.HUGGINGFACE_TOKEN
+            
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name,
-                trust_remote_code=True
+                trust_remote_code=True,
+                token=token
             )
 
             # dtype y device_map automáticos cuando hay GPU
@@ -75,7 +79,8 @@ class MistralModel:
                 device_map=device_map,
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,
-                max_memory=max_memory
+                max_memory=max_memory,
+                token=token
             )
 
             if not self.has_gpu:
@@ -90,8 +95,8 @@ class MistralModel:
         """Usa chat template si está disponible, de lo contrario usa [INST]."""
         # Estructura de mensajes estilo chat
         messages = [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"{prompt}\n\nText to process:\n{text}"}
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": text}
         ]
 
         if hasattr(self.tokenizer, "apply_chat_template"):

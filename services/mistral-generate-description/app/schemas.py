@@ -11,3 +11,5 @@ class GenerateDescriptionRequest(BaseModel):
 class GenerateDescriptionResponse(BaseModel):
     """Schema for description generator response."""
     text: str = Field(..., description="Generated product description")
+    status: str = Field(default="success", description="Status of the generation")
+    model: str = Field(default="mistral", description="Model used for generation")

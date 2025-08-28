@@ -10,6 +10,7 @@ export const ProductSchema = z.object({
   images: z.array(z.string()).optional(),
   audio_description: z.string().optional(),
   audio: z.string().optional(),
+  image_description: z.string().optional(),
 })
 
 export type ProductFormData = z.infer<typeof ProductSchema>

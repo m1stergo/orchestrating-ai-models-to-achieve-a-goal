@@ -61,8 +61,9 @@ const form = useForm({
 
 provide('form', form)
 
-const onSubmit = form.handleSubmit((values) => {
-  mutateAsync(values as UpdateProductFormData)
+const onSubmit = form.handleSubmit(async (values) => {
+  await mutateAsync(values as UpdateProductFormData)
+  visible.value = false
 })
 
 watch(data, () => {

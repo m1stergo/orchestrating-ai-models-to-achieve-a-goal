@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     # Microservice base URLs with API prefix
     DESCRIBE_IMAGE_QWEN_URL: str = "http://localhost:8001/api/v1"
     GENERATE_DESCRIPTION_MISTRAL_URL: str = "http://localhost:8002/api/v1"
+    MISTRAL_SERVICE_URL: str = "http://localhost:8002/api/v1"
     TTS_CHATTERBOX_URL: str = "http://localhost:8003/api/v1"
     
     # API Keys for external services

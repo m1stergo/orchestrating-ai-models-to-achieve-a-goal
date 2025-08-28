@@ -22,7 +22,9 @@ export async function describeImage(params: { image_url: string, model?: string,
     body: JSON.stringify(params),
   })
   if (!response.ok) {
-    throw new Error(`Failed to describe image: ${response.statusText}`)
+    // Get the error detail from the response body
+    const errorData = await response.json().catch(() => ({ detail: response.statusText }))
+    throw new Error(errorData.detail || `Failed to describe image: ${response.statusText}`)
   }
   return response.json()
 }
@@ -101,6 +103,32 @@ export async function generateTextToSpeech(params: { text: string, model?: strin
   })
   if (!response.ok) {
     throw new Error(`Failed to generate text to speech: ${response.statusText}`)
+  }
+  return response.json()
+}
+
+export async function warmupQwenModel(): Promise<{ status: string, message: string, details?: any }> {
+  const response = await fetch(`${API_BASE_URL}/v1/describe-image/warmup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to warmup Qwen model: ${response.statusText}`)
+  }
+  return response.json()
+}
+
+export async function warmupMistralModel(): Promise<{ status: string, message: string, details?: any }> {
+  const response = await fetch(`${API_BASE_URL}/v1/generate-description/warmup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to warmup Mistral model: ${response.statusText}`)
   }
   return response.json()
 }

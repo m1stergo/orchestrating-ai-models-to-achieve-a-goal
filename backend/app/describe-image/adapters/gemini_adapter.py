@@ -50,15 +50,24 @@ class GeminiAdapter(ImageDescriptionAdapter):
             raise
 
     def describe_image_sync(self, image_url: str, prompt: str) -> str:
+        # For Gemini, we need to download the image and pass it as inline data
+        import requests
+        import base64
+        
+        # Download the image
+        response = requests.get(image_url)
+        response.raise_for_status()
+        
+        # Convert to base64
+        image_data = base64.b64encode(response.content).decode('utf-8')
+        
         result = self.model.generate_content(
             [
                 prompt,
-                {"mime_type": "image/jpeg", "uri": image_url}
+                {"mime_type": "image/jpeg", "data": image_data}
             ],
             generation_config={
                 "temperature": 0.7,
-                "topK": 40,
-                "topP": 0.95,
                 "max_output_tokens": 500,
             },
         )

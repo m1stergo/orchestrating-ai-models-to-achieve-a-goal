@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     # External API Keys
     OPENAI_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
+    HUGGINGFACE_TOKEN: Optional[str] = None
     
     # Model configurations
     OPENAI_MODEL: str = "gpt-4o"

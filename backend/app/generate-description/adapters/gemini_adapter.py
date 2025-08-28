@@ -3,12 +3,14 @@ Gemini adapter for text generation.
 """
 import logging
 import asyncio
+import json
+import re
 import google.generativeai as genai
 from typing import Optional, List
 
 from app.config import settings
 from .base import TextGenerationAdapter
-from ..shared.prompts import get_product_description_prompt, get_promotional_audio_script_prompt, build_final_prompt
+from ..shared.prompts import get_product_description_prompt, get_promotional_audio_script_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +39,7 @@ class GeminiAdapter(TextGenerationAdapter):
         if not self.is_available():
             raise ValueError("Gemini API key is not configured.")
 
-        prompt_template = get_product_description_prompt(prompt)
-        full_prompt = build_final_prompt(prompt_template, text, categories)
+        full_prompt = get_product_description_prompt(prompt, text, categories)
 
         try:
             result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
@@ -55,8 +56,7 @@ class GeminiAdapter(TextGenerationAdapter):
         if not self.is_available():
             raise ValueError("Gemini API key is not configured.")
 
-        prompt_template = get_promotional_audio_script_prompt(prompt)
-        full_prompt = build_final_prompt(prompt_template, text)
+        full_prompt = get_promotional_audio_script_prompt(prompt, text)
 
         try:
             result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
@@ -76,10 +76,39 @@ class GeminiAdapter(TextGenerationAdapter):
             full_prompt,
             generation_config={
                 "temperature": 0.7,
-                "topK": 40,
-                "topP": 0.95,
                 "max_output_tokens": 1000,
             },
         )
 
-        return result.text
+        return self._extract_json_from_response(result.text)
+    
+    def _extract_json_from_response(self, response_text: str) -> str:
+        """Extract JSON from response text that may contain markdown code blocks."""
+        if not response_text:
+            return response_text
+            
+        # Try to find JSON within markdown code blocks
+        json_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', response_text, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(1).strip()
+            try:
+                # Validate it's proper JSON by parsing and re-serializing
+                parsed = json.loads(json_str)
+                return json.dumps(parsed, ensure_ascii=False)
+            except json.JSONDecodeError:
+                logger.warning("Found JSON block but couldn't parse it, returning original")
+                return response_text
+        
+        # If no code blocks, try to find JSON directly
+        try:
+            # Look for JSON object pattern
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+                parsed = json.loads(json_str)
+                return json.dumps(parsed, ensure_ascii=False)
+        except json.JSONDecodeError:
+            pass
+            
+        # Return original if no valid JSON found
+        return response_text

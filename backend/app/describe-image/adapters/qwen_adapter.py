@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class QwenAdapter(ImageDescriptionAdapter):
     def __init__(self):
-        self.service_url = settings.QWEN_SERVICE_URL
+        self.service_url = settings.DESCRIBE_IMAGE_QWEN_URL
         self.timeout = aiohttp.ClientTimeout(total=60)  # 60 seconds timeout for inference
     
     def _get_image_description_prompt(self, custom_prompt: Optional[str] = None) -> str:
@@ -32,7 +32,7 @@ Keywords: List relevant keywords that describe the item's appearance or function
         """Check if the Qwen service URL is available."""
         available = bool(self.service_url and self.service_url.strip())
         if not available:
-            logger.warning("Qwen service URL not found. Set QWEN_SERVICE_URL environment variable.")
+            logger.warning("Qwen service URL not found. Set DESCRIBE_IMAGE_QWEN_URL environment variable.")
         return available
 
     async def describe_image(self, image_url: str, prompt: Optional[str] = None) -> str:
@@ -49,13 +49,19 @@ Keywords: List relevant keywords that describe the item's appearance or function
                 try:
                     health_url = f"{self.service_url}/healthz"
                     async with session.get(health_url) as health_resp:
+                        if not health_resp.ok:
+                            logger.error(f"Qwen service health check failed: {health_resp.status}")
+                            return "Service not available. Health check failed."
+                        
                         health_data = await health_resp.json()
-                        if not health_resp.ok or not health_data.get("loaded", False):
-                            logger.error(f"Qwen service not ready: {health_resp.status}")
-                            return "Service not available. The model is still loading or not responding."
+                        if not health_data.get("loaded", False):
+                            logger.info(f"Qwen service model not loaded yet: {health_data}")
+                            # Return a specific error that the frontend can catch
+                            raise Exception("QWEN_NOT_READY: The model is still loading. Please try the warmup endpoint first.")
                 except Exception as e:
                     logger.error(f"Failed to check Qwen service health: {str(e)}")
-                    return "Service health check failed. The service may be down."
+                    # If it's a connection error, the service is likely not running (cold start)
+                    raise Exception("QWEN_SERVICE_DOWN: Service health check failed. The service may be down or starting up.")
 
                 # Call the describe-image endpoint
                 payload = {

@@ -137,6 +137,19 @@ async def generate_promotional_audio_script_proxy(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating promotional audio script: {str(e)}")
 
+@router.post(
+    "/warmup",
+    summary="Warmup Mistral Model",
+    description="Warmup the Mistral model for faster response times"
+)
+async def warmup_mistral_model():
+    """Warmup the Mistral model."""
+    try:
+        from .service import warmup_mistral_service
+        return await warmup_mistral_service()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error warming up Mistral model: {str(e)}")
+
 @router.get(
     "/models",
     response_model=List[str],

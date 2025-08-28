@@ -8,7 +8,7 @@ from typing import Optional, List
 
 from app.config import settings
 from .base import TextGenerationAdapter, ImageDescriptionAdapter
-from ..shared.prompts import get_product_description_prompt, get_promotional_audio_script_prompt, build_final_prompt
+from ..shared.prompts import get_product_description_prompt, get_promotional_audio_script_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +36,7 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
         if not self.is_available():
             raise ValueError("OpenAI API key is not configured.")
 
-        prompt_template = get_product_description_prompt(prompt)
-        final_prompt = build_final_prompt(prompt_template, text, categories)
+        final_prompt = get_product_description_prompt(prompt, text, categories)
 
         logger.info(f"Final prompt: {final_prompt}")
         try:
@@ -54,8 +53,7 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
         if not self.is_available():
             raise ValueError("OpenAI API key is not configured.")
 
-        prompt_template = get_promotional_audio_script_prompt(prompt)
-        final_prompt = build_final_prompt(prompt_template, text)
+        final_prompt = get_promotional_audio_script_prompt(prompt, text)
 
         logger.info(f"Final promotional audio script prompt: {final_prompt}")
         try:
