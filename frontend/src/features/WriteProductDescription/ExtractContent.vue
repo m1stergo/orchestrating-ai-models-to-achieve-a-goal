@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import UploadImage from './UploadImage.vue'
 import type { ExtractWebContentResponse } from './types'
 import { useMutation, useQuery } from '@pinia/colada'
-import { describeImage, extractWebContent, warmupQwenModel } from './api'
+import { describeImage, extractWebContent } from './api'
 import { getSettings } from '@/features/UserSettings/api'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -46,12 +46,6 @@ const confirm = useConfirm();
 
 const uploadedImage = ref('')
 
-// Auto-retry state
-const retryAttempts = ref(0)
-const maxRetryAttempts = 3
-const isAutoRetrying = ref(false)
-const hasExecutedWarmup = ref(false)
-
 const { data: extractWebContentData, mutateAsync: triggerExtractWebContent, isLoading: isLoadingExtractWebContent } = useMutation({
   mutation: extractWebContent,
   onError: () => {
@@ -60,13 +54,9 @@ const { data: extractWebContentData, mutateAsync: triggerExtractWebContent, isLo
   },
 })
 
-const { mutateAsync: triggerDescribeImage, isLoading: isLoadingDescribeImage, status: statusDescribeImage, error: errorDescribeImage } = useMutation({
+const { mutateAsync: triggerDescribeImage, isLoading: isLoadingDescribeImage, status: statusDescribeImage } = useMutation({
   mutation: describeImage,
   onSuccess: (data) => {
-    // Reset retry state on success
-    retryAttempts.value = 0
-    isAutoRetrying.value = false
-    
     if (selectedContentSource.value.value === 'website') {
       form.setValues({
         image_description: 'Listing description: ' + extractWebContentData.value?.title + ' ' + 'Image description: ' +  data.description!,
@@ -124,49 +114,6 @@ async function performExtraction() {
         })
     }
 }
-
-const { mutateAsync: triggerWarmupQwen } = useMutation({
-  mutation: warmupQwenModel,
-  onSuccess: () => {
-    hasExecutedWarmup.value = true
-  },
-  onError: (error) => {
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Warmup Error', 
-      detail: error.message, 
-      life: 3000 
-    })
-  },
-})
-
-// Watch for errors in describe image to handle auto-retry
-watch(errorDescribeImage, async (error) => {
-  if (!error || isAutoRetrying.value) return
-  if (props.model === 'qwen' && retryAttempts.value < maxRetryAttempts) {
-    isAutoRetrying.value = true
-    retryAttempts.value++
-    
-    // Execute warmup if not done yet
-    if (!hasExecutedWarmup.value) {
-      await triggerWarmupQwen()
-    }
-    
-    // Wait 30 seconds before retrying
-    setTimeout(async () => {
-      try {
-        performExtraction()
-      } catch (retryError) {
-        // If this was the last attempt, show final error
-        if (retryAttempts.value >= maxRetryAttempts) {
-          isAutoRetrying.value = false
-          toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error describing the image, please try again', life: 3000 });
-          emit('update:status', Status.ERROR)
-        }
-      }
-    }, 20000) // 20 seconds
-  }
-})
 
 watch(statusDescribeImage, () => {
     if (statusDescribeImage.value === Status.SUCCESS) {

@@ -1,10 +1,8 @@
-from fastapi import APIRouter, HTTPException, Body
-from .schemas import (
-    DescribeImageRequest,
-    DescribeImageResponse,
-)
-from .service import describe_image, warmup_qwen_service
+from fastapi import APIRouter, HTTPException
 from typing import List
+from .schemas import DescribeImageRequest, DescribeImageResponse, WarmupRequest, HealthCheckRequest
+from .service import describe_image, warmup_qwen_service
+from fastapi import Body
 
 router = APIRouter()
 
@@ -69,16 +67,46 @@ async def describe_image_proxy(
 
 @router.post(
     "/warmup",
-    summary="Warmup Qwen Model",
-    description="Trigger warmup of the Qwen model service. Returns status of the warmup process."
+    summary="Warmup Model",
+    description="Trigger warmup of a specific image description model. Returns status of the warmup process."
 )
-async def warmup_qwen():
-    """Warmup the Qwen model service."""
+async def warmup_model(request: WarmupRequest):
+    """Warmup a specific image description model."""
     try:
-        result = await warmup_qwen_service()
+        from .service import warmup_service
+        result = await warmup_service(request.model)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Warmup failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Warmup failed for {request.model}: {str(e)}")
+
+@router.post(
+    "/healthz",
+    summary="Health Check for Model",
+    description="Check health status of a specific image description adapter"
+)
+async def health_check_model(request: HealthCheckRequest):
+    """Check health status of a specific image description adapter."""
+    try:
+        from .service import health_check_service
+        result = await health_check_service(request.model)
+        # Return appropriate HTTP status based on health
+        if result["status"] == "healthy":
+            return result  # HTTP 200
+        elif result["status"] == "loading":
+            raise HTTPException(status_code=202, detail=result)
+        else:
+            # Everything else (unhealthy, error, unknown) is 503
+            raise HTTPException(status_code=503, detail=result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        # If we can't even call the service, it's definitely unavailable
+        error_detail = {
+            "status": "error",
+            "message": f"Service completely unavailable for {request.model}",
+            "details": str(e)
+        }
+        raise HTTPException(status_code=503, detail=error_detail)
 
 @router.get(
     "/models",

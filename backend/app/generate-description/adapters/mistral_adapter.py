@@ -151,3 +151,117 @@ class MistralAdapter(TextGenerationAdapter):
         except Exception as e:
             logger.error(f"Mistral promotional audio script generation error: {str(e)}")
             raise
+
+    async def warmup(self) -> dict:
+        """
+        Warmup the Mistral service by calling its warmup endpoint.
+        
+        Returns:
+            Dict with warmup status and information
+        """
+        if not self.is_available():
+            return {
+                "status": "error",
+                "message": "Mistral service URL is not configured",
+                "details": "MISTRAL_SERVICE_URL environment variable not set"
+            }
+
+        try:
+            timeout = aiohttp.ClientTimeout(total=10)  # Short timeout for warmup call
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                warmup_url = f"{self.service_url}/warmup"
+                
+                async with session.get(warmup_url) as resp:
+                    if resp.status == 200:
+                        result = await resp.json()
+                        logger.info(f"Mistral warmup successful: {result}")
+                        return {
+                            "status": "success",
+                            "message": "Mistral service warmup initiated successfully",
+                            "details": result
+                        }
+                    else:
+                        error_text = await resp.text()
+                        logger.error(f"Mistral warmup failed: {resp.status}, {error_text}")
+                        return {
+                            "status": "error",
+                            "message": f"Warmup failed with status {resp.status}",
+                            "details": error_text
+                        }
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"Mistral warmup connection error: {str(e)}")
+            return {
+                "status": "error",
+                "message": "Could not connect to Mistral service",
+                "details": str(e)
+            }
+        except Exception as e:
+            logger.error(f"Mistral warmup error: {str(e)}")
+            return {
+                "status": "error",
+                "message": "Warmup failed with unexpected error",
+                "details": str(e)
+            }
+
+    async def health_check(self) -> dict:
+        """
+        Check the health status of the Mistral service.
+        
+        Returns:
+            Dict with health status and information
+        """
+        if not self.is_available():
+            return {
+                "status": "unhealthy",
+                "message": "Mistral service URL is not configured",
+                "details": "MISTRAL_SERVICE_URL environment variable not set"
+            }
+
+        try:
+            timeout = aiohttp.ClientTimeout(total=5)  # Short timeout for health check
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                health_url = f"{self.service_url}/healthz"
+                
+                async with session.get(health_url) as resp:
+                    if resp.status == 200:
+                        result = await resp.json()
+                        logger.info(f"Mistral health check successful: {result}")
+                        
+                        # Check if the microservice reports loading status
+                        service_status = result.get("status", "healthy")
+                        if service_status == "loading":
+                            return {
+                                "status": "loading",
+                                "message": "Mistral service is loading",
+                                "details": result
+                            }
+                        
+                        return {
+                            "status": "healthy",
+                            "message": "Mistral service is healthy",
+                            "details": result
+                        }
+                    else:
+                        error_text = await resp.text()
+                        logger.error(f"Mistral health check failed: {resp.status}, {error_text}")
+                        return {
+                            "status": "unhealthy",
+                            "message": f"Health check failed with status {resp.status}",
+                            "details": error_text
+                        }
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"Mistral health check connection error: {str(e)}")
+            return {
+                "status": "error",
+                "message": "Could not connect to Mistral service",
+                "details": str(e)
+            }
+        except Exception as e:
+            logger.error(f"Mistral health check error: {str(e)}")
+            return {
+                "status": "error",
+                "message": "Health check failed with unexpected error",
+                "details": str(e)
+            }

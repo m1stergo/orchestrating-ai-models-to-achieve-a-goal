@@ -9,7 +9,7 @@ import AutoComplete from 'primevue/autocomplete'
 import { useQuery, useMutation, useQueryCache } from '@pinia/colada'
 import { getSettings, updateSettings } from './api'  
 import Skeleton from 'primevue/skeleton'
-// import { type UserSettingsResponse } from './types'
+import { type UserSettingsResponse } from './types'
 
 const visible = ref(false)
 
@@ -25,9 +25,13 @@ const { data, isLoading, error } = useQuery({
 
 const { mutate: updateSettingsMutation } = useMutation({
   mutation: updateSettings,
-  // onSettled: () => {
-  //   queryCache.invalidateQueries({ key: ['settings'] })
-  // }
+  onMutate: (newSettings) => {
+    const oldSettings = queryCache.getQueryData<UserSettingsResponse>(['settings'])!
+    queryCache.setQueryData(['settings'], {...oldSettings, ...newSettings})
+    queryCache.cancelQueries({ key: ['settings'] })
+
+    return { oldSettings, newSettings }
+  },
 })
 
 const describe_image_model = computed({

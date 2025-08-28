@@ -23,3 +23,21 @@ class ImageDescriptionAdapter(ABC):
             str: Description of the image
         """
         pass
+
+    @abstractmethod
+    async def warmup(self) -> dict:
+        """
+        Warmup the adapter service for faster response times.
+        Returns:
+            dict: Warmup status and information
+        """
+        pass
+
+    @abstractmethod
+    async def health_check(self) -> dict:
+        """
+        Check the health status of the adapter service.
+        Returns:
+            dict: Health status and information
+        """
+        pass

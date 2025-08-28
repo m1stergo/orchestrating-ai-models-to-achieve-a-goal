@@ -106,29 +106,3 @@ export async function generateTextToSpeech(params: { text: string, model?: strin
   }
   return response.json()
 }
-
-export async function warmupQwenModel(): Promise<{ status: string, message: string, details?: any }> {
-  const response = await fetch(`${API_BASE_URL}/v1/describe-image/warmup`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-  if (!response.ok) {
-    throw new Error(`Failed to warmup Qwen model: ${response.statusText}`)
-  }
-  return response.json()
-}
-
-export async function warmupMistralModel(): Promise<{ status: string, message: string, details?: any }> {
-  const response = await fetch(`${API_BASE_URL}/v1/generate-description/warmup`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-  if (!response.ok) {
-    throw new Error(`Failed to warmup Mistral model: ${response.statusText}`)
-  }
-  return response.json()
-}

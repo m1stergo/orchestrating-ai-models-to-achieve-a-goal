@@ -103,6 +103,54 @@ async def warmup_mistral_service() -> dict:
         }
 
 
+async def warmup_service(model_name: str) -> dict:
+    """
+    Warmup a specific adapter using the factory pattern.
+    
+    Args:
+        model_name: Name of the model/adapter to warmup
+    
+    Returns:
+        Dict with warmup status for the adapter
+    """
+    try:
+        adapter = TextGenerationAdapterFactory.get_adapter(model_name)
+        result = await adapter.warmup()
+        logger.info(f"Warmup completed for {model_name}: {result['status']}")
+        return result
+    except Exception as e:
+        logger.error(f"Warmup failed for {model_name}: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Warmup failed for {model_name}",
+            "details": str(e)
+        }
+
+
+async def health_check_service(model_name: str) -> dict:
+    """
+    Check health status of a specific adapter using the factory pattern.
+    
+    Args:
+        model_name: Name of the model/adapter to check
+    
+    Returns:
+        Dict with health status for the adapter
+    """
+    try:
+        adapter = TextGenerationAdapterFactory.get_adapter(model_name)
+        result = await adapter.health_check()
+        logger.info(f"Health check completed for {model_name}: {result['status']}")
+        return result
+    except Exception as e:
+        logger.error(f"Health check failed for {model_name}: {str(e)}")
+        return {
+            "status": "unhealthy",
+            "message": f"Health check failed for {model_name}",
+            "details": str(e)
+        }
+
+
 async def get_available_models() -> List[str]:
     """
     Get information about available models.

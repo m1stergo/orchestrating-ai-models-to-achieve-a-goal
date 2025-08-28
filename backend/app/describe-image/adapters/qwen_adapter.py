@@ -86,3 +86,117 @@ Keywords: List relevant keywords that describe the item's appearance or function
         except Exception as e:
             logger.error(f"Qwen adapter error: {str(e)}")
             raise
+
+    async def warmup(self) -> dict:
+        """
+        Warmup the Qwen service by calling its warmup endpoint.
+        
+        Returns:
+            Dict with warmup status and information
+        """
+        if not self.is_available():
+            return {
+                "status": "error",
+                "message": "Qwen service URL is not configured",
+                "details": "DESCRIBE_IMAGE_QWEN_URL environment variable not set"
+            }
+
+        try:
+            timeout = aiohttp.ClientTimeout(total=10)  # Short timeout for warmup call
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                warmup_url = f"{self.service_url}/warmup"
+                
+                async with session.get(warmup_url) as resp:
+                    if resp.status == 200:
+                        result = await resp.json()
+                        logger.info(f"Qwen warmup successful: {result}")
+                        return {
+                            "status": "success",
+                            "message": "Qwen service warmup initiated successfully",
+                            "details": result
+                        }
+                    else:
+                        error_text = await resp.text()
+                        logger.error(f"Qwen warmup failed: {resp.status}, {error_text}")
+                        return {
+                            "status": "error",
+                            "message": f"Warmup failed with status {resp.status}",
+                            "details": error_text
+                        }
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"Qwen warmup connection error: {str(e)}")
+            return {
+                "status": "error",
+                "message": "Could not connect to Qwen service",
+                "details": str(e)
+            }
+        except Exception as e:
+            logger.error(f"Qwen warmup error: {str(e)}")
+            return {
+                "status": "error",
+                "message": "Warmup failed with unexpected error",
+                "details": str(e)
+            }
+
+    async def health_check(self) -> dict:
+        """
+        Check the health status of the Qwen service.
+        
+        Returns:
+            Dict with health status and information
+        """
+        if not self.is_available():
+            return {
+                "status": "error",
+                "message": "Qwen service URL is not configured",
+                "details": "DESCRIBE_IMAGE_QWEN_URL environment variable not set"
+            }
+
+        try:
+            timeout = aiohttp.ClientTimeout(total=5)  # Short timeout for health check
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                health_url = f"{self.service_url}/healthz"
+                
+                async with session.get(health_url) as resp:
+                    if resp.status == 200:
+                        result = await resp.json()
+                        logger.info(f"Qwen health check successful: {result}")
+                        
+                        # Check if the microservice reports loading status
+                        service_status = result.get("status", "healthy")
+                        if service_status == "loading":
+                            return {
+                                "status": "loading",
+                                "message": "Qwen service is loading",
+                                "details": result
+                            }
+                        
+                        return {
+                            "status": "healthy",
+                            "message": "Qwen service is healthy",
+                            "details": result
+                        }
+                    else:
+                        error_text = await resp.text()
+                        logger.error(f"Qwen health check failed: {resp.status}, {error_text}")
+                        return {
+                            "status": "unhealthy",
+                            "message": f"Health check failed with status {resp.status}",
+                            "details": error_text
+                        }
+                        
+        except aiohttp.ClientError as e:
+            logger.error(f"Qwen health check connection error: {str(e)}")
+            return {
+                "status": "error",
+                "message": "Could not connect to Qwen service",
+                "details": str(e)
+            }
+        except Exception as e:
+            logger.error(f"Qwen health check error: {str(e)}")
+            return {
+                "status": "error",
+                "message": "Health check failed with unexpected error",
+                "details": str(e)
+            }

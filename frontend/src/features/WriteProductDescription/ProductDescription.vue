@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { watch, ref } from 'vue'
+import { watch } from 'vue'
 import { useMutation, useQuery } from '@pinia/colada'
-import { generateDescription, warmupMistralModel } from './api'
+import { generateDescription } from './api'
 import { useProductForm } from '@/composables/useProductForm'
 import { getSettings } from '@/features/UserSettings/api'
-import { useToast } from 'primevue/usetoast'
 import { Status } from './types'
 import Skeleton from 'primevue/skeleton'
 import InputText from 'primevue/inputtext'
@@ -19,15 +18,7 @@ const emit = defineEmits(['update:status'])
     
 const props = defineProps<{ model?: string }>()
 
-const toast = useToast()
-
 const form = useProductForm()
-
-// Auto-retry state for Mistral
-const retryAttempts = ref(0)
-const maxRetryAttempts = 3
-const isAutoRetrying = ref(false)
-const hasExecutedWarmup = ref(false)
 
 const { data: userSettings } = useQuery({
   key: ['settings'],
@@ -35,34 +26,15 @@ const { data: userSettings } = useQuery({
   refetchOnWindowFocus: false,
 })
 
-const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenerateDescription, error: errorGenerateDescription } = useMutation({
+const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenerateDescription } = useMutation({
   mutation: generateDescription,
   onSuccess: (data) => {
-    // Reset retry state on success
-    retryAttempts.value = 0
-    isAutoRetrying.value = false
-    
     const parsedData = parseDescriptionResponse(data.text)
     form.setValues({
       name: parsedData.title || form?.values.name,
       description: parsedData.description,
       keywords: parsedData.keywords || form?.values.keywords,
       category: parsedData.category || form?.values.category,
-    })
-  },
-})
-
-const { mutateAsync: triggerWarmupMistral } = useMutation({
-  mutation: warmupMistralModel,
-  onSuccess: () => {
-    hasExecutedWarmup.value = true
-  },
-  onError: (error) => {
-    toast.add({ 
-      severity: 'error', 
-      summary: 'Warmup Error', 
-      detail: error.message, 
-      life: 3000 
     })
   },
 })
@@ -93,47 +65,6 @@ function parseDescriptionResponse(description: string) {
     category: ''
   }
 }
-
-// Function to perform retry with recursive logic
-async function performRetryWithWarmup() {
-  if (retryAttempts.value >= maxRetryAttempts) {
-    isAutoRetrying.value = false
-    toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error generating the description, please try again', life: 3000 });
-    emit('update:status', Status.ERROR)
-    return
-  }
-
-  // Execute warmup if not done yet
-  if (!hasExecutedWarmup.value) {
-    await triggerWarmupMistral()
-  }
-  
-  // Wait 20 seconds before retrying
-  setTimeout(async () => {
-    try {
-      await triggerGenerateDescription({ 
-        text: form?.values.image_description!, 
-        model: props.model!,
-        prompt: userSettings.value?.generate_description_prompt || undefined,
-        categories: userSettings.value?.categories || undefined
-      })
-    } catch (retryError) {
-      // Recursively retry if still within attempts
-      retryAttempts.value++
-      await performRetryWithWarmup()
-    }
-  }, 20000) // 20 seconds
-}
-
-// Watch for errors in generate description to handle auto-retry for Mistral
-watch(errorGenerateDescription, async (error) => {
-  if (!error || isAutoRetrying.value) return
-  if (props.model === 'mistral' && retryAttempts.value < maxRetryAttempts) {
-    isAutoRetrying.value = true
-    retryAttempts.value++
-    await performRetryWithWarmup()
-  }
-})
 
 watch(statusGenerateDescription, () => {
     if (statusGenerateDescription.value === Status.SUCCESS) {
@@ -169,12 +100,6 @@ defineExpose({
                 <img :src="image" alt="Image" class="w-24 rounded">
             </div>
         </div>
-        <Message v-if="model === 'mistral' && isAutoRetrying && !isLoading" severity="warn" class="flex justify-center">
-            <div class="flex items-center gap-2 justify-center text-center">
-                <ProgressSpinner class="w-6 h-6" />
-                Mistral model is warming up, please wait a few seconds...
-            </div>
-        </Message>  
         <!-- Show description generation skeleton or final description -->
         <div v-else-if="isLoading">
             <p class="text-sm">Generating product description...</p>

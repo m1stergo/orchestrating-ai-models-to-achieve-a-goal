@@ -1,12 +1,7 @@
 from fastapi import APIRouter, HTTPException, Body
 import httpx
 from app.config import settings
-from .schemas import (
-    GenerateDescriptionRequest,
-    GenerateDescriptionResponse,
-    GeneratePromotionalAudioScriptRequest,
-    GeneratePromotionalAudioScriptResponse
-)
+from .schemas import GenerateDescriptionRequest, GenerateDescriptionResponse, GeneratePromotionalAudioScriptRequest, GeneratePromotionalAudioScriptResponse, WarmupRequest, HealthCheckRequest
 from pydantic import BaseModel
 from typing import Dict, Any, List
 
@@ -139,16 +134,46 @@ async def generate_promotional_audio_script_proxy(
 
 @router.post(
     "/warmup",
-    summary="Warmup Mistral Model",
-    description="Warmup the Mistral model for faster response times"
+    summary="Warmup Model",
+    description="Trigger warmup of a specific text generation model. Returns status of the warmup process."
 )
-async def warmup_mistral_model():
-    """Warmup the Mistral model."""
+async def warmup_model(request: WarmupRequest):
+    """Warmup a specific text generation model."""
     try:
-        from .service import warmup_mistral_service
-        return await warmup_mistral_service()
+        from .service import warmup_service
+        result = await warmup_service(request.model)
+        return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error warming up Mistral model: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Warmup failed for {request.model}: {str(e)}")
+
+@router.post(
+    "/healthz",
+    summary="Health Check for Model",
+    description="Check health status of a specific text generation adapter"
+)
+async def health_check_model(request: HealthCheckRequest):
+    """Check health status of a specific text generation adapter."""
+    try:
+        from .service import health_check_service
+        result = await health_check_service(request.model)
+        # Return appropriate HTTP status based on health
+        if result["status"] == "healthy":
+            return result  # HTTP 200
+        elif result["status"] == "loading":
+            raise HTTPException(status_code=202, detail=result)
+        else:
+            # Everything else (unhealthy, error, unknown) is 503
+            raise HTTPException(status_code=503, detail=result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        # If we can't even call the service, it's definitely unavailable
+        error_detail = {
+            "status": "error",
+            "message": f"Service completely unavailable for {request.model}",
+            "details": str(e)
+        }
+        raise HTTPException(status_code=503, detail=error_detail)
 
 @router.get(
     "/models",

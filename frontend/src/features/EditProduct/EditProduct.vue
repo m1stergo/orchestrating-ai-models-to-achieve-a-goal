@@ -12,6 +12,9 @@ import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { UpdateProductSchema } from '@/entities/products';
 import type { ProductFormData, UpdateProductFormData } from '@/entities/products'
+import { useService } from '@/entities/services/useService';
+import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 
 const props = defineProps<{ id: number }>()
 const queryCache = useQueryCache()
@@ -40,6 +43,9 @@ const {
     })
   }
 })
+
+const { isLoading: isLoadingDescribeImage, error: errorDescribeImage, isSuccess: isSuccessDescribeImage } = useService('describeImage');
+const { isLoading: isLoadingGenerateDescription, error: errorGenerateDescription, isSuccess: isSuccessGenerateDescription } = useService('generateDescription');
 
 const visible = ref(false)
 
@@ -74,7 +80,18 @@ watch(data, () => {
 <template>
   <Button icon="pi pi-pencil" rounded text size="small" @click="() => visible = true"/>
   <Drawer v-model:visible="visible" header="Edit Product" position="right" class="w-1/2" @show="refresh()">
-    <div v-if="isLoading" class="flex flex-col gap-4">
+    <Message v-if="isLoadingDescribeImage || isLoadingGenerateDescription" severity="warn" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            <ProgressSpinner class="w-6 h-6" />
+            Models are warming up, please wait a few seconds...
+        </div>
+    </Message>  
+    <Message v-else-if="errorDescribeImage || errorGenerateDescription" severity="error" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            An error occurred while warming up the models, please try again later.
+        </div>
+    </Message>  
+    <div v-else-if="isLoading" class="flex flex-col gap-4">
       <div class="flex flex-col gap-2">
         <Skeleton height="1rem" />
         <Skeleton height="3rem" />
@@ -88,11 +105,11 @@ watch(data, () => {
         <Skeleton height="3rem" />
       </div>
     </div>
-    <div v-else class="flex flex-col gap-4">
+    <div v-if="isSuccessDescribeImage && isSuccessGenerateDescription" class="flex flex-col gap-4">
        <WriteProductDescription :step="2"/>
     </div>
     
-    <template #footer>
+    <template #footer v-if="isSuccessDescribeImage && isSuccessGenerateDescription">
       <Button 
         :disabled="Object.keys(form.errors.value).length > 0" 
         type="submit" 
