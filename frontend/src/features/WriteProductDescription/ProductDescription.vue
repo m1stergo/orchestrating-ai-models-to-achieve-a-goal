@@ -101,7 +101,7 @@ defineExpose({
             </div>
         </div>
         <!-- Show description generation skeleton or final description -->
-        <div v-else-if="isLoading">
+        <div v-if="isLoading">
             <p class="text-sm">Generating product description...</p>
             <div class="flex flex-col gap-2">
                 <Skeleton height="2rem"></Skeleton>

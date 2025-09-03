@@ -2,12 +2,13 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 
 class GenerateDescriptionRequest(BaseModel):
-    image_description: str
+    text: str
     model: str = "openai"  # Default model
     prompt: Optional[str] = None
+    categories: Optional[List[str]] = None
 
 class GenerateDescriptionResponse(BaseModel):
-    description: str
+    text: str
 
 class GeneratePromotionalAudioScriptRequest(BaseModel):
     product_description: str

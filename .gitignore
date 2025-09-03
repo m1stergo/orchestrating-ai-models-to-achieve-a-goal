@@ -44,6 +44,9 @@ frontend/yarn-error.log*
 # Backend
 backend/app/static/images
 
+# Report
+report/
+
 # IDE
 .idea/
 .vscode/
