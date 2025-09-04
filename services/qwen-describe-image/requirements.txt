@@ -9,6 +9,7 @@ requests==2.32.4
 urllib3==2.5.0
 uvicorn[standard]==0.35.0
 transformers==4.54.1
-# No especificamos torch y torchvision porque ya están en la imagen base
+# Already included in the base image
 # torch>=2.0.0
 # torchvision>=0.15.0
+runpod>=1.7.0

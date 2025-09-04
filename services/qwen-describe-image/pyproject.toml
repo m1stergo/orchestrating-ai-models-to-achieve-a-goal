@@ -20,6 +20,7 @@ uvicorn = {extras = ["standard"], version = ">=0.24.0"}
 transformers = ">=4.37.0"
 torch = ">=2.1.0"
 torchvision = ">=0.15.0"
+runpod = ">=1.7.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -25,8 +25,6 @@ class Settings(BaseSettings):
     API_VERSION: str = get_version()
     PORT: int = 8000
     
-    # Hugging Face Authentication (optional)
-    HF_TOKEN: Optional[str] = None
     
     # RunPod S3 Storage Configuration
     S3_ENDPOINT_URL: Optional[str] = None
