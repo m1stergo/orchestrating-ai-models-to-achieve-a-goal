@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from typing import Optional
 import tomllib
 from pathlib import Path
 
@@ -23,6 +24,16 @@ class Settings(BaseSettings):
     API_DESCRIPTION: str = "AI service for image description and analysis"
     API_VERSION: str = get_version()
     PORT: int = 8000
+    
+    # Hugging Face Authentication (optional)
+    HF_TOKEN: Optional[str] = None
+    
+    # RunPod S3 Storage Configuration
+    S3_ENDPOINT_URL: Optional[str] = None
+    S3_BUCKET_NAME: Optional[str] = None
+    S3_REGION: Optional[str] = None
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
     
     QWEN_MODEL_NAME: str = "Qwen/Qwen2-VL-2B-Instruct"
     QWEN_MAX_MEMORY_GPU: str = "14GB"

@@ -6,39 +6,51 @@ Image description service using the Qwen/Qwen2-VL-2B-Instruct model.
 
 ### Local Setup (Poetry - Recommended)
 
-Fast and simple development using Poetry virtual environment:
-
 ```bash
-# Copy environment configuration
-cp env.example .env
+# 1. copy .env.example to .env
+cp .env.example .env
 
-# Install dependencies
+# 2. Install dependencies
 poetry install
 
-# Run the service with auto-reload
+# 3. Download model (first time)
+python download_model.py
+
+# 4. Run service
 poetry run uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-**For Blackwell GPUs (RTX 50 series):**
+### Local Setup With Docker
 ```bash
-poetry run pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+# Build and run
+docker-compose up --build
+
+# Only first time - download model
+docker-compose --profile setup run model-downloader
 ```
 
-## 🚀 Production (RunPod)
+## 🚀 Production
 
-## RunPod Deployment
+### Storage Strategy
 
-RunPod will build the image directly from your repository using `Dockerfile.prod`.
+**Development/Testing:**
+- Local volume: `./models`
+- Auto download model on first start
 
-### Setup Steps
+### RunPod Deployment
 
-1. **Connect your repository** to RunPod (GitHub/GitLab)
-2. **Create Network Volume** (10GB) for model persistence  
-3. **Deploy pod** with:
-   - **Dockerfile**: `Dockerfile.prod`
-   - **Volume mount**: `/workspace/models`
-   - **Environment variables**:
-     ```bash
-     MODEL_CACHE_DIR=/workspace/models
-     HF_HUB_CACHE=/workspace/models
-     ```
+1. **Pre-requisitos:**
+   - Upload model to Network Volume
+   - Or use auto download on first start
+
+2. **Deploy:**
+   ```bash
+   # Use docker-compose.prod.yml
+   docker-compose -f docker-compose.prod.yml up
+   ```
+
+3. **Environment variables:**
+   ```bash
+   MODEL_CACHE_DIR=/workspace/models
+   HF_HUB_CACHE=/workspace/models
+   ```

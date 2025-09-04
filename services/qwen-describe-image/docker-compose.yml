@@ -6,12 +6,20 @@ services:
       dockerfile: Dockerfile.prod
     ports:
       - "8001:8001"
+    runtime: nvidia
     environment:
       - MODEL_CACHE_DIR=/app/models
       - HF_HUB_CACHE=/app/models
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
       - model_cache:/app/models
+    user: "0:0"  # Run as root to avoid permission issues
 
 volumes:
   model_cache:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./models

@@ -1,5 +1,5 @@
 # Use PyTorch official image with CUDA 12.1 (lighter than nvidia/cuda devel)
-FROM pytorch/pytorch:2.1.2-cuda12.1-cudnn8-runtime
+FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
 
 # Set working directory to /app
 WORKDIR /app
@@ -19,12 +19,18 @@ RUN poetry install --only=main --no-dev --no-interaction --no-ansi
 RUN python -c "\
 import os; \
 os.environ['HF_HUB_CACHE'] = '/app/models'; \
-from transformers import AutoTokenizer, AutoProcessor; \
-model_name = 'Qwen/Qwen2.5-VL-3B-Instruct'; \
+from transformers import AutoTokenizer, AutoProcessor, Qwen2_5_VLForConditionalGeneration; \
+model_name = 'Qwen/Qwen2-VL-2B-Instruct'; \
 print('Pre-downloading model weights...'); \
-tokenizer = AutoTokenizer.from_pretrained(model_name); \
-processor = AutoProcessor.from_pretrained(model_name); \
+print('Downloading tokenizer and processor...'); \
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True); \
+processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True); \
+print('Downloading model weights (this may take several minutes)...'); \
+model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_name, trust_remote_code=True); \
 print('Model weights downloaded successfully!')"
+
+# Create models directory with proper permissions
+RUN mkdir -p /app/models && chmod 777 /app/models
 
 # Set model cache directory
 ENV MODEL_CACHE_DIR=/app/models
@@ -33,8 +39,11 @@ ENV HF_HUB_CACHE=/app/models
 # Copy application code
 COPY . .
 
+# Make startup script executable
+RUN chmod +x startup.sh
+
 # Expose port
 EXPOSE 8001
 
-# Production command
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Production command - use startup script
+CMD ["./startup.sh"]

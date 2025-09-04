@@ -1,0 +1,45 @@
+services:
+  # RunPod production service with S3 storage
+  qwen:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    runtime: nvidia
+    environment:
+      # Model configuration
+      - MODEL_CACHE_DIR=/app/models
+      - HF_HUB_CACHE=/app/models
+      
+      # GPU configuration
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      
+      # RunPod S3 Storage - REPLACE WITH YOUR ACTUAL CREDENTIALS
+      - S3_ENDPOINT_URL=https://s3api-us-ca-2.runpod.io
+      - S3_BUCKET_NAME=bioy7xmmtf
+      - S3_REGION=us-ca-2
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      
+      # Optional: HuggingFace token for private models
+      # - HF_TOKEN=${HF_TOKEN}
+    
+    volumes:
+      # Local cache for faster access
+      - model_cache:/app/models
+    
+    user: "0:0"
+    
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  model_cache:
+    driver: local
