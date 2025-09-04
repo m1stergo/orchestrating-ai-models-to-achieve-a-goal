@@ -57,6 +57,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add root health check for Docker
+@app.get("/health")
+async def health_check():
+    """
+    Root health check endpoint for Docker.
+    Docker health check only needs HTTP 200 response.
+    """
+    from app.service import get_service_status
+    status_info = get_service_status()
+    
+    # For Docker health check, we only care if the service responds
+    # Return 200 if model is ready, let Docker handle the rest
+    if status_info["status"] == "ready":
+        return {"status": "ok"}
+    else:
+        # Return 503 Service Unavailable if model is still loading
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail="Service not ready")
+
 # Include router
 app.include_router(router, prefix="/api/v1", tags=["describe-image"])
 

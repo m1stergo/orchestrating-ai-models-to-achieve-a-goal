@@ -1,6 +1,6 @@
 # Production Dockerfile for RunPod deployment
 # Uses PyTorch with CUDA support for GPU acceleration
-FROM pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime
+FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 
 # Set working directory
 WORKDIR /app
@@ -12,24 +12,18 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --upgrade pip
 
-# Install Poetry
-RUN pip install "poetry==1.8.2"
+# Copy requirements and application code
+COPY requirements.txt ./
+COPY app/ ./app/
+COPY *.py ./
 
-# Copy only the dependency files first
-COPY pyproject.toml poetry.lock* ./
-
-# Configure Poetry to install packages directly in the system Python
-RUN poetry config virtualenvs.create false \
-    && poetry install --only=main --no-dev --no-interaction --no-ansi --no-root
+# Install dependencies from requirements.txt
+RUN pip install -r requirements.txt
 
 # Set environment variables for RunPod Network Volume (shared across services)
 ENV MODEL_CACHE_DIR=/runpod-volume/models
 ENV HF_HUB_CACHE=/runpod-volume/models
 ENV PYTHONPATH=/app
-
-# Copy application code
-COPY app/ ./app/
-COPY *.py ./
 
 # Create model cache directories with proper permissions (both local and RunPod)
 # Create non-root user for security
@@ -39,9 +33,14 @@ USER appuser
 # Expose port
 EXPOSE 8001
 
-# Health check
+# Health check (healthz for Kubernetes compatibility, status for human-readable info)
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/api/v1/healthz || exit 1
+    CMD curl -f http://localhost:8001/health || exit 1
 
-# Production command
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1"]
+# Create an entrypoint script that shows GPU info at startup
+RUN printf '#!/bin/sh\necho "\\n===== GPU Information ====="\npython -c "import torch; print('"'"'CUDA Available:'"'"', torch.cuda.is_available()); print('"'"'Device Count:'"'"', torch.cuda.device_count()); print('"'"'CUDA Version:'"'"', torch.version.cuda if torch.cuda.is_available() else '"'"'N/A'"'"')"\nexec "$@"' > /app/docker-entrypoint.sh \
+    && chmod +x /app/docker-entrypoint.sh
+
+# Production command with GPU detection via entrypoint
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
