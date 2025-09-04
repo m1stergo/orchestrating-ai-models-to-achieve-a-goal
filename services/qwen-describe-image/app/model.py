@@ -4,15 +4,14 @@ import requests
 from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 from qwen_vl_utils import process_vision_info
 import torch
-from .schemas import DescribeImageResponse
 import logging
 import time
-from pathlib import Path
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 class QwenModel:
-    """ModelImageDescriptionModel for image description using Qwen2.5-VL model (local)."""
+    """ImageDescriptionModel for image description using model (local)."""
 
     def __init__(self, max_width: int = 512):
         self._model = None
@@ -23,8 +22,8 @@ class QwenModel:
         """Ensures that the model is loaded asynchronously."""
         if self._model is None or self._processor is None:
             start_time = time.time()
-            logger.info("Loading Qwen2.5-VL model... This may take several minutes.")
-            model_name = "Qwen/Qwen2.5-VL-7B-Instruct"
+            logger.info("Loading model... This may take several minutes.")
+            model_name = settings.QWEN_MODEL_NAME
 
             # Execute model loading in a separate thread to avoid blocking
             import asyncio
@@ -32,7 +31,7 @@ class QwenModel:
             await asyncio.to_thread(self._load_model_sync, model_name)
             
             total_time = time.time() - start_time
-            logger.info(f"Qwen2.5-VL model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes)")
+            logger.info(f"Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes)")
 
         return self._model, self._processor
         
@@ -47,7 +46,7 @@ class QwenModel:
             device_map="auto",
             trust_remote_code=True,
             low_cpu_mem_usage=True,
-            max_memory={0: "14GB", "cpu": "8GB"}
+            max_memory={0: settings.QWEN_MAX_MEMORY_GPU, "cpu": settings.QWEN_MAX_MEMORY_CPU}
         )
         model_time = time.time() - model_start
         logger.info(f"Model downloaded and loaded in {model_time:.2f} seconds ({model_time/60:.2f} minutes)")
@@ -73,15 +72,14 @@ class QwenModel:
         return img
 
     async def describe_image(self, image_url: str, prompt: str = None) -> str:
-        logger.info(f"QwenModel: describing image from {image_url}")
+        logger.info(f"describing image from {image_url}")
         try:
             model, processor = await self.is_loaded()
 
             image = self._download_and_resize_image(image_url)
 
             if prompt is None:
-                PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "default.txt"
-                prompt = PROMPT_PATH.read_text(encoding="utf-8")
+                prompt = settings.PROMPT
 
             # Use PIL.Image (already resized) in message
             messages = [
@@ -105,7 +103,7 @@ class QwenModel:
                 return_tensors="pt",
             ).to(model.device)
 
-            logger.info("Generating caption with Qwen2.5-VL...")
+            logger.info("Generating caption")
             generated_ids = model.generate(**inputs, max_new_tokens=256)
             generated_ids_trimmed = [
                 out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
@@ -115,9 +113,9 @@ class QwenModel:
             )
 
             description = output_text[0].strip() if output_text else "No description generated"
-            logger.info("QwenModel: description generated successfully")
+            logger.info("description generated successfully")
             return description
 
         except Exception as e:
-            logger.error(f"QwenModel error: {str(e)}")
+            logger.error(f"error: {str(e)}")
             raise

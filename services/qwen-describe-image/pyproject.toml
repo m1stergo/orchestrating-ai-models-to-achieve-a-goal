@@ -1,40 +1,26 @@
-[project]
+[tool.poetry]
 name = "qwen-describe-image"
 version = "0.1.0"
 description = "Qwen service for image description and analysis"
-authors = [
-    {name = "etow",email = "elias.qlr@gmail.com"}
-]
+authors = ["elias <elias.qlr@gmail.com>"]
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-    "accelerate (==1.9.0)",
-    "fastapi (==0.116.1)",
-    "httpx (==0.24.0)",
-    "numpy (==1.26.4)",
-    "pillow (==11.0.0)",
-    "pydantic-settings (>=2.0.0)",
-    "qwen-vl-utils (==0.0.11)",
-    "requests (==2.32.4)",
-    "urllib3 (==2.5.0)",
-    "uvicorn[standard] (==0.35.0)",
-    "transformers (==4.54.1)",
-    "accelerate (==1.9.0)",
-    "torch (==2.7.1+cu128)",
-    "torchvision (==0.22.1+cu128)"
-]
-
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-[[tool.poetry.source]]
-name = "pytorch"
-url = "https://download.pytorch.org/whl/cu128"
-priority = "explicit"
-
 
 [tool.poetry.dependencies]
-torch = {source = "pytorch"}
-torchvision = {source = "pytorch"}
+python = ">=3.11"
+accelerate = "1.9.0"
+fastapi = "0.116.1"
+httpx = "0.24.0"
+numpy = "1.26.4"
+pillow = "11.0.0"
+pydantic-settings = ">=2.0.0"
+qwen-vl-utils = "0.0.11"
+requests = "2.32.4"
+urllib3 = "2.5.0"
+uvicorn = {extras = ["standard"], version = "0.35.0"}
+transformers = "4.54.1"
+torch = ">=2.0.0"
+torchvision = ">=0.15.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,5 +1,4 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
 import tomllib
 from pathlib import Path
 
@@ -25,15 +24,6 @@ class Settings(BaseSettings):
     API_VERSION: str = get_version()
     PORT: int = 8000
     
-    # External API Keys
-    OPENAI_API_KEY: Optional[str] = None
-    GEMINI_API_KEY: Optional[str] = None
-    
-    # Model configurations
-    OPENAI_MODEL: str = "gpt-4o"
-    GEMINI_MODEL: str = "gemini-1.5-flash"
-    
-    # Qwen local model settings
     QWEN_MODEL_NAME: str = "Qwen/Qwen2-VL-2B-Instruct"
     QWEN_MAX_MEMORY_GPU: str = "14GB"
     QWEN_MAX_MEMORY_CPU: str = "8GB"

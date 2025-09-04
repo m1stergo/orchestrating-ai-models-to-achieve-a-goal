@@ -1,0 +1,17 @@
+services:
+  # Production service for RunPod deployment and local testing
+  qwen:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8001:8001"
+    environment:
+      - MODEL_CACHE_DIR=/app/models
+      - HF_HUB_CACHE=/app/models
+    volumes:
+      - model_cache:/app/models
+
+volumes:
+  model_cache:
+    driver: local
