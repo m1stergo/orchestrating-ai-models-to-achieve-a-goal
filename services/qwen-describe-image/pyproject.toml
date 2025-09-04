@@ -3,7 +3,6 @@ name = "qwen-describe-image"
 version = "0.1.0"
 description = "Qwen service for image description and analysis"
 authors = ["elias <elias.qlr@gmail.com>"]
-readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.11"
