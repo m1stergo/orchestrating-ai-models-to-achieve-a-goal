@@ -7,7 +7,7 @@ from pathlib import Path
 def get_version() -> str:
     """Read version from pyproject.toml"""
     try:
-        # qwen-describe-image/app/core/config.py -> up to service root
+        # qwen-describe-image/src/config.py -> up to service root
         pyproject_path = Path(__file__).resolve().parents[2] / "pyproject.toml"
         with open(pyproject_path, "rb") as f:
             pyproject_data = tomllib.load(f)
