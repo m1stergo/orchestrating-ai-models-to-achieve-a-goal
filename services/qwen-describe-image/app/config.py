@@ -26,12 +26,13 @@ class Settings(BaseSettings):
     PORT: int = 8000
     
     
-    # RunPod S3 Storage Configuration
-    S3_ENDPOINT_URL: Optional[str] = None
-    S3_BUCKET_NAME: Optional[str] = None
-    S3_REGION: Optional[str] = None
+    # RunPod S3 Storage Configuration for model downloading
+    S3_ENDPOINT: Optional[str] = None  # e.g., https://s3api-us-ca-2.runpod.io
+    S3_BUCKET: Optional[str] = None    # e.g., bioy7xmmtf
     AWS_ACCESS_KEY_ID: Optional[str] = None
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    MODEL_PREFIX: str = "models/"  # S3 prefix where model files are stored
+    LOCAL_MODEL_DIR: str = "./models/models--Qwen--Qwen2.5-VL-7B-Instruct"  # Local cache directory
     
     QWEN_MODEL_NAME: str = "Qwen/Qwen2.5-VL-7B-Instruct"
     QWEN_MAX_MEMORY_GPU: str = "14GB"

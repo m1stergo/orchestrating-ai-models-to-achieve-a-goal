@@ -8,6 +8,7 @@ import logging
 import time
 import os
 from .config import settings
+from .s3_downloader import s3_downloader
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +29,15 @@ class QwenModel:
         logger.info("Loading model... This may take several minutes.")
         model_name = settings.QWEN_MODEL_NAME
 
-        # Set HuggingFace cache directory if specified
-        if settings.HUGGINGFACE_CACHE_DIR:
-            cache_dir = settings.HUGGINGFACE_CACHE_DIR
-            os.environ['TRANSFORMERS_CACHE'] = cache_dir
-            os.environ['HF_HOME'] = cache_dir
-            logger.info(f"Using custom HuggingFace cache directory: {cache_dir}")
+        # Try to ensure model is available locally (from S3 if needed)
+        local_model_path = s3_downloader.ensure_model_local()
+        
+        # Use S3 downloaded model if available, otherwise use HuggingFace
+        if local_model_path:
+            model_name = local_model_path  # Use local path instead of HF model name
+            logger.info(f"Using S3 downloaded model from: {local_model_path}")
         else:
-            logger.info("Using default HuggingFace cache directory")
+            logger.info("Using HuggingFace model download")
 
         # Check if CUDA is available - REQUIRE GPU
         device_available = torch.cuda.is_available()
@@ -49,14 +51,13 @@ class QwenModel:
         logger.info("Loading model with GPU acceleration...")
         logger.info("Starting model download and initialization...")
         try:
-            # Pass cache_dir to from_pretrained if specified
+            # Configure model loading arguments
             model_kwargs = {
                 "torch_dtype": "auto",
                 "device_map": "auto",
                 "trust_remote_code": True
             }
-            if settings.HUGGINGFACE_CACHE_DIR:
-                model_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
+            
                 
             self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
                 model_name,
@@ -69,8 +70,6 @@ class QwenModel:
         # Load processor too
         from transformers import AutoProcessor
         processor_kwargs = {"trust_remote_code": True}
-        if settings.HUGGINGFACE_CACHE_DIR:
-            processor_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
             
         self._processor = AutoProcessor.from_pretrained(
             model_name, 
