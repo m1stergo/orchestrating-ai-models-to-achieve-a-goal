@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Ensure start script is executable
-RUN chmod +x src/start.sh
+RUN chmod +x app/start.sh
 
 # Run the RunPod serverless handler
-CMD ["./src/start.sh"]
+CMD ["./app/start.sh"]

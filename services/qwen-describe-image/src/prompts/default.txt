@@ -1,6 +1,0 @@
-Analyze the main product in the image provided. Focus exclusively on the product itself. Based on your visual analysis of the product, complete the following template. If any field cannot be determined from the image, state "Not visible" or "Unknown".
-
-Image description: A brief but comprehensive visual description of the item, detailing its color, shape, material, and texture.
-Product type: What is the object?
-Material: What is it made of? Be specific if possible (e.g., "leather," "plastic," "wood").
-Keywords: List relevant keywords that describe the item's appearance or function.

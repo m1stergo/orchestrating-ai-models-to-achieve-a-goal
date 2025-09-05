@@ -6,7 +6,8 @@ from qwen_vl_utils import process_vision_info
 import torch
 import logging
 import time
-from app.config import settings
+import os
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -27,23 +28,53 @@ class QwenModel:
         logger.info("Loading model... This may take several minutes.")
         model_name = settings.QWEN_MODEL_NAME
 
+        # Set HuggingFace cache directory if specified
+        if settings.HUGGINGFACE_CACHE_DIR:
+            cache_dir = settings.HUGGINGFACE_CACHE_DIR
+            os.environ['TRANSFORMERS_CACHE'] = cache_dir
+            os.environ['HF_HOME'] = cache_dir
+            logger.info(f"Using custom HuggingFace cache directory: {cache_dir}")
+        else:
+            logger.info("Using default HuggingFace cache directory")
+
+        # Check if CUDA is available - REQUIRE GPU
+        device_available = torch.cuda.is_available()
+        logger.info(f"CUDA available: {device_available}")
+        
+        if not device_available:
+            error_msg = "GPU is required for this service. No CUDA-compatible GPU detected. Terminating process."
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        
+        logger.info("Loading model with GPU acceleration...")
         logger.info("Starting model download and initialization...")
-        self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            model_name,
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-            trust_remote_code=True,
-            low_cpu_mem_usage=True,
-            max_memory={0: settings.QWEN_MAX_MEMORY_GPU, "cpu": settings.QWEN_MAX_MEMORY_CPU},
-            force_download=False,  # Use cache if available
-            resume_download=True   # Resume interrupted downloads
-        )
+        try:
+            # Pass cache_dir to from_pretrained if specified
+            model_kwargs = {
+                "torch_dtype": "auto",
+                "device_map": "auto",
+                "trust_remote_code": True
+            }
+            if settings.HUGGINGFACE_CACHE_DIR:
+                model_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
+                
+            self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                model_name,
+                **model_kwargs
+            )
+        except Exception as e:
+            logger.error(f"Failed to load model with GPU: {e}")
+            raise RuntimeError(f"Failed to load model on GPU: {str(e)}")
             
         # Load processor too
         from transformers import AutoProcessor
+        processor_kwargs = {"trust_remote_code": True}
+        if settings.HUGGINGFACE_CACHE_DIR:
+            processor_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
+            
         self._processor = AutoProcessor.from_pretrained(
             model_name, 
-            trust_remote_code=True
+            **processor_kwargs
         )
         
         total_time = time.time() - start_time
@@ -71,7 +102,9 @@ class QwenModel:
     def describe_image(self, image_url: str, prompt: str = None) -> str:
         logger.info(f"describing image from {image_url}")
         try:
-            model, processor = self.load_model()
+            # Ensure model is loaded
+            if not self.is_loaded():
+                self.load_model()
 
             image = self._download_and_resize_image(image_url)
 
@@ -89,23 +122,23 @@ class QwenModel:
                 }
             ]
 
-            text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            text = self._processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
             image_inputs, video_inputs = process_vision_info(messages)
 
-            inputs = processor(
+            inputs = self._processor(
                 text=[text],
                 images=image_inputs,
                 videos=video_inputs,
                 padding=True,
                 return_tensors="pt",
-            ).to(model.device)
+            ).to(self._model.device)
 
             logger.info("Generating caption")
-            generated_ids = model.generate(**inputs, max_new_tokens=256)
+            generated_ids = self._model.generate(**inputs, max_new_tokens=256)
             generated_ids_trimmed = [
                 out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
             ]
-            output_text = processor.batch_decode(
+            output_text = self._processor.batch_decode(
                 generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
             )
 

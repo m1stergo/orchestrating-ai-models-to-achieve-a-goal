@@ -47,9 +47,6 @@ backend/app/static/images
 # Report
 report/
 
-# Models
-services/qwen-describe-image/models/
-
 # IDE
 .idea/
 .vscode/

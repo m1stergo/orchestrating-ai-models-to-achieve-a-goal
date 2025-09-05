@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
-from app.config import settings
+from .config import settings
 
 # Configure logging
 logging.basicConfig(
@@ -13,13 +13,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import shared globals
-from app.shared import model_instance, model_loaded
+from .shared import model_instance, model_loaded
 
 # Import router after shared globals to avoid circular imports
-from app.router import router
+from .router import router
 
 @asynccontextmanager
-async def lifespan():
+async def lifespan(app):
     """
     Lifespan context manager to preload the model at startup.
     This ensures the model is loaded only once when the server starts.

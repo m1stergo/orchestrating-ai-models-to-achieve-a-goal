@@ -33,9 +33,21 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: Optional[str] = None
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
     
-    QWEN_MODEL_NAME: str = "Qwen/Qwen2-VL-2B-Instruct"
+    QWEN_MODEL_NAME: str = "Qwen/Qwen2.5-VL-7B-Instruct"
     QWEN_MAX_MEMORY_GPU: str = "14GB"
     QWEN_MAX_MEMORY_CPU: str = "8GB"
+    
+    # HuggingFace cache directory
+    HUGGINGFACE_CACHE_DIR: Optional[str] = None
+    
+    # Custom prompt template
+    PROMPT: Optional[str] = """
+    Analyze the main product in the image provided. Focus exclusively on the product itself. Based on your visual analysis of the product, complete the following template. If any field cannot be determined from the image, state "Not visible" or "Unknown".
+    Image description: A brief but comprehensive visual description of the item, detailing its color, shape, material, and texture.
+    Product type: What is the object?
+    Material: What is it made of? Be specific if possible (e.g., "leather," "plastic," "wood").
+    Keywords: List relevant keywords that describe the item's appearance or function.
+    """
     
     class Config:
         env_file = ".env"
