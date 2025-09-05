@@ -4,7 +4,7 @@ from typing import Any, Dict
 import runpod
 from .service import warmup_model, get_service_status, describe_image
 from .schemas import DescribeImageRequest
-from .config import get_settings
+from .config import settings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

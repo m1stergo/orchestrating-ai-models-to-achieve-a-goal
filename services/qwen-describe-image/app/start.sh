@@ -1,12 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
-
 echo "RunPod Serverless worker starting..."
+if [ -n "${STARTUP_DELAY:-}" ]; then sleep "$STARTUP_DELAY"; fi
 
-# Optional small delay for cold start sequencing
-if [ -n "${STARTUP_DELAY:-}" ]; then
-  echo "Delaying startup for ${STARTUP_DELAY}s"
-  sleep "$STARTUP_DELAY"
-fi
-
-exec python -u rp_handler.py
+# importante: asegurate que /app esté en PYTHONPATH (lo ponemos en el Dockerfile)
+exec python -m app.rp_handler
