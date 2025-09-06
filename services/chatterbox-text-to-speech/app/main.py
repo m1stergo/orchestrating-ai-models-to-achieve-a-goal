@@ -27,18 +27,18 @@ async def lifespan(app: FastAPI):
     global model_instance, model_loaded
     
     # Load model at startup
-    logger.info("Starting model preloading...")
+    logger.info("======== Starting model preloading... ========")
     try:
         model_instance.is_loaded()
         model_loaded = True
-        logger.info("Model preloaded successfully")
+        logger.info("======== Model preloaded successfully ========")
     except Exception as e:
-        logger.error(f"Failed to preload model: {str(e)}")
+        logger.error(f"======== Failed to preload model: {str(e)} ========")
     
     yield
     
     # Cleanup (if needed)
-    logger.info("Shutting down, performing cleanup...")
+    logger.info("======== Shutting down, performing cleanup... ========")
 
 
 app = FastAPI(
