@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, useTemplateRef, computed, onMounted } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 import { Status } from './types'
 import { useProductForm } from '@/composables/useProductForm'
 import { useQuery } from '@pinia/colada'
 import { getSettings } from '../UserSettings/api'
+import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 import Stepper from 'primevue/stepper'
 import StepItem from 'primevue/stepitem'
 import Step from 'primevue/step'
@@ -11,6 +13,7 @@ import StepPanel from 'primevue/steppanel'
 import ExtractContent from './ExtractContent.vue'
 import ProductDescription from './ProductDescription.vue'
 import PromotionalAudio from './PromotionalAudio.vue'
+import { useDescribeImageService } from '@/entities/services/useDescribeImageService'
 
 const props = defineProps<{ step?: number }>()
 
@@ -29,6 +32,11 @@ const activeStep = ref(props.step || 1)
 const extractContentStatus = ref<Status>(Status.PENDING)
 const productDescriptionStatus = ref<Status>(Status.PENDING)
 
+const { 
+    isWarmingUp: isWarmingUpDescribeImageService, 
+    error: errorDescribeImageService, 
+    isLoading: isLoadingDescribeImageService 
+} = useDescribeImageService()
 
 const productDescription = useTemplateRef('productDescription')
 
@@ -47,12 +55,18 @@ function handleExtractContentStatusUpdate(status: Status) {
 </script>
 
 <template>
-    <div> 
-       loading: {{ isLoadingDescribeImageService }} <br>
-       success: {{ isSuccessDescribeImageService }} <br>
-       error: {{ errorDescribeImageService }}
-    </div>
-    <div class="card">
+    <Message v-if="isWarmingUpDescribeImageService" severity="warn" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            <ProgressSpinner class="w-6 h-6" />
+            Models are warming up, please wait a few seconds...
+        </div>
+    </Message> 
+    <Message v-else-if="errorDescribeImageService" severity="error" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            An error occurred please try again later.
+        </div>
+    </Message>
+    <div v-else class="card">
         <Stepper v-model:value="activeStep">
             <StepItem :value="1">
                 <Step>Select content source</Step>

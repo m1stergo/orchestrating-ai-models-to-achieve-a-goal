@@ -192,9 +192,9 @@ def check_job_status(job_id: str) -> JobResponse:
         # If job doesn't exist, return an error
         return JobResponse(
             id=job_id,
-            status="ERROR",
+            status="COMPLETED",
             details=DescribeImageDetails(
-                status="ERROR",
+                status="IDLE",
                 message=f"Job ID {job_id} not found",
                 data=""
             )

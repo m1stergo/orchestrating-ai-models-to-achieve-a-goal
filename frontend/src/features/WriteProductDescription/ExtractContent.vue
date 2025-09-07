@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref } from 'vue'
 import UploadImage from './UploadImage.vue'
 import type { ExtractWebContentResponse } from './types'
 import { useMutation, useQuery } from '@pinia/colada'
-import { describeImage, describeImageStatus, extractWebContent, describeImageWarmup } from './api'
+import { extractWebContent } from './api'
 import { getSettings } from '@/features/UserSettings/api'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -11,10 +11,9 @@ import ConfirmPopup from 'primevue/confirmpopup'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
-import Message from 'primevue/message'
 import { Status } from './types'
 import { useProductForm } from '@/composables/useProductForm'
+import { useDescribeImageService } from '@/entities/services/useDescribeImageService'
 
 const props = defineProps<{ model?: string }>()
 
@@ -54,21 +53,23 @@ const { data: extractWebContentData, mutateAsync: triggerExtractWebContent, isLo
   },
 })
 
-const { mutateAsync: triggerDescribeImage, isLoading: isLoadingDescribeImage, status: statusDescribeImage } = useMutation({
-  mutation: describeImage,
-  onSuccess: (data) => {
+const { describeImage, isLoading } = useDescribeImageService({
+  onSuccess: (response: any) => {
     if (selectedContentSource.value.value === 'website') {
       form.setValues({
-        image_description: 'Listing description: ' + extractWebContentData.value?.title + ' ' + 'Image description: ' +  data.description!,
+        image_description: 'Listing description: ' + extractWebContentData.value?.title + ' ' + 'Image description: ' +  response.data!,
         images: extractWebContentData.value?.images!,
       })
     } else {
       form.setValues({
-        image_description: data.description!,
+        image_description: response.data!,
         images: [uploadedImage.value],
       })
     }
   },
+  onError: () => {
+    emit('update:status', Status.ERROR)
+  }
 })
 
 async function extractContent() {
@@ -101,36 +102,19 @@ async function performExtraction() {
     if (selectedContentSource.value.value === 'website') {
         if (!website.value.url) return
         await triggerExtractWebContent(website.value.url)
-        debugger
-        // await serviceIsAvailable(describeImageStatus, describeImageWarmup, props.model);
-        await triggerDescribeImage({
+        await describeImage({
             image_url: extractWebContentData.value?.images[0]!,
-            model: props.model,
+            model: props.model!,
             prompt: userSettings.value?.describe_image_prompt
         })
     } else if (uploadedImage.value) {
-      // await serviceIsAvailable(describeImageStatus, describeImageWarmup, props.model);
-      debugger
-      await triggerDescribeImage({
+      await describeImage({
           image_url: uploadedImage.value,
-          model: props.model,
+          model: props.model!,
           prompt: userSettings.value?.describe_image_prompt
       })
     }
 }
-
-
-watch(statusDescribeImage, () => {
-    if (statusDescribeImage.value === Status.SUCCESS) {
-        emit('update:status', Status.SUCCESS)
-    }
-    if (statusDescribeImage.value === Status.ERROR) {
-        emit('update:status', Status.ERROR)
-    }
-    if (statusDescribeImage.value === Status.PENDING) {
-        emit('update:status', Status.PENDING)
-    }
-})
 </script>
 
 <template>
@@ -151,15 +135,9 @@ watch(statusDescribeImage, () => {
       :severity="form.values.description ? 'primary' : 'help'" 
       variant="outlined"
       :disabled="!uploadedImage && !website.url" 
-      :loading="isLoadingExtractWebContent || isLoadingDescribeImage" 
-      :label="(isLoadingExtractWebContent || isLoadingDescribeImage) ? 'Extracting content...' : 'Extract content'" 
+      :loading="isLoadingExtractWebContent || isLoading" 
+      :label="(isLoadingExtractWebContent || isLoading) ? 'Extracting content...' : 'Extract content'" 
       @click="extractContent" />
     <ConfirmPopup></ConfirmPopup>
   </div>
-  <Message  v-if="model === 'qwen' && !isLoadingDescribeImage" severity="warn" class="flex justify-center">
-    <div class="flex items-center gap-2 justify-center text-center">
-      <ProgressSpinner class="w-6 h-6" />
-      Qwen model is warming up, please wait a few seconds...
-    </div>
-  </Message>
 </template>

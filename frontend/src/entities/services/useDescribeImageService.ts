@@ -1,32 +1,62 @@
-import { watch, computed } from "vue"
+import { watch, ref } from "vue"
 import { describeImageInference, describeImageStatus, describeImageWarmup } from "./api"
 import { useQuery } from "@pinia/colada"
 import { getSettings } from "@/features/UserSettings/api"
 import { useMutation } from "@pinia/colada"
 import { checkStatus } from "./checkStatus"
 
-export function useDescribeImageService(options?: { onSuccess?: () => void, onError?: (error: Error) => void }) {
+const isWarmingUp = ref(false)
+const isLoading = ref(false)
+const error = ref('')
+
+export function useDescribeImageService(options?: { onSuccess?: (response: any) => void, onError?: (error: Error) => void }) {
     const { data: settings } = useQuery({
         key: ['settings'],
         query: () => getSettings(),
         refetchOnWindowFocus: false,
     })
     
-    const { mutateAsync: triggerDescribeImageStatus, isLoading: isLoadingDescribeImageStatus } = useMutation({
+    const { mutateAsync: triggerDescribeImageStatus } = useMutation({
         mutation: describeImageStatus,
-        onError: options?.onError
+        onError: (err: Error) => {
+            options?.onError?.(err)
+            error.value = err.message
+        },
+        onSuccess: (data) => {
+            if (data.details?.status === "IN_PROGRESS") {
+                isLoading.value = true
+            }
+            if (data.status === "COMPLETED") {
+                isLoading.value = false
+            }
+            if (data.details?.status === "LOADING") {
+                isWarmingUp.value = true
+            }
+            if (data.details?.status === "IDLE") {
+                isWarmingUp.value = false
+            }
+            if (data.details?.status === "ERROR") {
+                isWarmingUp.value = false
+                error.value = data.details?.message
+            }
+        },  
     })
 
-    const { mutateAsync: triggerDescribeImageWarmup, isLoading: isLoadingDescribeImageWarmup } = useMutation({
+    const { mutateAsync: triggerDescribeImageWarmup, reset } = useMutation({
         mutation: describeImageWarmup,
-        onError: options?.onError
+        onError: (err: Error) => {
+            options?.onError?.(err)
+            error.value = err.message
+        }
     })
 
-
-    const { data: describeImageData, mutateAsync: describeImage, isLoading: isLoadingDescribeImageInference } = useMutation({
+    const { mutateAsync: describeImage } = useMutation({
         mutation: describeImageInference,
         onSuccess: options?.onSuccess,
-        onError: options?.onError
+        onError: (err: Error) => {
+            options?.onError?.(err)
+            error.value = err.message
+        }
     })
 
     watch(settings, async(newSettings, oldSettings) => {
@@ -34,16 +64,17 @@ export function useDescribeImageService(options?: { onSuccess?: () => void, onEr
             const { id } = await triggerDescribeImageWarmup({ model: newSettings?.describe_image_model! })
             try {
                 await checkStatus(() => triggerDescribeImageStatus({ model: newSettings?.describe_image_model!, job_id: id }));
-            } catch (error) {
-                options?.onError?.(error as Error)
+            } catch (err: any) {
+                options?.onError?.(err)
+                error.value = err.message
             }
         }
     })
 
     return {
-        describeImageData,
-        isWarmingUp: isLoadingDescribeImageWarmup,
-        isLoading: computed(() => isLoadingDescribeImageInference.value || isLoadingDescribeImageStatus.value || isLoadingDescribeImageWarmup.value),
-        describeImage
+        isWarmingUp,
+        isLoading,
+        describeImage,
+        error
     }
 }
