@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import UploadImage from './UploadImage.vue'
 import type { ExtractWebContentResponse } from './types'
 import { useMutation, useQuery } from '@pinia/colada'
-import { describeImage, extractWebContent } from './api'
+import { describeImage, describeImageStatus, extractWebContent, describeImageWarmup } from './api'
 import { getSettings } from '@/features/UserSettings/api'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -101,19 +101,24 @@ async function performExtraction() {
     if (selectedContentSource.value.value === 'website') {
         if (!website.value.url) return
         await triggerExtractWebContent(website.value.url)
+        debugger
+        // await serviceIsAvailable(describeImageStatus, describeImageWarmup, props.model);
         await triggerDescribeImage({
             image_url: extractWebContentData.value?.images[0]!,
             model: props.model,
             prompt: userSettings.value?.describe_image_prompt
         })
     } else if (uploadedImage.value) {
-        await triggerDescribeImage({
-            image_url: uploadedImage.value,
-            model: props.model,
-            prompt: userSettings.value?.describe_image_prompt
-        })
+      // await serviceIsAvailable(describeImageStatus, describeImageWarmup, props.model);
+      debugger
+      await triggerDescribeImage({
+          image_url: uploadedImage.value,
+          model: props.model,
+          prompt: userSettings.value?.describe_image_prompt
+      })
     }
 }
+
 
 watch(statusDescribeImage, () => {
     if (statusDescribeImage.value === Status.SUCCESS) {
@@ -151,7 +156,7 @@ watch(statusDescribeImage, () => {
       @click="extractContent" />
     <ConfirmPopup></ConfirmPopup>
   </div>
-  <Message  v-if="model === 'qwen' && isAutoRetrying && !isLoadingDescribeImage" severity="warn" class="flex justify-center">
+  <Message  v-if="model === 'qwen' && !isLoadingDescribeImage" severity="warn" class="flex justify-center">
     <div class="flex items-center gap-2 justify-center text-center">
       <ProgressSpinner class="w-6 h-6" />
       Qwen model is warming up, please wait a few seconds...

@@ -1,4 +1,4 @@
-import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageResponse, DescribeImageResponse, GenerateDescriptionResponse, VoiceModelsResponse, GeneratePromotionalAudioScriptResponse, TextToSpeechResponse } from './types'
+import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageResponse, DescribeImageDetails, GenerateDescriptionResponse, VoiceModelsResponse, GeneratePromotionalAudioScriptResponse, TextToSpeechResponse, StatusResponse } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -13,7 +13,7 @@ export async function uploadImage(formData: FormData): Promise<UploadImageRespon
   return response.json()
 }
 
-export async function describeImage(params: { image_url: string, model?: string, prompt?: string }): Promise<DescribeImageResponse> {
+export async function describeImage(params: { image_url: string, model?: string, prompt?: string }): Promise<DescribeImageDetails> {
   const response = await fetch(`${API_BASE_URL}/v1/describe-image/`, {
     method: 'POST',
     headers: {
@@ -104,5 +104,33 @@ export async function generateTextToSpeech(params: { text: string, model?: strin
   if (!response.ok) {
     throw new Error(`Failed to generate text to speech: ${response.statusText}`)
   }
+  return response.json()
+}
+
+// Nuevos endpoints para status y warmup
+export async function describeImageWarmup(model: string): Promise<StatusResponse> {
+  const response = await fetch(`${API_BASE_URL}/v1/describe-image/warmup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ model }),
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to warmup describe image model: ${response.statusText}`)
+  }
+  return response.json()
+}
+
+export async function describeImageStatus(params: { model: string, job_id?: string }): Promise<StatusResponse> {
+  const response = await fetch(`${API_BASE_URL}/v1/describe-image/status`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+  
+  // No throw error here to handle different status codes in the caller
   return response.json()
 }

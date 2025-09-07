@@ -1,32 +1,46 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from typing import List
-from .schemas import DescribeImageRequest, DescribeImageResponse, WarmupRequest, HealthCheckRequest
-from .service import describe_image, warmup_qwen_service
+from .schemas import (
+    DescribeImageRequest, WarmupRequest, StatusRequest,
+    StandardResponse, ResponseDetails
+)
+from .service import describe_image, warmup, status
 from fastapi import Body
 
 router = APIRouter()
 
 @router.post(
     "/",
-    response_model=DescribeImageResponse,
+    response_model=StandardResponse,
     responses={
         200: {
             "description": "Image description generated successfully",
             "content": {
                 "application/json": {
                     "example": {
-                        "description": "A modern smartphone with a sleek black design, featuring a large touchscreen display and multiple camera lenses on the back.",
+                        "status": "COMPLETED",
+                        "id": "example-id",
+                        "details": {
+                            "status": "IDLE",
+                            "message": "",
+                            "data": "A modern smartphone with a sleek black design, featuring a large touchscreen display and multiple camera lenses on the back."
+                        }
                     }
                 }
             }
         },
-        503: {
+        500: {
             "description": "Service unavailable",
             "content": {
                 "application/json": {
                     "example": {
-                        "detail": "Service unavailable: Connection timeout",
-                        "service": "describe-image"
+                        "status": "ERROR",
+                        "id": None,
+                        "details": {
+                            "status": "ERROR",
+                            "message": "Service unavailable: Connection timeout",
+                            "data": ""
+                        }
                     }
                 }
             }
@@ -53,60 +67,51 @@ async def describe_image_proxy(
             "model": "openai"
         }
     )
-):
-    try:
-        # Call the service directly using the adapter pattern
-        return await describe_image(request)
-    except Exception as e:
-        error_message = str(e)
-        # Check for specific Qwen errors and return appropriate status codes
-        if "QWEN_NOT_READY" in error_message or "QWEN_SERVICE_DOWN" in error_message:
-            raise HTTPException(status_code=503, detail=error_message)
-        else:
-            raise HTTPException(status_code=500, detail=f"Error describing image: {error_message}")
+) -> StandardResponse:
+    # Validate and return the standardized response
+    return await describe_image(request)
 
 @router.post(
     "/warmup",
+    response_model=StandardResponse,
     summary="Warmup Model",
     description="Trigger warmup of a specific image description model. Returns status of the warmup process."
 )
-async def warmup_model(request: WarmupRequest):
+async def warmup_model(request: WarmupRequest) -> StandardResponse:
     """Warmup a specific image description model."""
     try:
-        from .service import warmup_service
-        result = await warmup_service(request.model)
-        return result
+        return await warmup(request.model)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Warmup failed for {request.model}: {str(e)}")
+        return StandardResponse(
+            status="ERROR",
+            id=None,
+            details=ResponseDetails(
+                status="ERROR",
+                message=f"Warmup failed for {request.model}: {str(e)}",
+                data=""
+            )
+        )
 
 @router.post(
-    "/healthz",
-    summary="Health Check for Model",
-    description="Check health status of a specific image description adapter"
+    "/status",
+    response_model=StandardResponse,
+    summary="Check Model Status",
+    description="Check the status of a specific model adapter. For Qwen, this checks if the service is ready and can optionally check a specific job ID."
 )
-async def health_check_model(request: HealthCheckRequest):
-    """Check health status of a specific image description adapter."""
+async def check_status(request: StatusRequest) -> StandardResponse:
+    """Check status of a specific model adapter."""
     try:
-        from .service import health_check_service
-        result = await health_check_service(request.model)
-        # Return appropriate HTTP status based on health
-        if result["status"] == "healthy":
-            return result  # HTTP 200
-        elif result["status"] == "loading":
-            raise HTTPException(status_code=202, detail=result)
-        else:
-            # Everything else (unhealthy, error, unknown) is 503
-            raise HTTPException(status_code=503, detail=result)
-    except HTTPException:
-        raise
+        return await status(request.model, request.job_id)
     except Exception as e:
-        # If we can't even call the service, it's definitely unavailable
-        error_detail = {
-            "status": "error",
-            "message": f"Service completely unavailable for {request.model}",
-            "details": str(e)
-        }
-        raise HTTPException(status_code=503, detail=error_detail)
+        return StandardResponse(
+            status="ERROR",
+            id=None,
+            details=ResponseDetails(
+                status="ERROR",
+                message=f"Status check failed for {request.model}: {str(e)}",
+                data=""
+            )
+        )
 
 @router.get(
     "/models",

@@ -127,7 +127,7 @@ async def warmup_service(model_name: str) -> dict:
         }
 
 
-async def health_check_service(model_name: str) -> dict:
+async def status_service(model_name: str) -> dict:
     """
     Check health status of a specific adapter using the factory pattern.
     
@@ -139,7 +139,7 @@ async def health_check_service(model_name: str) -> dict:
     """
     try:
         adapter = TextGenerationAdapterFactory.get_adapter(model_name)
-        result = await adapter.health_check()
+        result = await adapter.status()
         logger.info(f"Health check completed for {model_name}: {result['status']}")
         return result
     except Exception as e:

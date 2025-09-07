@@ -134,7 +134,7 @@ class GeminiAdapter(TextGenerationAdapter):
             "details": {"model": self.model_name, "service": "Google Gemini"}
         }
 
-    async def health_check(self) -> dict:
+    async def status(self) -> dict:
         """
         Check the health status of the Gemini adapter.
         

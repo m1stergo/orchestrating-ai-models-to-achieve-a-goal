@@ -152,7 +152,7 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
             "details": {"model": self.model_name, "service": "OpenAI"}
         }
 
-    async def health_check(self) -> dict:
+    async def status(self) -> dict:
         """
         Check the health status of the OpenAI adapter.
         

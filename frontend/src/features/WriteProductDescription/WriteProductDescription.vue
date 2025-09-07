@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { ref, useTemplateRef, computed, onMounted } from 'vue'
 import { Status } from './types'
 import { useProductForm } from '@/composables/useProductForm'
 import { useQuery } from '@pinia/colada'
@@ -47,6 +47,11 @@ function handleExtractContentStatusUpdate(status: Status) {
 </script>
 
 <template>
+    <div> 
+       loading: {{ isLoadingDescribeImageService }} <br>
+       success: {{ isSuccessDescribeImageService }} <br>
+       error: {{ errorDescribeImageService }}
+    </div>
     <div class="card">
         <Stepper v-model:value="activeStep">
             <StepItem :value="1">

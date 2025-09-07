@@ -151,11 +151,11 @@ async def warmup_model(request: WarmupRequest):
     summary="Health Check for Model",
     description="Check health status of a specific text generation adapter"
 )
-async def health_check_model(request: HealthCheckRequest):
+async def status_model(request: HealthCheckRequest):
     """Check health status of a specific text generation adapter."""
     try:
-        from .service import health_check_service
-        result = await health_check_service(request.model)
+        from .service import status_service
+        result = await status_service(request.model)
         # Return appropriate HTTP status based on health
         if result["status"] == "healthy":
             return result  # HTTP 200

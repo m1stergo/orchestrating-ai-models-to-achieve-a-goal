@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ModelState(Enum):
     COLD = "cold"
     LOADING = "loading"
-    IDDLE = "iddle"
+    IDLE = "IDLE"
     ERROR = "error"
 
 class QwenModel:
@@ -31,7 +31,7 @@ class QwenModel:
     def load_model(self):
         """Ensures that the model is loaded synchronously."""
         if self.is_loaded():
-            self._state = ModelState.IDDLE
+            self._state = ModelState.IDLE
             return
             
         self._state = ModelState.LOADING
@@ -94,7 +94,7 @@ class QwenModel:
             )
             
             # Successfully loaded both model and processor
-            self._state = ModelState.IDDLE
+            self._state = ModelState.IDLE
             total_time = time.time() - start_time
             logger.info(f"======== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ========")
 

@@ -76,7 +76,7 @@ class TextGenerationAdapter(ABC):
         pass
 
     @abstractmethod
-    async def health_check(self) -> dict:
+    async def status(self) -> dict:
         """
         Check the health status of the adapter service.
         Returns:

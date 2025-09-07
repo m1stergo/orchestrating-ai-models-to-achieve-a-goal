@@ -26,8 +26,10 @@ export interface UploadImageResponse {
   size: number
 }
 
-export interface DescribeImageResponse {
-  description: string 
+export interface DescribeImageDetails {
+  status: string
+  message: string
+  data: string
 }
 
 export interface UploadAudioResponse {
@@ -61,4 +63,16 @@ export enum Status {
   PENDING = 'pending',
   SUCCESS = 'success',
   ERROR = 'error'
+}
+
+/**
+ * Response from status endpoints
+ */
+export interface StatusResponse {
+  status: string
+  job_status?: string
+  message?: string
+  http_status?: number
+  status_code?: number
+  details?: any
 }

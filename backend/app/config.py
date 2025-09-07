@@ -50,13 +50,14 @@ class Settings(BaseSettings):
     # API Keys for external services
     OPENAI_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
+    QWEN_API_TOKEN: Optional[str] = None
     OPENAI_VISION_MODEL: Optional[str] = None
     GEMINI_VISION_MODEL: Optional[str] = None
     QWEN_VISION_MODEL: Optional[str] = None
     OPENAI_TEXT_MODEL: Optional[str] = None
     GEMINI_TEXT_MODEL: Optional[str] = None
     MISTRAL_TEXT_MODEL: Optional[str] = None
-    
+
     # Computed property for image URL construction
     @property
     def images_url(self) -> str:
