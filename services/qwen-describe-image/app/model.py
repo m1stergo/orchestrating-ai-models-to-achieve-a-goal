@@ -13,10 +13,10 @@ from .config import settings
 logger = logging.getLogger(__name__)
 
 class ModelState(Enum):
-    COLD = "cold"
-    LOADING = "loading"
+    COLD = "COLD"
+    LOADING = "LOADING"
     IDLE = "IDLE"
-    ERROR = "error"
+    ERROR = "ERROR"
 
 class QwenModel:
     """ImageDescriptionModel for image description using model (local)."""
@@ -147,10 +147,8 @@ class QwenModel:
 
             image = self._download_and_resize_image(image_url)
 
-            if prompt is None:
-                prompt = settings.PROMPT
+            prompt = settings.PROMPT if prompt is None else prompt
 
-            # Use PIL.Image (already resized) in message
             messages = [
                 {
                     "role": "user",

@@ -22,16 +22,22 @@ class Settings(BaseSettings):
     API_TITLE: str = "Generate Description Service"
     API_DESCRIPTION: str = "AI service for text generation and description"
     API_VERSION: str = get_version()
-    
-    # External API Keys
-    OPENAI_API_KEY: Optional[str] = None
-    GEMINI_API_KEY: Optional[str] = None
-    HUGGINGFACE_TOKEN: Optional[str] = None
-    
+    PORT: int = 8000
+
     # Model configurations
-    OPENAI_MODEL: str = "gpt-4o"
-    GEMINI_MODEL: str = "gemini-1.5-flash"
     MISTRAL_MODEL: str = "mistralai/Mistral-7B-Instruct-v0.1"
+    
+    # HuggingFace cache directory
+    HUGGINGFACE_TOKEN: Optional[str] = None
+
+    # Custom prompt template
+    PROMPT: Optional[str] = """
+    Analyze the main product in the image provided. Focus exclusively on the product itself. Based on your visual analysis of the product, complete the following template. If any field cannot be determined from the image, state "Not visible" or "Unknown".
+    Image description: A brief but comprehensive visual description of the item, detailing its color, shape, material, and texture.
+    Product type: What is the object?
+    Material: What is it made of? Be specific if possible (e.g., "leather," "plastic," "wood").
+    Keywords: List relevant keywords that describe the item's appearance or function.
+    """
     
     class Config:
         env_file = ".env"

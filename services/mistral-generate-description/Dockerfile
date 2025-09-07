@@ -1,23 +1,23 @@
-FROM python:3.11-slim
+FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends bash ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install Poetry and dependencies in a single layer, no color or prompts
-RUN pip install --upgrade pip \
-    && pip install "poetry==1.8.2" \
-    && poetry config virtualenvs.create false
+# Copy requirements file first for better layer caching
+COPY requirements.txt ./
 
-# Copy Poetry files first for better build cache
-COPY pyproject.toml poetry.lock* ./
+# Install dependencies via pip (PyTorch already included in base image)
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install main dependencies without interaction or ANSI colors
-RUN poetry install --only=main --no-dev --no-interaction --no-ansi
-
-# Copy the rest of the application
+# Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 8003
+# Ensure start script is executable
+RUN chmod +x app/start.sh
 
-# Production command
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
+# Run the RunPod serverless handler
+CMD ["./app/start.sh"]

@@ -1,4 +1,4 @@
-import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageResponse, DescribeImageDetails, GenerateDescriptionResponse, VoiceModelsResponse, GeneratePromotionalAudioScriptResponse, TextToSpeechResponse, StatusResponse } from './types'
+import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageResponse, JobDetails, GenerateDescriptionResponse, VoiceModelsResponse, GeneratePromotionalAudioScriptResponse, TextToSpeechResponse, StatusResponse } from './types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -13,7 +13,7 @@ export async function uploadImage(formData: FormData): Promise<UploadImageRespon
   return response.json()
 }
 
-export async function describeImage(params: { image_url: string, model?: string, prompt?: string }): Promise<DescribeImageDetails> {
+export async function describeImage(params: { image_url: string, model?: string, prompt?: string }): Promise<JobDetails> {
   const response = await fetch(`${API_BASE_URL}/v1/describe-image/`, {
     method: 'POST',
     headers: {

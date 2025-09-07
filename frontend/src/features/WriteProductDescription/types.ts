@@ -26,7 +26,7 @@ export interface UploadImageResponse {
   size: number
 }
 
-export interface DescribeImageDetails {
+export interface JobDetails {
   status: string
   message: string
   data: string

@@ -9,13 +9,12 @@ class JobStatus(str, Enum):
     COMPLETED = "COMPLETED"    # Job is completed
     ERROR = "ERROR"            # Job encountered an error
 
-# Original schemas for direct calls
 class DescribeImageRequest(BaseModel):
     """Schema for image description request."""
     image_url: Optional[str] = Field(None, description="URL of the image to describe (required for inference)")
     prompt: Optional[str] = Field(None, description="Optional prompt to guide the description")
     
-class DescribeImageDetails(BaseModel):
+class JobDetails(BaseModel):
     status: Optional[str] = Field(None, description="Status of the operation")
     message: Optional[str] = Field(None, description="Optional message")
     data: Optional[str] = Field(None, description="Generated description of the image")
@@ -30,4 +29,4 @@ class JobResponse(BaseModel):
     id: str = Field(..., description="Job ID")
     status: str = Field(..., description="Job status")
     workerId: str = Field(default="qwen-worker", description="Worker ID")
-    details: Optional[DescribeImageDetails] = None
+    details: Optional[JobDetails] = None

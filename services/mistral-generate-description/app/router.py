@@ -1,58 +1,94 @@
-from fastapi import APIRouter, HTTPException
-from .schemas import GenerateDescriptionRequest, GenerateDescriptionResponse
-from .service import generate_description
+from fastapi import APIRouter
+from .schemas import GenerateDescriptionRequest, JobRequest, JobResponse
+from .service import generate_description, check_job_status, warmup_model
+import logging
+import uuid
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.post("/generate-description", response_model=GenerateDescriptionResponse)
-async def generate_description_endpoint(
-    request: GenerateDescriptionRequest
-):
+@router.post("/run", response_model=JobResponse)
+async def run_job(request: JobRequest):
     """
-    Generate description using the Mistral model.
+    RunPod-compatible endpoint that executes jobs and returns RunPod format.
+    """
+    job_id = str(uuid.uuid4()) + "-u1"
     
-    Args:
-        request: The request containing text and optional prompt
+    try:
+        input_data = request.input
+        action = input_data.get("action")
         
-    Returns:
-        The generated description
-    """
-    try:
-        result = await generate_description(request)
-        return result
+        logger.info(f"======== Mistral handler called with action: {action} ========")
+        
+        # Execute based on action
+        if action == "inference":
+            text = input_data.get("text")
+            prompt = input_data.get("prompt")
+            
+            if not text:
+                return JobResponse(
+                    id=job_id,
+                    status="ERROR",
+                    workerId="mistral-worker",
+                    details=JobDetails(
+                        status="ERROR",
+                        message="text is required",
+                        data=""
+                    )
+                )
+
+            # Create request and call service
+            request_obj = GenerateDescriptionRequest(
+                text=text,
+                prompt=prompt
+            )
+            
+            # generate_description ahora devuelve directamente un JobResponse
+            result = generate_description(request_obj)
+            
+            # Simplemente devolvemos el resultado con el id del job_id
+            return JobResponse(
+                id=job_id,
+                status=result.status,
+                workerId="mistral-worker",
+                details=result.details
+            )
+            
+        elif action == "warmup":
+            # Warmup model now returns a JobResponse directly with the correct status
+            result = warmup_model()
+            # Simply return the warmup result directly
+            return result
+            
+        else:
+            return JobResponse(
+                id=job_id,
+                status="ERROR",
+                workerId="mistral-worker",
+                details=JobDetails(
+                    status="ERROR",
+                    message=f"Unknown action: {action}. Valid actions: warmup, inference",
+                    data=""
+                )
+            )
+            
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate description: {str(e)}")
+        logger.error(f"Mistral job execution failed: {str(e)}")
+        
+        return JobResponse(
+            id=job_id,
+            status="ERROR",
+            workerId="mistral-worker",
+            details=JobDetails(
+                status="ERROR",
+                message=str(e),
+                data=""
+            )
+        )
 
 
-@router.get("/healthz")
-async def readiness_check():
-    """
-    Readiness probe endpoint that checks if the model is loaded.
-    Used by Kubernetes/RunPod to determine if the pod is ready to serve requests.
-    """
-    from .shared import model_loaded
-    return {
-        "status": "ready" if model_loaded else "loading",
-        "loaded": model_loaded,
-        "service": "generate-description"
-    }
-
-
-@router.get("/warmup")
-async def warmup():
-    """
-    Endpoint to trigger model loading if not already loaded.
-    Useful for manual warmup after deployment.
-    """
-    from . import shared
-    
-    if shared.model_loaded:
-        return {"status": "already_loaded"}
-    
-    try:
-        await shared.model_instance.is_loaded()
-        shared.model_loaded = True
-        return {"status": "loaded_successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to load model: {str(e)}")
-
+@router.get("/status/{job_id}")
+async def get_job_status(job_id: str):
+    """Return current status of a previously submitted job."""
+    return check_job_status(job_id)

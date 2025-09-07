@@ -4,14 +4,14 @@ import threading
 import uuid
 from typing import Optional
 
-from .schemas import DescribeImageRequest, DescribeImageDetails, JobResponse, JobStatus
+from .schemas import DescribeImageRequest, JobDetails, JobResponse
 from .shared import model_instance
 from .model import ModelState
 
 logger = logging.getLogger(__name__)
 
 # Simple job simulation
-# job_id -> {"status": "IN_PROGRESS|COMPLETED|ERROR", "result": None|DescribeImageDetails}
+# job_id -> {"status": "IN_PROGRESS|COMPLETED|ERROR", "result": None|JobDetails}
 pending_jobs = {}
 
 # Flag to track model loading status
@@ -37,7 +37,7 @@ def _load_model_in_thread(job_id: str):
         # Update job status to completed
         pending_jobs[job_id] = {
             "status": "COMPLETED",
-            "result": DescribeImageDetails(
+            "result": JobDetails(
                 status="IDLE",  # Ahora es IDLE porque el modelo ya está cargado
                 message="Model warmup completed successfully",
                 data=""
@@ -54,7 +54,7 @@ def _load_model_in_thread(job_id: str):
         # Update with error
         pending_jobs[job_id] = {
             "status": "ERROR",
-            "result": DescribeImageDetails(
+            "result": JobDetails(
                 status="ERROR",
                 message=error_msg,
                 data=""
@@ -80,7 +80,7 @@ def _process_job_in_thread(job_id: str, image_url: str, prompt: Optional[str] = 
         # Update job status
         pending_jobs[job_id] = {
             "status": "COMPLETED",
-            "result": DescribeImageDetails(
+            "result": JobDetails(
                 status="IDLE",
                 message="Image description completed successfully",
                 data=result
@@ -95,14 +95,14 @@ def _process_job_in_thread(job_id: str, image_url: str, prompt: Optional[str] = 
         # Update with error
         pending_jobs[job_id] = {
             "status": "ERROR",
-            "result": DescribeImageDetails(
+            "result": JobDetails(
                 status="ERROR",
                 message=error_msg,
                 data=""
             )
         }
 
-def describe_image(request: DescribeImageRequest = None, image_url: str = None, prompt: str = None) -> JobResponse:
+def describe_image(request: DescribeImageRequest) -> JobResponse:
     """
     Describe an image using the preloaded adapter.
     Now returns a JobResponse with status for async simulation.
@@ -115,20 +115,12 @@ def describe_image(request: DescribeImageRequest = None, image_url: str = None, 
     Returns:
         JobResponse: The job response with ID for tracking
     """
-    # Handle both request object and individual parameters
-    if request is not None:
-        actual_image_url = request.image_url
-        actual_prompt = request.prompt
-    else:
-        actual_image_url = image_url
-        actual_prompt = prompt
-    
     # Generate unique ID for the job
     job_id = str(uuid.uuid4())
     
     # Check if model is ready using model's state
     if model_instance.state == ModelState.COLD:
-        details = DescribeImageDetails(
+        details = JobDetails(
             status="COLD",
             message=f"Model not ready. Current state: {model_instance.state.value}. Call warmup first.",
             data=""
@@ -140,7 +132,7 @@ def describe_image(request: DescribeImageRequest = None, image_url: str = None, 
         )
 
     if model_instance.state == ModelState.LOADING:
-        details = DescribeImageDetails(
+        details = JobDetails(
             status="LOADING",
             message=f"Model is currently loading...",
             data=""
@@ -161,7 +153,7 @@ def describe_image(request: DescribeImageRequest = None, image_url: str = None, 
     logger.info(f"======== Starting background processing for job {job_id} ========")
     thread = threading.Thread(
         target=_process_job_in_thread,
-        args=(job_id, actual_image_url, actual_prompt)
+        args=(job_id, request.image_url, request.prompt)
     )
     thread.daemon = True
     thread.start()
@@ -170,7 +162,7 @@ def describe_image(request: DescribeImageRequest = None, image_url: str = None, 
     return JobResponse(
         id=job_id,
         status="COMPLETED",
-        details=DescribeImageDetails(
+        details=JobDetails(
             status="LOADING",
             message="Processing started. Check status with job ID.",
             data=""
@@ -193,7 +185,7 @@ def check_job_status(job_id: str) -> JobResponse:
         return JobResponse(
             id=job_id,
             status="COMPLETED",
-            details=DescribeImageDetails(
+            details=JobDetails(
                 status="IDLE",
                 message=f"Job ID {job_id} not found",
                 data=""
@@ -210,7 +202,7 @@ def check_job_status(job_id: str) -> JobResponse:
         return JobResponse(
             id=job_id,
             status="COMPLETED",
-            details=DescribeImageDetails(
+            details=JobDetails(
                 status="LOADING",
                 message="Job is still processing",
                 data=""
@@ -246,7 +238,7 @@ def warmup_model() -> JobResponse:
         return JobResponse(
             id=job_id,
             status="COMPLETED",
-            details=DescribeImageDetails(
+            details=JobDetails(
                 status="IDLE",
                 message="Model already loaded and ready",
                 data=""
@@ -260,7 +252,7 @@ def warmup_model() -> JobResponse:
             return JobResponse(
                 id=model_loading_job_id,
                 status="IN_PROGRESS",
-                details=DescribeImageDetails(
+                details=JobDetails(
                     status="LOADING",
                     message="Model is currently loading...",
                     data=""
@@ -294,7 +286,7 @@ def warmup_model() -> JobResponse:
     return JobResponse(
         id=job_id,
         status="COMPLETED",
-        details=DescribeImageDetails(
+        details=JobDetails(
             status="LOADING",
             message="Model warmup started. Check status with job ID.",
             data=""

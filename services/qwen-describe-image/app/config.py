@@ -23,16 +23,9 @@ class Settings(BaseSettings):
     API_TITLE: str = "Describe Image Service"
     API_DESCRIPTION: str = "AI service for image description and analysis"
     API_VERSION: str = get_version()
-    PORT: int = 8000
     
     
-    # RunPod S3 Storage Configuration
-    S3_ENDPOINT_URL: Optional[str] = None
-    S3_BUCKET_NAME: Optional[str] = None
-    S3_REGION: Optional[str] = None
-    AWS_ACCESS_KEY_ID: Optional[str] = None
-    AWS_SECRET_ACCESS_KEY: Optional[str] = None
-    
+    # Model Configuration
     QWEN_MODEL_NAME: str = "Qwen/Qwen2.5-VL-7B-Instruct"
     QWEN_MAX_MEMORY_GPU: str = "14GB"
     QWEN_MAX_MEMORY_CPU: str = "8GB"
