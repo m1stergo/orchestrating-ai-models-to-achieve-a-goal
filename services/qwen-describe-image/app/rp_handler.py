@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 import runpod
 from .service import warmup_model, describe_image
+from .schemas import DescribeImageRequest
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -37,7 +38,8 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
         elif action == "inference":
             image_url = event.get("input", {}).get("image_url")
             prompt = event.get("input", {}).get("prompt")
-            result = describe_image(image_url=image_url, prompt=prompt)
+            request = DescribeImageRequest(image_url=image_url, prompt=prompt)
+            result = describe_image(request=request)
             
             return {
                 "status": result.details.status if result.details else "ERROR",

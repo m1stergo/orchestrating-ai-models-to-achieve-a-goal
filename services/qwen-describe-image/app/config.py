@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     API_TITLE: str = "Describe Image Service"
     API_DESCRIPTION: str = "AI service for image description and analysis"
     API_VERSION: str = get_version()
+    PORT: int = 8001
     
     
     # Model Configuration
