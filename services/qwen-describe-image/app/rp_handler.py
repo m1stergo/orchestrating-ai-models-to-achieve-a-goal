@@ -29,9 +29,9 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
             result = warmup_model()
             
             return {
-                "status": result.status,
-                "message": result.message,
-                "data": result.data
+                "status": result.details.status if result.details else "ERROR",
+                "message": result.details.message if result.details else "No details available",
+                "data": result.details.data if result.details else ""
             }
             
         elif action == "inference":
@@ -40,9 +40,9 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
             result = describe_image(image_url=image_url, prompt=prompt)
             
             return {
-                "status": result.status,
-                "message": result.message,
-                "data": result.data
+                "status": result.details.status if result.details else "ERROR",
+                "message": result.details.message if result.details else "No details available",
+                "data": result.details.data if result.details else ""
             }
             
         else:
