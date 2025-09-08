@@ -35,7 +35,6 @@ const productDescriptionStatus = ref<Status>(Status.PENDING)
 const { 
     isWarmingUp: isWarmingUpDescribeImageService, 
     error: errorDescribeImageService, 
-    isLoading: isLoadingDescribeImageService 
 } = useDescribeImageService()
 
 const productDescription = useTemplateRef('productDescription')

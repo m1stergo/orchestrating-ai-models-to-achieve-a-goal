@@ -2,21 +2,19 @@ type options = {
     interval?: number,
     maxRetries?: number
 }
-export function checkStatus(checkStatusFn: Function, options?: options) {
-    const interval = options?.interval || 2000;
-    const maxRetries = options?.maxRetries || 20;
+export function poll(pollFn: Function, options?: options) {
+    const interval = options?.interval || 3000;
+    const maxRetries = options?.maxRetries || 40;
     return new Promise((resolve, reject) => { 
         let retries = 0;
         const retry = async () => {
-          console.log("REVISA");
           if (retries >= maxRetries) {
             reject(new Error("Service not available"));
             return;
           }
           try {
             // Ensure we unwrap the computed value to avoid circular references
-            const statusResult = await checkStatusFn();
-            console.log("statusResult", statusResult);
+            const statusResult = await pollFn();
 
             // if COMPLETED resolve
             if (statusResult?.status === "COMPLETED") {

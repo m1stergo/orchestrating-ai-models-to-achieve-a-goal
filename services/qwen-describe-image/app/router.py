@@ -1,8 +1,7 @@
 from fastapi import APIRouter
-from .schemas import DescribeImageRequest, JobRequest, JobResponse, JobDetails, JobStatus
+from .schemas import DescribeImageRequest, JobRequest, JobResponse, JobDetails
 from .service import describe_image, warmup_model, check_job_status
 import logging
-import uuid
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -12,8 +11,6 @@ async def run_job(request: JobRequest):
     """
     RunPod-compatible endpoint that executes jobs and returns RunPod format.
     """
-    job_id = str(uuid.uuid4()) + "-u1"
-    
     try:
         input_data = request.input
         action = input_data.get("action")
@@ -27,7 +24,7 @@ async def run_job(request: JobRequest):
             
             if not image_url:
                 return JobResponse(
-                    id=job_id,
+                    id="none",
                     status="ERROR",
                     workerId="qwen-worker",
                     details=JobDetails(
@@ -43,16 +40,9 @@ async def run_job(request: JobRequest):
                 prompt=prompt
             )
             
-            # describe_image ahora devuelve directamente un JobResponse
-            result = describe_image(request_obj)
+            job_response = describe_image(request_obj)
             
-            # Simplemente devolvemos el resultado con el id del job_id
-            return JobResponse(
-                id=job_id,
-                status=result.status,
-                workerId="qwen-worker",
-                details=result.details
-            )
+            return job_response
             
         elif action == "warmup":
             # Warmup model now returns a JobResponse directly with the correct status
@@ -62,7 +52,7 @@ async def run_job(request: JobRequest):
             
         else:
             return JobResponse(
-                id=job_id,
+                id="none",
                 status="ERROR",
                 workerId="qwen-worker",
                 details=JobDetails(
@@ -76,7 +66,7 @@ async def run_job(request: JobRequest):
         logger.error(f"Qwen job execution failed: {str(e)}")
         
         return JobResponse(
-            id=job_id,
+            id="none",
             status="ERROR",
             workerId="qwen-worker",
             details=JobDetails(
@@ -87,8 +77,8 @@ async def run_job(request: JobRequest):
         )
 
 
-@router.get("/status/{job_id}")
-async def get_job_status(job_id: str):
+@router.get("/status/{id}")
+async def get_job_status(id: str):
     """Return current status of a previously submitted job."""
     # Usar la nueva función de verificación de estado
-    return check_job_status(job_id)
+    return check_job_status(id)

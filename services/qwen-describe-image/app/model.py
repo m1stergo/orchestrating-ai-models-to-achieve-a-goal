@@ -13,10 +13,11 @@ from .config import settings
 logger = logging.getLogger(__name__)
 
 class ModelState(Enum):
-    COLD = "COLD"
-    LOADING = "LOADING"
-    IDLE = "IDLE"
-    ERROR = "ERROR"
+    COLD = "COLD"           # Modelo no inicializado
+    WARMINGUP = "WARMINGUP" # Modelo inicializándose (warmup)
+    PROCESSING = "PROCESSING" # Modelo procesando una imagen
+    IDLE = "IDLE"           # Modelo listo para uso
+    ERROR = "ERROR"         # Error en el modelo
 
 class QwenModel:
     """ImageDescriptionModel for image description using model (local)."""
@@ -34,7 +35,7 @@ class QwenModel:
             self._state = ModelState.IDLE
             return
             
-        self._state = ModelState.LOADING
+        self._state = ModelState.WARMINGUP
         self._loading_start_time = time.time()
         self._error_message = None
         

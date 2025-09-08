@@ -66,6 +66,7 @@ const { describeImage, isLoading } = useDescribeImageService({
         images: [uploadedImage.value],
       })
     }
+    emit('update:status', Status.SUCCESS)
   },
   onError: () => {
     emit('update:status', Status.ERROR)
@@ -102,13 +103,13 @@ async function performExtraction() {
     if (selectedContentSource.value.value === 'website') {
         if (!website.value.url) return
         await triggerExtractWebContent(website.value.url)
-        await describeImage({
+        describeImage({
             image_url: extractWebContentData.value?.images[0]!,
             model: props.model!,
             prompt: userSettings.value?.describe_image_prompt
         })
     } else if (uploadedImage.value) {
-      await describeImage({
+      describeImage({
           image_url: uploadedImage.value,
           model: props.model!,
           prompt: userSettings.value?.describe_image_prompt

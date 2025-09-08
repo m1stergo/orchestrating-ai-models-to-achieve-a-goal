@@ -41,12 +41,16 @@ type DescribeImageInferenceParams = {
     prompt?: string
 }
 export async function describeImageInference(params: DescribeImageInferenceParams): Promise<{ id: string, status: string, details?: any }> {
-    const response = await fetch(`${API_BASE_URL}/v1/describe-image`, {
+    const response = await fetch(`${API_BASE_URL}/v1/describe-image/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(params)
+      body: JSON.stringify({
+        image_url: params.image_url,
+        prompt: params.prompt,
+        model: params.model
+      })
     })
     if (!response.ok) {
       throw new Error(`Failed to describe image model ${params.model}: ${response.statusText}`)

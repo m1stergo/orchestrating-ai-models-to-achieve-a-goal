@@ -10,7 +10,7 @@ from fastapi import Body
 router = APIRouter()
 
 @router.post(
-    "/",
+    "/run",
     response_model=StandardResponse,
     responses={
         200: {
@@ -59,7 +59,7 @@ router = APIRouter()
     - `qwen`: Qwen-VL (local processing, privacy-focused)
     """
 )
-async def describe_image_proxy(
+async def run_describe_image(
     request: DescribeImageRequest = Body(
         ...,
         example={
