@@ -269,7 +269,6 @@ def check_job_status(job_id: str) -> JobResponse:
             details=details
         )
 
-
 def warmup_model() -> JobResponse:
     """
     Trigger model loading (warmup) asynchronously.

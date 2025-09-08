@@ -11,13 +11,13 @@ logger = logging.getLogger(__name__)
 
 class ModelState(Enum):
     COLD = "COLD"
-    LOADING = "LOADING"
+    WARMINGUP = "WARMINGUP"
+    PROCESSING = "PROCESSING"
     IDLE = "IDLE"
     ERROR = "ERROR"
 
 class MistralModel:
     """Local Mistral model for text generation (aligned with other providers)."""
-
     def __init__(self):
         self.model_name = None
         self.model: Optional[Any] = None
@@ -25,59 +25,20 @@ class MistralModel:
         self._state = ModelState.COLD
         self._loading_start_time = None
         self._error_message = None
-        
-    def is_loaded(self) -> bool:
-        """Check if model is loaded."""
-        return self.model is not None and self.tokenizer is not None
-        
-    @property
-    def state(self) -> ModelState:
-        """Get current model state."""
-        return self._state
     
-    @property
-    def error_message(self) -> str:
-        """Get error message if state is ERROR."""
-        return self._error_message
-    
-    @property
-    def loading_start_time(self) -> float:
-        """Get loading start time."""
-        return self._loading_start_time
-
-    async def generate_description(self, text: str, prompt: str) -> str:
-        logger.info(f"======== Describing image from {image_url} ========")
-
-        try:
-            if not self.is_loaded():
-                self.load_model()
-            
-            prompt = settings.PROMPT if prompt is None else prompt
-            
-            input_text = self._build_chat_prompt(text, prompt)
-
-            logger.info("======== Generating description ========")
-            generated = self._generate_sync(input_text)
-            logger.info("======== Description generated successfully ========")
-            logger.info("======== {generated} ========")
-            return generated.strip()
-        except Exception as e:
-            logger.error(f"======== Error: {str(e)} ========")
-            raise
-
     def load_model(self):
         """Ensures that the model is loaded synchronously."""
         if self.is_loaded():
             self._state = ModelState.IDLE
             return
             
-        self._state = ModelState.LOADING
+        self._state = ModelState.WARMINGUP
         self._loading_start_time = time.time()
         self._error_message = None
 
         start_time = time.time()
         logger.info(f"======== Loading Mistral model: {self.model_name}... This may take several minutes. ========")
-        model_name = settings.MISTRAL_MODEL_NAME
+        self.model_name = settings.MISTRAL_MODEL_NAME
 
         # Set HuggingFace cache directory if specified
         if settings.HUGGINGFACE_CACHE_DIR:
@@ -98,7 +59,6 @@ class MistralModel:
             raise RuntimeError(error_msg)
 
         logger.info("======== Starting model download and initialization... ========")
-
 
         try:
             # Load tokenizer
@@ -146,9 +106,51 @@ class MistralModel:
             self._error_message = str(e)
             raise Exception(f"Model loading failed: {str(e)}")
             
-    async def is_loaded(self):
+    def is_loaded(self):
         """Check if model is loaded."""
         return self.model is not None and self.tokenizer is not None
+
+    @property
+    def state(self) -> ModelState:
+        """Get current model state."""
+        return self._state
+    
+    @property
+    def error_message(self) -> str:
+        """Get error message if state is ERROR."""
+        return self._error_message
+    
+    @property
+    def loading_start_time(self) -> float:
+        """Get loading start time."""
+        return self._loading_start_time
+
+    async def generate_description(self, text: str, prompt: str) -> str:
+        logger.info(f"======== Processing text content ========")
+
+        try:
+            if not self.is_loaded():
+                self.load_model()
+            
+            # Set state to PROCESSING before starting generation
+            self._state = ModelState.PROCESSING
+            
+            prompt = settings.PROMPT if prompt is None else prompt
+            
+            input_text = self._build_chat_prompt(text, prompt)
+
+            logger.info("======== Generating description ========")
+            generated = self._generate_sync(input_text)
+            
+            # Reset state to IDLE after processing
+            self._state = ModelState.IDLE
+            
+            logger.info("======== Description generated successfully ========")
+            logger.info(f"======== {generated} ========")
+            return generated.strip()
+        except Exception as e:
+            logger.error(f"======== Error: {str(e)} ========")
+            raise
 
     def _build_chat_prompt(self, text: str, prompt: str) -> str:
         messages = [

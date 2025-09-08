@@ -13,11 +13,11 @@ from .config import settings
 logger = logging.getLogger(__name__)
 
 class ModelState(Enum):
-    COLD = "COLD"           # Modelo no inicializado
-    WARMINGUP = "WARMINGUP" # Modelo inicializándose (warmup)
-    PROCESSING = "PROCESSING" # Modelo procesando una imagen
-    IDLE = "IDLE"           # Modelo listo para uso
-    ERROR = "ERROR"         # Error en el modelo
+    COLD = "COLD" 
+    WARMINGUP = "WARMINGUP"
+    PROCESSING = "PROCESSING"
+    IDLE = "IDLE"
+    ERROR = "ERROR"
 
 class QwenModel:
     """ImageDescriptionModel for image description using model (local)."""
@@ -41,7 +41,7 @@ class QwenModel:
         
         start_time = time.time()
         logger.info("======== Qwen model loading... This may take several minutes. ========")
-        model_name = settings.QWEN_MODEL_NAME
+        self.model_name = settings.QWEN_MODEL_NAME
 
         # Set HuggingFace cache directory if specified
         if settings.HUGGINGFACE_CACHE_DIR:
@@ -62,6 +62,7 @@ class QwenModel:
             raise RuntimeError(error_msg)
         
         logger.info("======== Starting model download and initialization... ========")
+        
         try:
             # Pass cache_dir to from_pretrained if specified
             model_kwargs = {
@@ -73,7 +74,7 @@ class QwenModel:
                 model_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
                 
             self._model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-                model_name,
+                self.model_name,
                 **model_kwargs
             )
         except Exception as e:
@@ -90,7 +91,7 @@ class QwenModel:
                 processor_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
                 
             self._processor = AutoProcessor.from_pretrained(
-                model_name, 
+                self.model_name, 
                 **processor_kwargs
             )
             

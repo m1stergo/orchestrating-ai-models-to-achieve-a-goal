@@ -80,5 +80,4 @@ async def run_job(request: JobRequest):
 @router.get("/status/{id}")
 async def get_job_status(id: str):
     """Return current status of a previously submitted job."""
-    # Usar la nueva función de verificación de estado
     return check_job_status(id)

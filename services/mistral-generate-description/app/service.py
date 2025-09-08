@@ -75,8 +75,12 @@ def _process_job_in_thread(job_id: str, text: str, prompt: Optional[str] = None)
     time.sleep(5)
     
     try:
+        # Set model state to PROCESSING before starting generation
+        model_instance._state = ModelState.PROCESSING
         # Use synchronous processing to avoid threading issues with async
         result = model_instance.generate_description(text, prompt)
+        # Reset state to IDLE after processing
+        model_instance._state = ModelState.IDLE
         
         # Update job status
         pending_jobs[job_id] = {
@@ -102,8 +106,6 @@ def _process_job_in_thread(job_id: str, text: str, prompt: Optional[str] = None)
                 data=""
             )
         }
-
-
 
 def generate_description(request: GenerateDescriptionRequest) -> JobResponse:
     """
@@ -131,11 +133,23 @@ def generate_description(request: GenerateDescriptionRequest) -> JobResponse:
             status="IN_QUEUE",
             details=details
         )
-
-    if model_instance.state == ModelState.LOADING:
+        
+    if model_instance.state == ModelState.WARMINGUP:
         details = JobDetails(
-            status="LOADING",
-            message=f"Model is currently loading...",
+            status="WARMINGUP",
+            message=f"Model is warming up...",
+            data=""
+        )
+        return JobResponse(
+            id=job_id,
+            status="IN_PROGRESS",
+            details=details
+        )
+        
+    if model_instance.state == ModelState.PROCESSING:
+        details = JobDetails(
+            status="PROCESSING",
+            message=f"Model is currently processing another request. Please try again later.",
             data=""
         )
         return JobResponse(
@@ -159,12 +173,12 @@ def generate_description(request: GenerateDescriptionRequest) -> JobResponse:
     thread.daemon = True
     thread.start()
     
-    # Return immediate response with COMPLETED status but details.status=LOADING
+    # Return response with IN_PROGRESS status and PROCESSING in details.status
     return JobResponse(
         id=job_id,
-        status="COMPLETED",
+        status="IN_PROGRESS",
         details=JobDetails(
-            status="LOADING",
+            status="PROCESSING",
             message="Processing started. Check status with job ID.",
             data=""
         )
@@ -200,28 +214,59 @@ def check_job_status(job_id: str) -> JobResponse:
     
     # Create response based on current status
     if job_status == "IN_PROGRESS":
+        # Si no hay resultado aún, necesitamos diferenciar entre warmup y processing
+        if job_result is None:
+            # Verificamos si este job es el job de warmup
+            if job_id == model_loading_job_id:
+                details = JobDetails(
+                    status="WARMINGUP",
+                    message="Model is warming up...",
+                    data=""
+                )
+            else:
+                details = JobDetails(
+                    status="PROCESSING",
+                    message="Job is still processing",
+                    data=""
+                )
+        else:
+            details = job_result
+            
         return JobResponse(
             id=job_id,
-            status="COMPLETED",
-            details=JobDetails(
-                status="LOADING",
-                message="Job is still processing",
-                data=""
-            )
+            status="IN_PROGRESS",
+            details=details
         )
     elif job_status == "COMPLETED":
+        if job_result is None:
+            details = JobDetails(
+                status="IDLE",
+                message="Job completed successfully",
+                data=""
+            )
+        else:
+            details = job_result
+            
         return JobResponse(
             id=job_id,
             status="COMPLETED",
-            details=job_result
+            details=details
         )
     else:  # ERROR
+        if job_result is None:
+            details = JobDetails(
+                status="ERROR",
+                message="Unknown error occurred",
+                data=""
+            )
+        else:
+            details = job_result
+            
         return JobResponse(
             id=job_id,
             status="ERROR",
-            details=job_result
+            details=details
         )
-
 
 def warmup_model() -> JobResponse:
     """
@@ -246,16 +291,16 @@ def warmup_model() -> JobResponse:
             )
         )
     
-    # If there's already a loading job in progress, return its status
-    if model_instance.state == ModelState.LOADING and model_loading_job_id is not None:
-        # Get current loading job info
+    # If there's already a warmup job in progress, return its status
+    if model_instance.state == ModelState.WARMINGUP and model_loading_job_id is not None:
+        # Get current warmup job info
         if model_loading_job_id in pending_jobs:
             return JobResponse(
                 id=model_loading_job_id,
                 status="IN_PROGRESS",
                 details=JobDetails(
-                    status="LOADING",
-                    message="Model is currently loading...",
+                    status="WARMINGUP",
+                    message="Model is already warming up...",
                     data=""
                 )
             )
@@ -280,12 +325,12 @@ def warmup_model() -> JobResponse:
     thread.daemon = True
     thread.start()
     
-    # Return immediate response with COMPLETED status but details.status=LOADING
+    # Return response with IN_PROGRESS status and WARMINGUP in details.status
     return JobResponse(
         id=job_id,
-        status="COMPLETED",
+        status="IN_PROGRESS",
         details=JobDetails(
-            status="LOADING",
+            status="WARMINGUP",
             message="Model warmup started. Check status with job ID.",
             data=""
         )
