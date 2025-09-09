@@ -27,7 +27,7 @@ async def run_job(request: JobRequest):
                     id="none",
                     status="ERROR",
                     workerId="mistral-worker",
-                    details=JobDetails(
+                    detail=JobDetail(
                         status="ERROR",
                         message="text is required",
                         data=""
@@ -57,7 +57,7 @@ async def run_job(request: JobRequest):
                 id="none",
                 status="ERROR",
                 workerId="mistral-worker",
-                details=JobDetails(
+                detail=JobDetail(
                     status="ERROR",
                     message=f"Unknown action: {action}. Valid actions: warmup, inference",
                     data=""
@@ -71,7 +71,7 @@ async def run_job(request: JobRequest):
             id="none",
             status="ERROR",
             workerId="mistral-worker",
-            details=JobDetails(
+            detail=JobDetail(
                 status="ERROR",
                 message=str(e),
                 data=""

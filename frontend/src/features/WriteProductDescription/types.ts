@@ -26,19 +26,9 @@ export interface UploadImageResponse {
   size: number
 }
 
-export interface JobDetails {
-  status: string
-  message: string
-  data: string
-}
-
 export interface UploadAudioResponse {
   audio_url: string
   filename: string
-}
-
-export interface GenerateDescriptionResponse {
-  text: string
 }
 
 export interface VoiceModel {
@@ -51,8 +41,10 @@ export interface VoiceModelsResponse {
   count: number
 }
 
-export interface GeneratePromotionalAudioScriptResponse {
-  text: string
+export interface ServiceResponse {
+  status: string
+  message: string
+  data: string
 }
 
 export interface TextToSpeechResponse {
@@ -74,5 +66,5 @@ export interface StatusResponse {
   message?: string
   http_status?: number
   status_code?: number
-  details?: any
+  detail?: any
 }

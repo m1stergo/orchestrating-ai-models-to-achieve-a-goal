@@ -2,11 +2,11 @@
 import { RouterView } from 'vue-router'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { useDescribeImageService } from '@/entities/services/useDescribeImageService'
+import { useService } from '@/entities/services/useService'
 
 const toast = useToast()
 
-useDescribeImageService({
+useService('describe-image', {
   onError: () => {
     toast.add({
       severity: 'error',

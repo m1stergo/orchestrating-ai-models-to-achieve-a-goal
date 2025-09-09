@@ -41,7 +41,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         content={
             "status": "error",
             "message": str(exc.detail),
-            "details": exc.detail  # Use 'details' instead of 'detail' for consistency
+            "detail": exc.detail
         }
     )
 

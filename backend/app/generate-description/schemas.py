@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel
+from typing import Optional, List, TypeVar, Generic
+
+T = TypeVar('T')
 
 class GenerateDescriptionRequest(BaseModel):
     text: str
@@ -7,16 +9,15 @@ class GenerateDescriptionRequest(BaseModel):
     prompt: Optional[str] = None
     categories: Optional[List[str]] = None
 
-class GenerateDescriptionResponse(BaseModel):
-    text: str
+class ServiceResponse(BaseModel, Generic[T]):
+    status: str
+    message: str
+    data: Optional[T] = None
 
 class GeneratePromotionalAudioScriptRequest(BaseModel):
     product_description: str
     model: str = "openai"  # Default model
     prompt: Optional[str] = None
-    
-class GeneratePromotionalAudioScriptResponse(BaseModel):
-    script: str
 
 class WarmupRequest(BaseModel):
     model: str

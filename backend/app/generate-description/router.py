@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Body
 import httpx
 from app.config import settings
-from .schemas import GenerateDescriptionRequest, GenerateDescriptionResponse, GeneratePromotionalAudioScriptRequest, GeneratePromotionalAudioScriptResponse, WarmupRequest, HealthCheckRequest
+from .schemas import GenerateDescriptionRequest, ServiceResponse, GeneratePromotionalAudioScriptRequest, ServiceResponse, WarmupRequest, HealthCheckRequest
 from pydantic import BaseModel
 from typing import Dict, Any, List
 
@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.post(
     "/",
-    response_model=GenerateDescriptionResponse,
+    response_model=ServiceResponse,
     responses={
         200: {
             "description": "Enhanced product description generated successfully",
@@ -20,7 +20,6 @@ router = APIRouter()
                 "application/json": {
                     "example": {
                         "text": "Experience cutting-edge technology with this premium smartphone featuring an elegant black finish. The device boasts a stunning large touchscreen display that delivers crystal-clear visuals, while the advanced multi-camera system captures professional-quality photos and videos. Perfect for both business professionals and tech enthusiasts who demand excellence in design and performance.",
-                        "model": "openai"
                     }
                 }
             }
@@ -72,7 +71,7 @@ async def generate_description_proxy(
 
 @router.post(
     "/promotional-audio-script",
-    response_model=GeneratePromotionalAudioScriptResponse,
+    response_model=ServiceResponse,
     responses={
         200: {
             "description": "Promotional audio script generated successfully",
@@ -134,6 +133,7 @@ async def generate_promotional_audio_script_proxy(
 
 @router.post(
     "/warmup",
+    response_model=ServiceResponse[dict],
     summary="Warmup Model",
     description="Trigger warmup of a specific text generation model. Returns status of the warmup process."
 )
@@ -145,35 +145,6 @@ async def warmup_model(request: WarmupRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Warmup failed for {request.model}: {str(e)}")
-
-@router.post(
-    "/healthz",
-    summary="Health Check for Model",
-    description="Check health status of a specific text generation adapter"
-)
-async def status_model(request: HealthCheckRequest):
-    """Check health status of a specific text generation adapter."""
-    try:
-        from .service import status_service
-        result = await status_service(request.model)
-        # Return appropriate HTTP status based on health
-        if result["status"] == "healthy":
-            return result  # HTTP 200
-        elif result["status"] == "loading":
-            raise HTTPException(status_code=202, detail=result)
-        else:
-            # Everything else (unhealthy, error, unknown) is 503
-            raise HTTPException(status_code=503, detail=result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        # If we can't even call the service, it's definitely unavailable
-        error_detail = {
-            "status": "error",
-            "message": f"Service completely unavailable for {request.model}",
-            "details": str(e)
-        }
-        raise HTTPException(status_code=503, detail=error_detail)
 
 @router.get(
     "/models",

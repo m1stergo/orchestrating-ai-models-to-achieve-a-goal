@@ -142,14 +142,14 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
             return {
                 "status": "error",
                 "message": "OpenAI API key is not configured",
-                "details": "OPENAI_API_KEY environment variable not set"
+                "detail": "OPENAI_API_KEY environment variable not set"
             }
         
         logger.info("OpenAI warmup successful")
         return {
             "status": "success",
             "message": "OpenAI adapter is ready",
-            "details": {"model": self.model_name, "service": "OpenAI"}
+            "detail": {"model": self.model_name, "service": "OpenAI"}
         }
 
     async def status(self) -> dict:
@@ -163,7 +163,7 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
             return {
                 "status": "unhealthy",
                 "message": "OpenAI API key is not configured",
-                "details": "OPENAI_API_KEY environment variable not set"
+                "detail": "OPENAI_API_KEY environment variable not set"
             }
 
         # Check if model is initialized
@@ -172,7 +172,7 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
         return {
             "status": "healthy",
             "message": "OpenAI adapter is healthy",
-            "details": {
+            "detail": {
                 "model": self.model_name,
                 "api_key_configured": True,
                 "model_initialized": model_initialized,

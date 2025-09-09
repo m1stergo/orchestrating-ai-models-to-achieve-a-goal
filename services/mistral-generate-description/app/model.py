@@ -168,7 +168,7 @@ class MistralModel:
             except Exception:
                 pass
 
-        return f"<s>[INST] {prompt}\n\nText to process:\n{text} [/INST]"
+        return f"<s>[INST] {prompt} {text} [/INST]"
 
     def _generate_sync(self, input_text: str) -> str:
         inputs = self.tokenizer(

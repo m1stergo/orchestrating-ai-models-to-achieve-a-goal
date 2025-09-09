@@ -13,7 +13,7 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import { Status } from './types'
 import { useProductForm } from '@/composables/useProductForm'
-import { useDescribeImageService } from '@/entities/services/useDescribeImageService'
+import { useService } from '@/entities/services/useService'
 
 const props = defineProps<{ model?: string }>()
 
@@ -53,7 +53,7 @@ const { data: extractWebContentData, mutateAsync: triggerExtractWebContent, isLo
   },
 })
 
-const { describeImage, isLoading } = useDescribeImageService({
+const { run: describeImage, isLoading } = useService('describe-image', {
   onSuccess: (response: any) => {
     if (selectedContentSource.value.value === 'website') {
       form.setValues({

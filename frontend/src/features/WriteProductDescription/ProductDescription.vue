@@ -11,8 +11,6 @@ import Textarea from 'primevue/textarea'
 import AutoComplete from 'primevue/autocomplete'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
-
 
 const emit = defineEmits(['update:status'])
     
@@ -28,8 +26,9 @@ const { data: userSettings } = useQuery({
 
 const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenerateDescription } = useMutation({
   mutation: generateDescription,
-  onSuccess: (data) => {
-    const parsedData = parseDescriptionResponse(data.text)
+  onSuccess: ({ data }) => {
+    debugger
+    const parsedData = parseDescriptionResponse(data)
     form.setValues({
       name: parsedData.title || form?.values.name,
       description: parsedData.description,
@@ -42,6 +41,7 @@ const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenera
 function parseDescriptionResponse(description: string) {
   try {
     // Try to parse as JSON
+    debugger
     const parsed = JSON.parse(description)
     
     // Validate that it has the expected structure

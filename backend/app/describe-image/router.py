@@ -1,30 +1,25 @@
 from fastapi import APIRouter
-from typing import List
+from typing import List, Dict, Any
 from .schemas import (
-    DescribeImageRequest, WarmupRequest, StatusRequest,
-    StandardResponse, ResponseDetails
+    DescribeImageRequest, WarmupRequest, ServiceResponse
 )
-from .service import describe_image, warmup, status
+from .service import describe_image, warmup, get_available_models as get_models
 from fastapi import Body
 
 router = APIRouter()
 
 @router.post(
-    "/run",
-    response_model=StandardResponse,
+    "/",
+    response_model=ServiceResponse[str],
     responses={
         200: {
             "description": "Image description generated successfully",
             "content": {
                 "application/json": {
                     "example": {
-                        "status": "COMPLETED",
-                        "id": "example-id",
-                        "details": {
-                            "status": "IDLE",
-                            "message": "",
-                            "data": "A modern smartphone with a sleek black design, featuring a large touchscreen display and multiple camera lenses on the back."
-                        }
+                        "status": "success",
+                        "message": "Image description generated successfully",
+                        "data": "A modern smartphone with a sleek black design, featuring a large touchscreen display and multiple camera lenses on the back."
                     }
                 }
             }
@@ -34,13 +29,9 @@ router = APIRouter()
             "content": {
                 "application/json": {
                     "example": {
-                        "status": "ERROR",
-                        "id": None,
-                        "details": {
-                            "status": "ERROR",
-                            "message": "Service unavailable: Connection timeout",
-                            "data": ""
-                        }
+                        "status": "error",
+                        "message": "Service unavailable: Connection timeout",
+                        "data": None
                     }
                 }
             }
@@ -67,58 +58,36 @@ async def run_describe_image(
             "model": "openai"
         }
     )
-) -> StandardResponse:
+):
     # Validate and return the standardized response
     return await describe_image(request)
 
 @router.post(
     "/warmup",
-    response_model=StandardResponse,
+    response_model=ServiceResponse[str],
     summary="Warmup Model",
     description="Trigger warmup of a specific image description model. Returns status of the warmup process."
 )
-async def warmup_model(request: WarmupRequest) -> StandardResponse:
-    """Warmup a specific image description model."""
+async def warmup_model(request: WarmupRequest):
+    """Warmup a specific text generation model."""
     try:
+        # Usar la función warmup que ya está importada al comienzo del archivo
         return await warmup(request.model)
     except Exception as e:
-        return StandardResponse(
-            status="ERROR",
-            id=None,
-            details=ResponseDetails(
-                status="ERROR",
-                message=f"Warmup failed for {request.model}: {str(e)}",
-                data=""
-            )
-        )
-
-@router.post(
-    "/status",
-    response_model=StandardResponse,
-    summary="Check Model Status",
-    description="Check the status of a specific model adapter. For Qwen, this checks if the service is ready and can optionally check a specific job ID."
-)
-async def check_status(request: StatusRequest) -> StandardResponse:
-    """Check status of a specific model adapter."""
-    try:
-        return await status(request.model, request.job_id)
-    except Exception as e:
-        return StandardResponse(
-            status="ERROR",
-            id=None,
-            details=ResponseDetails(
-                status="ERROR",
-                message=f"Status check failed for {request.model}: {str(e)}",
-                data=""
-            )
-        )
+        # La función warmup ya maneja internamente los errores
+        # Esto solo se ejecutaría si hay un error inesperado
+        return {
+            "status": "error",
+            "message": f"Unexpected error during warmup: {str(e)}",
+            "data": None
+        }
 
 @router.get(
     "/models",
-    response_model=List[str],
+    response_model=ServiceResponse[List[str]],
     summary="Get Available Models",
     description="Get list of available models for image description"
 )
 async def get_available_models():
     """Get available models for image description."""
-    return ["openai", "gemini", "qwen"]
+    return await get_models()

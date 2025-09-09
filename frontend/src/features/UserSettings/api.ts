@@ -10,6 +10,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
  */
 export async function getSettings(): Promise<UserSettingsResponse> {
   const response = await fetch(`${API_BASE_URL}/v1/settings/`)
+  debugger
   if (!response.ok) {
     throw new Error(`Failed to get settings: ${response.statusText}`)
   }
@@ -30,5 +31,6 @@ export async function updateSettings(settings: UserSettingsUpdate): Promise<User
   if (!response.ok) {
     throw new Error(`Failed to update settings: ${response.statusText}`)
   }
+  debugger
   return response.json()
 }

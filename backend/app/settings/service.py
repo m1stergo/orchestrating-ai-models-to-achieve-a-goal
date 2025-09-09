@@ -136,13 +136,13 @@ class SettingsService:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.get(url)
                 response.raise_for_status()
-                data = response.json()
+                r = response.json()
+                data = r["data"]
                 
-                # Expect services to return array of strings: ["model1", "model2", ...]
                 if isinstance(data, list):
                     return data
                 else:
-                    logger.warning(f"Unexpected response format from {url}: expected array, got {type(data)}")
+                    logger.warning(f"Unexpected response format from {url}: {data}")
                     return []
         except Exception as e:
             logger.warning(f"Failed to get models from {url}: {str(e)}")

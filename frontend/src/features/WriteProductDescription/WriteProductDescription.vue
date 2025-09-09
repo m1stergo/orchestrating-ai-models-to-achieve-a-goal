@@ -13,7 +13,7 @@ import StepPanel from 'primevue/steppanel'
 import ExtractContent from './ExtractContent.vue'
 import ProductDescription from './ProductDescription.vue'
 import PromotionalAudio from './PromotionalAudio.vue'
-import { useDescribeImageService } from '@/entities/services/useDescribeImageService'
+import { useService } from '@/entities/services/useService'
 
 const props = defineProps<{ step?: number }>()
 
@@ -35,7 +35,7 @@ const productDescriptionStatus = ref<Status>(Status.PENDING)
 const { 
     isWarmingUp: isWarmingUpDescribeImageService, 
     error: errorDescribeImageService, 
-} = useDescribeImageService()
+} = useService('describe-image')
 
 const productDescription = useTemplateRef('productDescription')
 

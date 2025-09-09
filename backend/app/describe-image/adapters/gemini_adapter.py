@@ -85,40 +85,10 @@ class GeminiAdapter(ImageDescriptionAdapter):
             return {
                 "status": "error",
                 "message": "Gemini API key is not configured",
-                "details": "GEMINI_API_KEY environment variable not set"
             }
         
         logger.info("Gemini warmup successful")
         return {
             "status": "success",
             "message": "Gemini adapter is ready",
-            "details": {"model": self.model_name, "service": "Google Gemini"}
-        }
-
-    async def status(self) -> dict:
-        """
-        Check the health status of the Gemini adapter.
-        
-        Returns:
-            Dict with health status and information
-        """
-        if not self.is_available():
-            return {
-                "status": "unhealthy",
-                "message": "Gemini API key is not configured",
-                "details": "GEMINI_API_KEY environment variable not set"
-            }
-
-        # Check if model is initialized
-        model_initialized = self.model is not None
-        
-        return {
-            "status": "healthy",
-            "message": "Gemini adapter is healthy",
-            "details": {
-                "model": self.model_name,
-                "api_key_configured": True,
-                "model_initialized": model_initialized,
-                "service": "Google Gemini"
-            }
         }

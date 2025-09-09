@@ -124,14 +124,14 @@ class GeminiAdapter(TextGenerationAdapter):
             return {
                 "status": "error",
                 "message": "Gemini API key is not configured",
-                "details": "GEMINI_API_KEY environment variable not set"
+                "detail": "GEMINI_API_KEY environment variable not set"
             }
         
         logger.info("Gemini warmup successful")
         return {
             "status": "success",
             "message": "Gemini adapter is ready",
-            "details": {"model": self.model_name, "service": "Google Gemini"}
+            "detail": {"model": self.model_name, "service": "Google Gemini"}
         }
 
     async def status(self) -> dict:
@@ -145,7 +145,7 @@ class GeminiAdapter(TextGenerationAdapter):
             return {
                 "status": "unhealthy",
                 "message": "Gemini API key is not configured",
-                "details": "GEMINI_API_KEY environment variable not set"
+                "detail": "GEMINI_API_KEY environment variable not set"
             }
 
         # Check if model is initialized
@@ -154,7 +154,7 @@ class GeminiAdapter(TextGenerationAdapter):
         return {
             "status": "healthy",
             "message": "Gemini adapter is healthy",
-            "details": {
+            "detail": {
                 "model": self.model_name,
                 "api_key_configured": True,
                 "model_initialized": model_initialized,

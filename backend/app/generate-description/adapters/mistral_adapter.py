@@ -163,7 +163,7 @@ class MistralAdapter(TextGenerationAdapter):
             return {
                 "status": "error",
                 "message": "Mistral service URL is not configured",
-                "details": "MISTRAL_SERVICE_URL environment variable not set"
+                "detail": "MISTRAL_SERVICE_URL environment variable not set"
             }
 
         try:
@@ -178,7 +178,7 @@ class MistralAdapter(TextGenerationAdapter):
                         return {
                             "status": "success",
                             "message": "Mistral service warmup initiated successfully",
-                            "details": result
+                            "detail": result
                         }
                     else:
                         error_text = await resp.text()
@@ -186,7 +186,7 @@ class MistralAdapter(TextGenerationAdapter):
                         return {
                             "status": "error",
                             "message": f"Warmup failed with status {resp.status}",
-                            "details": error_text
+                            "detail": error_text
                         }
                         
         except aiohttp.ClientError as e:
@@ -194,14 +194,14 @@ class MistralAdapter(TextGenerationAdapter):
             return {
                 "status": "error",
                 "message": "Could not connect to Mistral service",
-                "details": str(e)
+                "detail": str(e)
             }
         except Exception as e:
             logger.error(f"Mistral warmup error: {str(e)}")
             return {
                 "status": "error",
                 "message": "Warmup failed with unexpected error",
-                "details": str(e)
+                "detail": str(e)
             }
 
     async def status(self) -> dict:
@@ -215,7 +215,7 @@ class MistralAdapter(TextGenerationAdapter):
             return {
                 "status": "unhealthy",
                 "message": "Mistral service URL is not configured",
-                "details": "MISTRAL_SERVICE_URL environment variable not set"
+                "detail": "MISTRAL_SERVICE_URL environment variable not set"
             }
 
         try:
@@ -234,13 +234,13 @@ class MistralAdapter(TextGenerationAdapter):
                             return {
                                 "status": "loading",
                                 "message": "Mistral service is loading",
-                                "details": result
+                                "detail": result
                             }
                         
                         return {
                             "status": "healthy",
                             "message": "Mistral service is healthy",
-                            "details": result
+                            "detail": result
                         }
                     else:
                         error_text = await resp.text()
@@ -248,7 +248,7 @@ class MistralAdapter(TextGenerationAdapter):
                         return {
                             "status": "unhealthy",
                             "message": f"Health check failed with status {resp.status}",
-                            "details": error_text
+                            "detail": error_text
                         }
                         
         except aiohttp.ClientError as e:
@@ -256,12 +256,12 @@ class MistralAdapter(TextGenerationAdapter):
             return {
                 "status": "error",
                 "message": "Could not connect to Mistral service",
-                "details": str(e)
+                "detail": str(e)
             }
         except Exception as e:
             logger.error(f"Mistral health check error: {str(e)}")
             return {
                 "status": "error",
                 "message": "Health check failed with unexpected error",
-                "details": str(e)
+                "detail": str(e)
             }

@@ -168,51 +168,15 @@ class OpenAIAdapter(ImageDescriptionAdapter):
 
         return result.choices[0].message.content or ""
 
-    async def warmup(self) -> dict:
+    async def warmup(self) -> str:
         """
         Warmup the OpenAI adapter.
         
         Returns:
-            Dict with warmup status and information
+            str with warmup status and information
         """
         if not self.is_available():
-            return {
-                "status": "error",
-                "message": "OpenAI API key is not configured",
-                "details": "OPENAI_API_KEY environment variable not set"
-            }
-        
+            raise ValueError("OpenAI API key is not configured.")
+            
         logger.info("OpenAI warmup successful")
-        return {
-            "status": "success",
-            "message": "OpenAI adapter is ready",
-            "details": {"model": self.model_name, "service": "OpenAI"}
-        }
-
-    async def status(self) -> dict:
-        """
-        Check the health status of the OpenAI adapter.
-        
-        Returns:
-            Dict with health status and information
-        """
-        if not self.is_available():
-            return {
-                "status": "unhealthy",
-                "message": "OpenAI API key is not configured",
-                "details": "OPENAI_API_KEY environment variable not set"
-            }
-
-        # Check if model is initialized
-        model_initialized = self.model is not None
-        
-        return {
-            "status": "healthy",
-            "message": "OpenAI adapter is healthy",
-            "details": {
-                "model": self.model_name,
-                "api_key_configured": True,
-                "model_initialized": model_initialized,
-                "service": "OpenAI"
-            }
-        }
+        return "OpenAI adapter is ready"

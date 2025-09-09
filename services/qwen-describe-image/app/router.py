@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .schemas import DescribeImageRequest, JobRequest, JobResponse, JobDetails
+from .schemas import DescribeImageRequest, JobRequest, JobResponse, JobDetail
 from .service import describe_image, warmup_model, check_job_status
 import logging
 
@@ -27,7 +27,7 @@ async def run_job(request: JobRequest):
                     id="none",
                     status="ERROR",
                     workerId="qwen-worker",
-                    details=JobDetails(
+                    detail=JobDetail(
                         status="ERROR",
                         message="image_url is required",
                         data=""
@@ -55,7 +55,7 @@ async def run_job(request: JobRequest):
                 id="none",
                 status="ERROR",
                 workerId="qwen-worker",
-                details=JobDetails(
+                detail=JobDetail(
                     status="ERROR",
                     message=f"Unknown action: {action}. Valid actions: warmup, inference",
                     data=""
@@ -69,7 +69,7 @@ async def run_job(request: JobRequest):
             id="none",
             status="ERROR",
             workerId="qwen-worker",
-            details=JobDetails(
+            detail=JobDetail(
                 status="ERROR",
                 message=str(e),
                 data=""

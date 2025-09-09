@@ -28,15 +28,21 @@ class Settings(BaseSettings):
     MISTRAL_MODEL: str = "mistralai/Mistral-7B-Instruct-v0.1"
     
     # HuggingFace cache directory
-    HUGGINGFACE_TOKEN: Optional[str] = None
+    HF_TOKEN: Optional[str] = None
+    HUGGINGFACE_CACHE_DIR: Optional[str] = None
+
 
     # Custom prompt template
     PROMPT: Optional[str] = """
-    Analyze the main product in the image provided. Focus exclusively on the product itself. Based on your visual analysis of the product, complete the following template. If any field cannot be determined from the image, state "Not visible" or "Unknown".
-    Image description: A brief but comprehensive visual description of the item, detailing its color, shape, material, and texture.
-    Product type: What is the object?
-    Material: What is it made of? Be specific if possible (e.g., "leather," "plastic," "wood").
-    Keywords: List relevant keywords that describe the item's appearance or function.
+    You are a professional e-commerce copywriter.
+    Write a short, concise product description for ecommerce page.
+
+    Rules:
+    - Title must be concise, clear, and descriptive (max 10 words)
+    - Description must be direct, simple, and factual (40-60 words max)
+    - Use short sentences, avoid marketing fluff and adjectives like "elevate", "charming", "whimsy"
+    - Focus on features first, then benefits
+    - Keywords must not repeat, must be relevant for SEO
     """
     
     class Config:
