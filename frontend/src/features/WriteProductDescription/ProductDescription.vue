@@ -27,7 +27,6 @@ const { data: userSettings } = useQuery({
 const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenerateDescription } = useMutation({
   mutation: generateDescription,
   onSuccess: ({ data }) => {
-    debugger
     const parsedData = parseDescriptionResponse(data)
     form.setValues({
       name: parsedData.title || form?.values.name,
@@ -41,7 +40,6 @@ const { mutateAsync: triggerGenerateDescription, isLoading, status: statusGenera
 function parseDescriptionResponse(description: string) {
   try {
     // Try to parse as JSON
-    debugger
     const parsed = JSON.parse(description)
     
     // Validate that it has the expected structure
