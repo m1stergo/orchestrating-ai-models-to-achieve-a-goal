@@ -59,22 +59,3 @@ def get_promotional_audio_script_prompt(custom_prompt: Optional[str] = None, tex
     """
     return base_instruction + "\n\n" + "Product: " + text
 
-
-def build_final_prompt(template: str, text: str, categories: list = None) -> str:
-    """
-    Build the final prompt by replacing placeholders.
-    
-    Args:
-        template: The prompt template with placeholders
-        text: The text to process
-        categories: Optional list of categories
-        
-    Returns:
-        str: The final prompt with placeholders replaced
-    """
-    categories_text = ", ".join(categories) if categories and len(categories) > 0 else "any"
-    
-    final_prompt = template + "\n\n" + "Product: " + text
-    final_prompt = final_prompt + "\n\n" + "Categories list: " + categories_text
-    
-    return final_prompt

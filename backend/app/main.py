@@ -55,15 +55,15 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(settings_router.router, prefix=f"{settings.API_V1_STR}/settings", tags=["settings"])
-app.include_router(products_router.router, prefix=f"{settings.API_V1_STR}/products", tags=["products"])
-app.include_router(upload_image_router, prefix=f"{settings.API_V1_STR}/upload-image", tags=["upload-image"])
-app.include_router(upload_audio_router, prefix=f"{settings.API_V1_STR}/upload-audio", tags=["upload-audio"])
-app.include_router(extract_web_content_router.router, prefix=f"{settings.API_V1_STR}/extract-webcontent", tags=["extract-webcontent"])
-app.include_router(describe_image_router, prefix=f"{settings.API_V1_STR}/describe-image", tags=["describe-image"])
-app.include_router(generate_description_router, prefix=f"{settings.API_V1_STR}/generate-description", tags=["generate-description"])
-app.include_router(text_to_speech_router, prefix=f"{settings.API_V1_STR}/text-to-speech", tags=["text-to-speech"])
-app.include_router(export_router.router, prefix=f"{settings.API_V1_STR}/export", tags=["export"])
+app.include_router(settings_router.router, prefix=f"{settings.API_VERSION}/settings", tags=["settings"])
+app.include_router(products_router.router, prefix=f"{settings.API_VERSION}/products", tags=["products"])
+app.include_router(upload_image_router, prefix=f"{settings.API_VERSION}/upload-image", tags=["upload-image"])
+app.include_router(upload_audio_router, prefix=f"{settings.API_VERSION}/upload-audio", tags=["upload-audio"])
+app.include_router(extract_web_content_router.router, prefix=f"{settings.API_VERSION}/extract-webcontent", tags=["extract-webcontent"])
+app.include_router(describe_image_router, prefix=f"{settings.API_VERSION}/describe-image", tags=["describe-image"])
+app.include_router(generate_description_router, prefix=f"{settings.API_VERSION}/generate-description", tags=["generate-description"])
+app.include_router(text_to_speech_router, prefix=f"{settings.API_VERSION}/text-to-speech", tags=["text-to-speech"])
+app.include_router(export_router.router, prefix=f"{settings.API_VERSION}/export", tags=["export"])
 
 # Mount static files directory
 static_dir = Path("app/static")

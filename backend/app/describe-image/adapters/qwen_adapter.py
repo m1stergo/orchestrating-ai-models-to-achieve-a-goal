@@ -41,10 +41,10 @@ class QwenAdapter(ImageDescriptionAdapter):
         if not self.is_available():
             raise ValueError("Qwen service URL is not configured")
 
-        # Use custom prompt or default
-        final_prompt = get_image_description_prompt(prompt)
-
         try:
+            # Use custom prompt or default
+            final_prompt = get_image_description_prompt(prompt)
+            
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
                 # Call the new RunPod-compatible endpoint
                 payload = {
@@ -59,6 +59,8 @@ class QwenAdapter(ImageDescriptionAdapter):
                 } if self.api_token else {}
                 async with session.post(f"{self.service_url}/run", json=payload, headers=headers) as resp:
                     if resp.status != 200:
+                        error_text = await resp.text()
+                        logger.error(f"Qwen service error: {resp.status}, {error_text}")
                         raise Exception(f"HTTP error: {resp.status}")
                     
                     # Parse initial response
@@ -73,6 +75,7 @@ class QwenAdapter(ImageDescriptionAdapter):
                     logger.info(f"Waiting for job {job_id} to complete...")
                     final_result = await self.poll_until_complete(job_id)
 
+                    logger.info("Qwen service described image successfully")
                     return final_result.get("detail", {}).get("data", "")
 
         except Exception as e:

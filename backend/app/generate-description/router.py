@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Body
-import httpx
-from app.config import settings
-from .schemas import GenerateDescriptionRequest, ServiceResponse, GeneratePromotionalAudioScriptRequest, ServiceResponse, WarmupRequest, HealthCheckRequest
+from .schemas import GenerateDescriptionRequest, ServiceResponse, GeneratePromotionalAudioScriptRequest, ServiceResponse, WarmupRequest
 from pydantic import BaseModel
 from typing import Dict, Any, List
+from .service import generate_description, generate_promotional_audio_script, get_available_models
+
 
 class ServicesHealthResponse(BaseModel):
     services: Dict[str, Any]
@@ -12,14 +12,18 @@ router = APIRouter()
 
 @router.post(
     "/",
-    response_model=ServiceResponse,
+    response_model=ServiceResponse[str],
     responses={
         200: {
             "description": "Enhanced product description generated successfully",
             "content": {
                 "application/json": {
                     "example": {
-                        "text": "Experience cutting-edge technology with this premium smartphone featuring an elegant black finish. The device boasts a stunning large touchscreen display that delivers crystal-clear visuals, while the advanced multi-camera system captures professional-quality photos and videos. Perfect for both business professionals and tech enthusiasts who demand excellence in design and performance.",
+                        "example": {
+                        "status": "success",
+                        "message": "Image description generated successfully",
+                        "data": "Experience cutting-edge technology with this premium smartphone featuring an elegant black finish. The device boasts a stunning large touchscreen display that delivers crystal-clear visuals, while the advanced multi-camera system captures professional-quality photos and videos. Perfect for both business professionals and tech enthusiasts who demand excellence in design and performance.",
+                        }
                     }
                 }
             }
@@ -29,8 +33,9 @@ router = APIRouter()
             "content": {
                 "application/json": {
                     "example": {
-                        "detail": "Service unavailable: Connection timeout",
-                        "service": "generate-description"
+                        "status": "error",
+                        "message": "Service unavailable: Connection timeout",
+                        "data": None
                     }
                 }
             }
@@ -47,13 +52,9 @@ router = APIRouter()
     - `openai`: GPT-4 (creative, engaging copy)
     - `mistral`: Mistral AI (balanced, versatile content)
     - `gemini`: Google Gemini (balanced, versatile content)
-    
-    **Input Requirements:**
-    - `text`: Product information to generate description from (required)
-    - `model`: Preferred AI model - 'openai', 'gemini', or 'mistral' (required)
     """
 )
-async def generate_description_proxy(
+async def generate_product_description(
     request: GenerateDescriptionRequest = Body(
         ...,
         example={
@@ -64,7 +65,6 @@ async def generate_description_proxy(
 ):
     try:
         # Call the service directly using the adapter pattern
-        from .service import generate_description
         return await generate_description(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating description: {str(e)}")
@@ -78,7 +78,9 @@ async def generate_description_proxy(
             "content": {
                 "application/json": {
                     "example": {
-                        "text": "Wait, you NEED to see this! This isn't just any smartphone - it's your new best friend! Black, sleek, and absolutely stunning with that massive screen that'll make you never want to look away. Plus those cameras? They're basically professional-level magic in your pocket! Ready to upgrade your life? Link in bio! #TechTok #SmartphoneGoals"
+                        "status": "success",
+                        "message": "Image description generated successfully",
+                        "data": "Wait, you NEED to see this! This isn't just any smartphone - it's your new best friend! Black, sleek, and absolutely stunning with that massive screen that'll make you never want to look away. Plus those cameras? They're basically professional-level magic in your pocket! Ready to upgrade your life? Link in bio! #TechTok #SmartphoneGoals"
                     }
                 }
             }
@@ -88,8 +90,9 @@ async def generate_description_proxy(
             "content": {
                 "application/json": {
                     "example": {
-                        "detail": "Service unavailable: Connection timeout",
-                        "service": "generate-promotional-audio-script"
+                        "status": "error",
+                        "message": "Service unavailable: Connection timeout",
+                        "data": None
                     }
                 }
             }
@@ -106,16 +109,9 @@ async def generate_description_proxy(
     - `openai`: GPT-4 (creative, engaging scripts)
     - `mistral`: Mistral AI (balanced, versatile content)
     - `gemini`: Google Gemini (balanced, versatile content)
-    
-    **Output Features:**
-    - Strong attention-grabbing hook
-    - Natural, conversational tone
-    - Short, punchy sentences
-    - Social media expressions
-    - Clear call-to-action
     """
 )
-async def generate_promotional_audio_script_proxy(
+async def generate_promotional_audio_script(
     request: GeneratePromotionalAudioScriptRequest = Body(
         ...,
         example={
@@ -125,8 +121,6 @@ async def generate_promotional_audio_script_proxy(
     )
 ):
     try:
-        # Call the service directly using the adapter pattern
-        from .service import generate_promotional_audio_script
         return await generate_promotional_audio_script(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating promotional audio script: {str(e)}")
@@ -140,18 +134,17 @@ async def generate_promotional_audio_script_proxy(
 async def warmup_model(request: WarmupRequest):
     """Warmup a specific text generation model."""
     try:
-        from .service import warmup_service
-        result = await warmup_service(request.model)
+        result = await warmup(request.model)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Warmup failed for {request.model}: {str(e)}")
 
 @router.get(
     "/models",
-    response_model=List[str],
+    response_model=ServiceResponse[List[str]],
     summary="Get Available Models",
     description="Get list of available models for description generation"
 )
-async def get_available_models():
+async def get_models():
     """Get available models for description generation."""
-    return ["openai", "gemini", "mistral"]
+    return await get_available_models()

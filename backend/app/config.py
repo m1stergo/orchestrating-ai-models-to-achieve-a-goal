@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings."""
     
     # API settings
-    API_V1_STR: str = "/api/v1"
+    API_VERSION: str = "/api/v1"
     PROJECT_NAME: str = "AI Orchestration API"
     
     # Database settings

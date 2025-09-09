@@ -38,7 +38,7 @@ class ImageDescriptionAdapterFactory:
         """
         if model_name not in cls._adapters:
             available = list(cls._adapters.keys())
-            raise ValueError(f"Modelo no soportado: {model_name}. Disponibles: {available}")
+            raise ValueError(f"Model not supported: {model_name}. Available models: {available}")
         
         adapter_class = cls._adapters[model_name]
         return adapter_class()

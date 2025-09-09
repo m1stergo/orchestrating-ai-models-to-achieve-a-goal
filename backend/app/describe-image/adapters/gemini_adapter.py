@@ -1,6 +1,3 @@
-"""
-Gemini adapter for image description.
-"""
 import logging
 import asyncio
 from typing import Optional
@@ -9,6 +6,7 @@ import google.generativeai as genai
 from app.config import settings
 from .base import ImageDescriptionAdapter
 from ..shared.prompts import get_image_description_prompt
+from .utils import convert_image_to_base64
 
 logger = logging.getLogger(__name__)
 
@@ -42,24 +40,26 @@ class GeminiAdapter(ImageDescriptionAdapter):
         final_prompt = get_image_description_prompt(prompt)
 
         try:
-            result_text = await asyncio.to_thread(self.describe_image_sync, image_url, final_prompt)
+            # Convertir imagen a base64
+            image_data_url = await convert_image_to_base64(image_url)
+            
+            # Ejecutar la generación en un thread separado ya que es una operación sincrónica
+            result_text = await asyncio.to_thread(
+                self.describe_image_sync, image_data_url, final_prompt
+            )
+            
             logger.info("Gemini model described image successfully")
             return result_text
         except Exception as e:
             logger.error(f"Gemini image description error: {e}")
             raise
 
-    def describe_image_sync(self, image_url: str, prompt: str) -> str:
-        # For Gemini, we need to download the image and pass it as inline data
-        import requests
-        import base64
-        
-        # Download the image
-        response = requests.get(image_url)
-        response.raise_for_status()
-        
-        # Convert to base64
-        image_data = base64.b64encode(response.content).decode('utf-8')
+    def describe_image_sync(self, image_data_url: str, prompt: str) -> str:
+        # Extract only the base64 part from the data URL (remove the mime type prefix)
+        if ',' in image_data_url:
+            image_data = image_data_url.split(',', 1)[1]
+        else:
+            image_data = image_data_url
         
         result = self.model.generate_content(
             [
@@ -68,27 +68,21 @@ class GeminiAdapter(ImageDescriptionAdapter):
             ],
             generation_config={
                 "temperature": 0.7,
-                "max_output_tokens": 500,
+                "max_output_tokens": 1000,
             },
         )
 
         return result.text
 
-    async def warmup(self) -> dict:
+    async def warmup(self) -> str:
         """
         Warmup the Gemini adapter.
         
         Returns:
-            Dict with warmup status and information
+            str with warmup status and information
         """
         if not self.is_available():
-            return {
-                "status": "error",
-                "message": "Gemini API key is not configured",
-            }
-        
+            raise ValueError("Gemini API key is not configured.")
+            
         logger.info("Gemini warmup successful")
-        return {
-            "status": "success",
-            "message": "Gemini adapter is ready",
-        }
+        return "Gemini adapter is ready"

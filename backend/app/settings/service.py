@@ -117,13 +117,16 @@ class SettingsService:
         """Fetch available models from internal backend services."""
         # Get models from describe-image service (internal backend endpoint)
         describe_models = await self._get_models_from_service(
-            f"{settings.BASE_URL}{settings.API_V1_STR}/describe-image/models"
+            f"{settings.BASE_URL}{settings.API_VERSION}/describe-image/models"
         )
         
         # Get models from generate-description service (internal backend endpoint)
         generate_models = await self._get_models_from_service(
-            f"{settings.BASE_URL}{settings.API_V1_STR}/generate-description/models"
+            f"{settings.BASE_URL}{settings.API_VERSION}/generate-description/models"
         )
+
+        logger.info(f"Available describe-image models: {describe_models}")
+        logger.info(f"Available generate-description models: {generate_models}")
         
         return {
             "describe_image_models": describe_models,

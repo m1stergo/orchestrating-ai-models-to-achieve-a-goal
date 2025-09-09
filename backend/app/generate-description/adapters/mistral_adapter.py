@@ -3,9 +3,11 @@ Mistral adapter for text generation
 """
 import logging
 import aiohttp
+import asyncio
 from typing import Optional, List
 from app.config import settings
 from .base import TextGenerationAdapter
+from ..shared.prompts import get_product_description_prompt, get_promotional_audio_script_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -13,255 +15,291 @@ logger = logging.getLogger(__name__)
 class MistralAdapter(TextGenerationAdapter):
     def __init__(self):
         self.service_url = settings.MISTRAL_SERVICE_URL
+        self.api_token = settings.MISTRAL_API_TOKEN
         self.timeout = aiohttp.ClientTimeout(total=60)  # 60 seconds timeout for inference
+        self.poll_interval = 5  # Interval in seconds between polling attempts
+        self.max_retries = 40   # Maximum number of polling retries
     
-    def _get_product_description_prompt(self, custom_prompt: Optional[str] = None, product_description: str = None, categories: list = None) -> str:
-        """Get product description prompt template."""
-        base_instruction = custom_prompt if custom_prompt and custom_prompt.strip() else """
-        You are a professional e-commerce copywriter.
-        Write a short, concise product description for ecommerce page.
-
-        Rules:
-        - Title must be concise, clear, and descriptive (max 10 words)
-        - Description must be direct, simple, and factual (40-60 words max)
-        - Use short sentences, avoid marketing fluff and adjectives like "elevate", "charming", "whimsy"
-        - Focus on features first, then benefits
-        - Keywords must not repeat, must be relevant for SEO
-        """
-
-        base_instruction = base_instruction + "\n\n" + "Product: " + product_description
-
-        categories_text = ", ".join(categories) if categories and len(categories) > 0 else "any"
-    
-        json_structure = """Return a valid JSON response with the following structure:
-        {
-        "title": "Inferred product title/name",
-        "description": "product description",
-        "keywords": ["5 relevant SEO keywords, 1-3 words each, lowercase"],
-        "category": "Suggested product category from this list: [categories]"
-        }""".replace("[categories]", categories_text)
-
-        return base_instruction + "\n\n" + json_structure
-    
-    def _get_promotional_audio_script_prompt(self, custom_prompt: Optional[str] = None, text: str = None) -> str:
-        """Get promotional audio script prompt template."""
-        base_instruction = custom_prompt if custom_prompt and custom_prompt.strip() else """
-        Create a short description for a Reels/TikTok promotional video.
-        The result should sound natural, conversational, and energetic, with short, punchy sentences that grab attention in the first few seconds.
-        Include a strong hook at the beginning, a simple middle part, and a call-to-action at the end.
-        Avoid being too formal, use common social media expressions, and keep the length suitable for a video under 30 seconds.
-        Do not use emojis!
-        """
-        return base_instruction + "\n\n" + "Product: " + text
-
     def is_available(self) -> bool:
         """Check if the Mistral service URL is available."""
         available = bool(self.service_url and self.service_url.strip())
         if not available:
             logger.warning("Mistral service URL not found. Set MISTRAL_SERVICE_URL environment variable.")
         return available
-
+    
     async def generate_text(self, text: str, prompt: Optional[str] = None, categories: Optional[List[str]] = None) -> str:
-        """Generate text using the Mistral model microservice."""
+        """Generate text using the Mistral model microservice with polling."""
         if not self.is_available():
             raise ValueError("Mistral service URL is not configured.")
 
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
-                # First check if the service is healthy
-                health_url = f"{self.service_url}/healthz"
-                async with session.get(health_url) as health_resp:
-                    if not health_resp.ok:
-                        logger.error(f"Mistral service health check failed: {health_resp.status}")
-                        raise Exception("MISTRAL_SERVICE_DOWN: Service health check failed. The service may be down or starting up.")
-                    
-                    health_data = await health_resp.json()
-                    if not health_data.get("loaded", False):
-                        logger.info(f"Mistral service model not loaded yet: {health_data}")
-                        # Return a specific error that the frontend can catch
-                        raise Exception("MISTRAL_NOT_READY: The model is still loading. Please try the warmup endpoint first.")
-
-                # Call the generate-text endpoint
-                full_prompt = self._get_product_description_prompt(prompt, text, categories)
+                full_prompt = get_product_description_prompt(prompt, text, categories)
                 
                 payload = {
-                    "text": text,
-                    "prompt": full_prompt
+                    "input": {
+                        "action": "inference",
+                        "text": text,
+                        "prompt": full_prompt
+                    }
                 }
                 
-                async with session.post(f"{self.service_url}/generate-description", json=payload) as resp:
+                headers = {
+                    "Authorization": f"Bearer {self.api_token}"
+                } if self.api_token else {}
+                
+                async with session.post(f"{self.service_url}/run", json=payload, headers=headers) as resp:
                     if resp.status != 200:
                         error_text = await resp.text()
                         logger.error(f"Mistral service error: {resp.status}, {error_text}")
-                        raise Exception(f"MISTRAL_SERVICE_ERROR: Service error {resp.status}")
+                        raise Exception(f"HTTP error: {resp.status}")
                     
-                    result = await resp.json()
-                    description = result.get("text", "")
-                    logger.info("Mistral service generated text successfully")
-                    return description
+                    initial_result = await resp.json()
+                    
+                    if initial_result.get("status") == "ERROR":
+                        raise Exception(initial_result.get("message") or "Unknown error")
+                        
+                    job_id = initial_result.get("id", "")
+                    
+                    logger.info(f"Waiting for job {job_id} to complete...")
+                    final_result = await self.poll_until_complete(job_id)
 
-        except aiohttp.ClientError as e:
-            logger.error(f"Mistral service connection error: {str(e)}")
-            raise Exception(f"MISTRAL_CONNECTION_ERROR: Service connection error: {str(e)}")
+                    generated_text = final_result.get("detail", {}).get("data", "")
+                    
+                    logger.info("Mistral service generated text successfully")
+                    return generated_text
+
         except Exception as e:
             logger.error(f"Mistral adapter error: {str(e)}")
             raise
 
     async def generate_promotional_audio_script(self, text: str, prompt: Optional[str] = None) -> str:
-        """Generate a promotional audio script using the Mistral model microservice."""
+        """Generate a promotional audio script using the Mistral model microservice with polling."""
         if not self.is_available():
             raise ValueError("Mistral service URL is not configured.")
 
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
-                # First check if the service is healthy
-                health_url = f"{self.service_url}/healthz"
-                async with session.get(health_url) as health_resp:
-                    if not health_resp.ok:
-                        logger.error(f"Mistral service health check failed: {health_resp.status}")
-                        raise Exception("MISTRAL_SERVICE_DOWN: Service health check failed. The service may be down or starting up.")
-                    
-                    health_data = await health_resp.json()
-                    if not health_data.get("loaded", False):
-                        logger.info(f"Mistral service model not loaded yet: {health_data}")
-                        # Return a specific error that the frontend can catch
-                        raise Exception("MISTRAL_NOT_READY: The model is still loading. Please try the warmup endpoint first.")
-
-                # Call the generate-description endpoint with promotional audio script prompt
-                full_prompt = self._get_promotional_audio_script_prompt(prompt, text)
+                # Preparar el payload para el modelo con RunPod
+                full_prompt = get_promotional_audio_script_prompt(prompt, text)
+                
                 payload = {
-                    "text": text,
-                    "prompt": full_prompt
+                    "input": {
+                        "action": "generate_promotional_audio",
+                        "text": text,
+                        "prompt": full_prompt
+                    }
                 }
                 
-                async with session.post(f"{self.service_url}/generate-description", json=payload) as resp:
+                # Configurar los headers con token de API si está disponible
+                headers = {
+                    "Authorization": f"Bearer {self.api_token}"
+                } if self.api_token else {}
+                
+                # Llamar al endpoint /run para iniciar el proceso asíncrono
+                async with session.post(f"{self.service_url}/run", json=payload, headers=headers) as resp:
                     if resp.status != 200:
                         error_text = await resp.text()
                         logger.error(f"Mistral service error: {resp.status}, {error_text}")
                         raise Exception(f"MISTRAL_SERVICE_ERROR: Service error {resp.status}")
                     
-                    result = await resp.json()
-                    script = result.get("text", "")
-                    logger.info("Mistral service generated promotional audio script successfully")
-                    return script
+                    # Obtener la respuesta inicial con el ID del trabajo
+                    initial_result = await resp.json()
+                    
+                    if initial_result.get("status") == "ERROR":
+                        raise Exception(initial_result.get("message") or "Unknown error")
+                        
+                    # Obtener el ID del trabajo para polling
+                    job_id = initial_result.get("id", "")
+                    
+                    logger.info(f"Waiting for promotional audio script job {job_id} to complete...")
+                    
+                    # Esperar a que el trabajo finalice mediante polling
+                    final_result = await self.poll_until_complete(job_id)
 
-        except aiohttp.ClientError as e:
-            logger.error(f"Mistral service connection error: {str(e)}")
-            raise Exception(f"MISTRAL_CONNECTION_ERROR: Service connection error: {str(e)}")
+                    # Extraer el texto generado del resultado final
+                    generated_script = final_result.get("detail", {}).get("data", "")
+                    
+                    if not generated_script:
+                        logger.warning(f"Empty result from job {job_id}")
+                        
+                    logger.info("Mistral service generated promotional audio script successfully")
+                    return generated_script
+
         except Exception as e:
             logger.error(f"Mistral promotional audio script generation error: {str(e)}")
             raise
 
-    async def warmup(self) -> dict:
+    async def warmup(self) -> str:
         """
         Warmup the Mistral service by calling its warmup endpoint.
-        
+            
         Returns:
-            Dict with warmup status and information
+            str with warmup status or job ID for polling
         """
-        if not self.is_available():
-            return {
-                "status": "error",
-                "message": "Mistral service URL is not configured",
-                "detail": "MISTRAL_SERVICE_URL environment variable not set"
-            }
-
         try:
-            timeout = aiohttp.ClientTimeout(total=10)  # Short timeout for warmup call
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                warmup_url = f"{self.service_url}/warmup"
+            async with aiohttp.ClientSession() as session:
+                # Call the RunPod-compatible warmup endpoint
+                payload = {
+                    "input": {
+                        "action": "warmup"
+                    }
+                }
                 
-                async with session.get(warmup_url) as resp:
-                    if resp.status == 200:
-                        result = await resp.json()
-                        logger.info(f"Mistral warmup successful: {result}")
-                        return {
-                            "status": "success",
-                            "message": "Mistral service warmup initiated successfully",
-                            "detail": result
-                        }
-                    else:
-                        error_text = await resp.text()
-                        logger.error(f"Mistral warmup failed: {resp.status}, {error_text}")
-                        return {
-                            "status": "error",
-                            "message": f"Warmup failed with status {resp.status}",
-                            "detail": error_text
-                        }
+                headers = {
+                    "Authorization": f"Bearer {self.api_token}"
+                } if self.api_token else {}
+                async with session.post(f"{self.service_url}/run", json=payload, headers=headers) as resp:
+                    if resp.status != 200:
+                        raise Exception(f"HTTP error: {resp.status}")
+                    
+                    initial_result = await resp.json()
+                    
+                    if initial_result.get("status") == "ERROR":
+                        raise Exception(initial_result.get("message"))
                         
-        except aiohttp.ClientError as e:
-            logger.error(f"Mistral warmup connection error: {str(e)}")
-            return {
-                "status": "error",
-                "message": "Could not connect to Mistral service",
-                "detail": str(e)
-            }
+                    job_id = initial_result.get("id", "")
+
+                    logger.info(f"Initial result WARMUP: {initial_result}")
+                    
+                    logger.info(f"Waiting for warmup job {job_id} to complete...")
+                    try:
+                        result = await self.poll_until_complete(job_id)
+                        # poll_until_complete siempre devuelve un diccionario
+                        return result.get("detail", {}).get("message", "Model warmed up successfully")
+                    except Exception as e:
+                        logger.info(f"Job ID {job_id} not found, model likely already warmed up")
+                        
         except Exception as e:
             logger.error(f"Mistral warmup error: {str(e)}")
-            return {
-                "status": "error",
-                "message": "Warmup failed with unexpected error",
-                "detail": str(e)
-            }
-
-    async def status(self) -> dict:
+            raise
+            
+    # Internal use, has runpod signature        
+    async def status(self, job_id: str) -> dict:
         """
-        Check the health status of the Mistral service.
+        Check the status of the Mistral service or a specific job.
         
+        Args:
+            job_id: Job ID to check status for
+            
         Returns:
-            Dict with health status and information
+            dict: Dictionary with job status information
         """
         if not self.is_available():
             return {
-                "status": "unhealthy",
-                "message": "Mistral service URL is not configured",
-                "detail": "MISTRAL_SERVICE_URL environment variable not set"
+                "status": "ERROR", 
+                "id": None, 
+                "detail": {
+                    "status": "ERROR", 
+                    "message": "Mistral service URL is not configured", 
+                    "data": ""
+                }
             }
 
         try:
-            timeout = aiohttp.ClientTimeout(total=5)  # Short timeout for health check
+            timeout = aiohttp.ClientTimeout(total=5)  # Short timeout for status check
             async with aiohttp.ClientSession(timeout=timeout) as session:
-                health_url = f"{self.service_url}/healthz"
+                status_url = f"{self.service_url}/status/{job_id}"
                 
-                async with session.get(health_url) as resp:
-                    if resp.status == 200:
-                        result = await resp.json()
-                        logger.info(f"Mistral health check successful: {result}")
-                        
-                        # Check if the microservice reports loading status
-                        service_status = result.get("status", "healthy")
-                        if service_status == "loading":
-                            return {
-                                "status": "loading",
-                                "message": "Mistral service is loading",
-                                "detail": result
+                headers = {
+                    "Authorization": f"Bearer {self.api_token}"
+                } if self.api_token else {}
+                
+                async with session.get(status_url, headers=headers) as resp:
+                    if resp.status == 404:
+                        # Job ID no encontrado (404)
+                        error_message = f"Job ID {job_id} not found"
+                        logger.warning(error_message)
+                        raise Exception(error_message)
+                    elif resp.status != 200:
+                        return {
+                            "status": "ERROR", 
+                            "id": None, 
+                            "detail": {
+                                "status": "ERROR", 
+                                "message": f"HTTP error: {resp.status}", 
+                                "data": ""
                             }
+                        }
+                    
+                    # Get the complete response - ya es un diccionario, solo retornarlo
+                    result = await resp.json()
+                    
+                    # Comprobar si el resultado indica que el job no existe
+                    if result.get("status") == "ERROR" and "not found" in result.get("detail", {}).get("message", "").lower():
+                        error_message = result.get("detail", {}).get("message", f"Job ID {job_id} not found")
+                        logger.warning(error_message)
+                        raise Exception(error_message)
                         
-                        return {
-                            "status": "healthy",
-                            "message": "Mistral service is healthy",
-                            "detail": result
-                        }
-                    else:
-                        error_text = await resp.text()
-                        logger.error(f"Mistral health check failed: {resp.status}, {error_text}")
-                        return {
-                            "status": "unhealthy",
-                            "message": f"Health check failed with status {resp.status}",
-                            "detail": error_text
-                        }
+                    return result
                         
         except aiohttp.ClientError as e:
-            logger.error(f"Mistral health check connection error: {str(e)}")
+            logger.error(f"Mistral status check connection error: {str(e)}")
             return {
-                "status": "error",
-                "message": "Could not connect to Mistral service",
-                "detail": str(e)
+                "status": "ERROR", 
+                "id": None, 
+                "detail": {
+                    "status": "ERROR", 
+                    "message": f"Connection error: {str(e)}", 
+                    "data": ""
+                }
             }
         except Exception as e:
-            logger.error(f"Mistral health check error: {str(e)}")
+            logger.error(f"Mistral status check error: {str(e)}")
             return {
-                "status": "error",
-                "message": "Health check failed with unexpected error",
-                "detail": str(e)
+                "status": "ERROR", 
+                "id": None, 
+                "detail": {
+                    "status": "ERROR", 
+                    "message": f"Unexpected error: {str(e)}", 
+                    "data": ""
+                }
             }
+
+    async def poll_until_complete(self, job_id: str, interval: int = None, max_retries: int = None) -> dict:
+        """
+        Poll a job until it's complete or until max retries is reached.
+        
+        Args:
+            job_id: The job ID to poll
+            interval: Seconds between polling attempts (defaults to self.poll_interval)
+            max_retries: Maximum number of polling attempts (defaults to self.max_retries)
+            
+        Returns:
+            dict: Dictionary with job status
+        """
+        interval = interval or self.poll_interval
+        max_retries = max_retries or self.max_retries
+        retries = 0
+        
+        while retries < max_retries:
+            # Check job status
+            status_response = await self.status(job_id)
+
+            # If job failed
+            if status_response.get("status") == "ERROR":
+                error_message = status_response.get("detail", {}).get("message", "")
+                logger.error(f"Job {job_id} failed: {error_message}")
+                return status_response
+
+            if status_response.get("status") == "COMPLETED" or status_response.get("status") == "IN_PROGRESS":
+                if status_response.get("detail", {}).get("status") == "IDLE":
+                    return status_response
+                    
+            # Wait before checking again
+            retries += 1
+            logger.debug(f"Job {job_id} still in progress, retry {retries}/{max_retries}")
+            await asyncio.sleep(interval)
+        
+        # If we got here, we've exceeded max retries
+        error_message = f"Timed out waiting for job {job_id} after {max_retries} retries"
+        logger.error(error_message)
+        return {
+            "status": "ERROR", 
+            "id": job_id, 
+            "detail": {
+                "status": "ERROR", 
+                "message": error_message, 
+                "data": ""
+            }
+        }

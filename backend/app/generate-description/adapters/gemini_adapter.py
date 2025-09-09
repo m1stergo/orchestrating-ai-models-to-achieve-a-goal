@@ -27,10 +27,10 @@ class GeminiAdapter(TextGenerationAdapter):
 
     def is_available(self) -> bool:
         """Check if the Gemini API key is available."""
-        ok = bool(self.api_key and self.api_key.strip())
-        if not ok:
+        available = bool(self.api_key and self.api_key.strip())
+        if not available:
             logger.warning("Gemini API key not found. Set GEMINI_API_KEY environment variable.")
-        return ok
+        return available
 
     async def generate_text(self, text: str, prompt: Optional[str] = None, categories: Optional[List[str]] = None) -> str:
         """Generate text using Gemini's text model."""
@@ -39,10 +39,10 @@ class GeminiAdapter(TextGenerationAdapter):
         if not self.is_available():
             raise ValueError("Gemini API key is not configured.")
 
-        full_prompt = get_product_description_prompt(prompt, text, categories)
+        final_prompt = get_product_description_prompt(prompt, text, categories)
 
         try:
-            result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
+            result_text = await asyncio.to_thread(self.generate_text_sync, final_prompt)
             logger.info("Gemini text generated successfully")
             return result_text.strip() if result_text else "No response generated"
         except Exception as e:
@@ -56,24 +56,24 @@ class GeminiAdapter(TextGenerationAdapter):
         if not self.is_available():
             raise ValueError("Gemini API key is not configured.")
 
-        full_prompt = get_promotional_audio_script_prompt(prompt, text)
+        final_prompt = get_promotional_audio_script_prompt(prompt, text)
 
         try:
-            result_text = await asyncio.to_thread(self.generate_text_sync, full_prompt)
+            result_text = await asyncio.to_thread(self.generate_text_sync, final_prompt)
             logger.info("Gemini promotional audio script generated successfully")
             return result_text.strip() if result_text else "No response generated"
         except Exception as e:
             logger.error(f"Gemini promotional audio script generation error: {e}")
             raise
 
-    def generate_text_sync(self, full_prompt: str) -> str:
+    def generate_text_sync(self, final_prompt: str) -> str:
         if self.model is None:
             # Fallback si el modelo no se inicializó en el constructor
             genai.configure(api_key=self.api_key)
             self.model = genai.GenerativeModel(self.model_name)
             
         result = self.model.generate_content(
-            full_prompt,
+            final_prompt,
             generation_config={
                 "temperature": 0.7,
                 "max_output_tokens": 1000,
@@ -113,51 +113,15 @@ class GeminiAdapter(TextGenerationAdapter):
         # Return original if no valid JSON found
         return response_text
 
-    async def warmup(self) -> dict:
+    async def warmup(self) -> str:
         """
-        Warmup the Gemini adapter.
+        Warmup the OpenAI adapter.
         
         Returns:
-            Dict with warmup status and information
+            str with warmup status and information
         """
         if not self.is_available():
-            return {
-                "status": "error",
-                "message": "Gemini API key is not configured",
-                "detail": "GEMINI_API_KEY environment variable not set"
-            }
-        
+            raise ValueError("Gemini API key is not configured.")
+            
         logger.info("Gemini warmup successful")
-        return {
-            "status": "success",
-            "message": "Gemini adapter is ready",
-            "detail": {"model": self.model_name, "service": "Google Gemini"}
-        }
-
-    async def status(self) -> dict:
-        """
-        Check the health status of the Gemini adapter.
-        
-        Returns:
-            Dict with health status and information
-        """
-        if not self.is_available():
-            return {
-                "status": "unhealthy",
-                "message": "Gemini API key is not configured",
-                "detail": "GEMINI_API_KEY environment variable not set"
-            }
-
-        # Check if model is initialized
-        model_initialized = self.model is not None
-        
-        return {
-            "status": "healthy",
-            "message": "Gemini adapter is healthy",
-            "detail": {
-                "model": self.model_name,
-                "api_key_configured": True,
-                "model_initialized": model_initialized,
-                "service": "Google Gemini"
-            }
-        }
+        return "Gemini adapter is ready"

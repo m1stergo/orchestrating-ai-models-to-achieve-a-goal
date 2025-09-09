@@ -3,18 +3,20 @@ OpenAI adapter for text generation and image description.
 """
 import logging
 import asyncio
+import re
+import json
 from openai import OpenAI
 from typing import Optional, List
 
 from app.config import settings
-from .base import TextGenerationAdapter, ImageDescriptionAdapter
+from .base import TextGenerationAdapter
 from ..shared.prompts import get_product_description_prompt, get_promotional_audio_script_prompt
 
 logger = logging.getLogger(__name__)
 
 
-class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
-    """OpenAI adapter for both text generation and image description."""
+class OpenAIAdapter(TextGenerationAdapter):
+    """OpenAI adapter for text generation."""
 
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
@@ -57,27 +59,11 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
 
         logger.info(f"Final promotional audio script prompt: {final_prompt}")
         try:
-            result_text = await asyncio.to_thread(self.generate_promotional_audio_script_sync, final_prompt)
+            result_text = await asyncio.to_thread(self.generate_text_sync, final_prompt)
             logger.info("OpenAI model generated promotional audio script successfully")
             return result_text
         except Exception as e:
             logger.error(f"OpenAI promotional audio script generation error: {e}")
-            raise
-
-    async def describe_image(self, image_url: str, prompt: Optional[str] = None) -> str:
-        """Describe an image using OpenAI's vision model."""
-        if not self.is_available():
-            raise ValueError("OpenAI API key is not configured.")
-
-        if prompt is None:
-            prompt = "Describe this image in detail."
-
-        try:
-            result_text = await asyncio.to_thread(self.describe_image_sync, image_url, prompt)
-            logger.info("OpenAI model described image successfully")
-            return result_text
-        except Exception as e:
-            logger.error(f"OpenAI image description error: {e}")
             raise
 
     def generate_text_sync(self, full_prompt: str) -> str:
@@ -85,97 +71,56 @@ class OpenAIAdapter(TextGenerationAdapter, ImageDescriptionAdapter):
         if self.model is None:
             self.model = OpenAI(api_key=self.api_key)
 
-        resp = self.model.chat.completions.create(
+        result = self.model.chat.completions.create(
             model=self.model_name,
             messages=[{"role": "user", "content": full_prompt}],
             max_tokens=1000,
             temperature=0.3,
             response_format={"type": "json_object"}
         )
-        text = resp.choices[0].message.content or ""
-        return text.strip()
+        text = result.choices[0].message.content or ""
+        return self._extract_json_from_response(text)
+    
+    def _extract_json_from_response(self, response_text: str) -> str:
+        """Extract JSON from response text that may contain markdown code blocks."""
+        if not response_text:
+            return response_text
+            
+        # Try to find JSON within markdown code blocks
+        json_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', response_text, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(1).strip()
+            try:
+                # Validate it's proper JSON by parsing and re-serializing
+                parsed = json.loads(json_str)
+                return json.dumps(parsed, ensure_ascii=False)
+            except json.JSONDecodeError:
+                logger.warning("Found JSON block but couldn't parse it, returning original")
+                return response_text
+        
+        # If no code blocks, try to find JSON directly
+        try:
+            # Look for JSON object pattern
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+                parsed = json.loads(json_str)
+                return json.dumps(parsed, ensure_ascii=False)
+        except json.JSONDecodeError:
+            pass
+            
+        # Return original if no valid JSON found
+        return response_text
 
-    def generate_promotional_audio_script_sync(self, full_prompt: str) -> str:
-        """Synchronous method to generate promotional audio script using OpenAI without JSON format."""
-        if self.model is None:
-            self.model = OpenAI(api_key=self.api_key)
-
-        resp = self.model.chat.completions.create(
-            model=self.model_name,
-            messages=[{"role": "user", "content": full_prompt}],
-            max_tokens=500,
-            temperature=0.7,
-        )
-        text = resp.choices[0].message.content or ""
-        return text.strip()
-
-    def describe_image_sync(self, image_url: str, prompt: str) -> str:
-        """Synchronous method to describe image using OpenAI."""
-        if self.model is None:
-            self.model = OpenAI(api_key=self.api_key)
-
-        resp = self.model.chat.completions.create(
-            model=settings.OPENAI_VISION_MODEL,  # Use vision model for image description
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": image_url}}
-                    ]
-                }
-            ],
-            max_tokens=500,
-            temperature=0.7,
-        )
-        text = resp.choices[0].message.content or ""
-        return text.strip()
-
-    async def warmup(self) -> dict:
+    async def warmup(self) -> str:
         """
         Warmup the OpenAI adapter.
         
         Returns:
-            Dict with warmup status and information
+            str with warmup status and information
         """
         if not self.is_available():
-            return {
-                "status": "error",
-                "message": "OpenAI API key is not configured",
-                "detail": "OPENAI_API_KEY environment variable not set"
-            }
-        
+            raise ValueError("OpenAI API key is not configured.")
+            
         logger.info("OpenAI warmup successful")
-        return {
-            "status": "success",
-            "message": "OpenAI adapter is ready",
-            "detail": {"model": self.model_name, "service": "OpenAI"}
-        }
-
-    async def status(self) -> dict:
-        """
-        Check the health status of the OpenAI adapter.
-        
-        Returns:
-            Dict with health status and information
-        """
-        if not self.is_available():
-            return {
-                "status": "unhealthy",
-                "message": "OpenAI API key is not configured",
-                "detail": "OPENAI_API_KEY environment variable not set"
-            }
-
-        # Check if model is initialized
-        model_initialized = self.model is not None
-        
-        return {
-            "status": "healthy",
-            "message": "OpenAI adapter is healthy",
-            "detail": {
-                "model": self.model_name,
-                "api_key_configured": True,
-                "model_initialized": model_initialized,
-                "service": "OpenAI"
-            }
-        }
+        return "OpenAI adapter is ready"

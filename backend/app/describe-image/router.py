@@ -1,9 +1,9 @@
 from fastapi import APIRouter
-from typing import List, Dict, Any
+from typing import List
 from .schemas import (
     DescribeImageRequest, WarmupRequest, ServiceResponse
 )
-from .service import describe_image, warmup, get_available_models as get_models
+from .service import describe_image, warmup, get_available_models
 from fastapi import Body
 
 router = APIRouter()
@@ -59,8 +59,10 @@ async def run_describe_image(
         }
     )
 ):
-    # Validate and return the standardized response
-    return await describe_image(request)
+    try:
+        return await describe_image(request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error describing image: {str(e)}")
 
 @router.post(
     "/warmup",
@@ -76,11 +78,7 @@ async def warmup_model(request: WarmupRequest):
     except Exception as e:
         # La función warmup ya maneja internamente los errores
         # Esto solo se ejecutaría si hay un error inesperado
-        return {
-            "status": "error",
-            "message": f"Unexpected error during warmup: {str(e)}",
-            "data": None
-        }
+        raise HTTPException(status_code=500, detail=f"Warmup failed for {request.model}: {str(e)}")
 
 @router.get(
     "/models",
@@ -88,6 +86,6 @@ async def warmup_model(request: WarmupRequest):
     summary="Get Available Models",
     description="Get list of available models for image description"
 )
-async def get_available_models():
+async def get_models():
     """Get available models for image description."""
-    return await get_models()
+    return await get_available_models()
