@@ -1,51 +1,15 @@
 """
 Base adapter interfaces for AI models.
 """
-from abc import ABC, abstractmethod
 from typing import Optional, List
+from app.shared.api_adapter import ApiAdapter
+from ..shared.utils import get_product_description_prompt, get_promotional_audio_script_prompt
 
-class TextGenerationAdapter(ABC):
-    """Base interface for text generation adapters."""
+class GenerateDescriptionAdapter(ApiAdapter):
+    async def inference_text(self, text: str, prompt: Optional[str] = None, categories: Optional[List[str]] = None) -> str:
+        final_prompt = get_product_description_prompt(custom_prompt=prompt, product_description=text, categories=categories)
+        return await self.inference(final_prompt)
 
-    @abstractmethod
-    def is_available(self) -> bool:
-        """Check if the adapter is available."""
-        pass
-
-    @abstractmethod
-    async def generate_text(self, text: str, prompt: str, categories: Optional[List[str]] = None) -> str:
-        """
-        Generate text from input text using the model.
-        
-        Args:
-            text: Input text to process
-            prompt: Prompt to guide the generation
-            categories: Optional list of available product categories
-            
-        Returns:
-            str: Generated text
-        """
-        pass
-
-    @abstractmethod
-    async def generate_promotional_audio_script(self, text: str, prompt: Optional[str] = None) -> str:
-        """
-        Generate a promotional reel/TikTok script from marketing text.
-        
-        Args:
-            text: Input marketing text to transform
-            prompt: Optional custom prompt for script generation
-            
-        Returns:
-            str: Generated promotional audio script
-        """
-        pass
-
-    @abstractmethod
-    async def warmup(self) -> dict:
-        """
-        Warmup the adapter service for faster response times.
-        Returns:
-            dict: Warmup status and information
-        """
-        pass
+    async def inference_promotional_audio(self, text: str, prompt: Optional[str] = None) -> str:
+        final_prompt = get_promotional_audio_script_prompt(custom_prompt=prompt, text=text)
+        return await self.inference(final_prompt)

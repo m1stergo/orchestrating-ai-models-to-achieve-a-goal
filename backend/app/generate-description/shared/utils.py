@@ -1,8 +1,17 @@
 """
-Shared prompt templates for text generation adapters.
+Utility functions for generate-description module.
 """
+import re
+import json
+import logging
 from typing import Optional
 
+
+logger = logging.getLogger(__name__)
+
+"""
+Shared prompt templates for text generation adapters.
+"""
 def get_product_description_prompt(custom_prompt: str = None, product_description: str = None, categories: list = None) -> str:
     """
     Get the product description prompt template.
@@ -59,3 +68,42 @@ def get_promotional_audio_script_prompt(custom_prompt: Optional[str] = None, tex
     """
     return base_instruction + "\n\n" + "Product: " + text
 
+
+def extract_json_from_response(response_text: str) -> str:
+    """
+    Extract JSON from response text that may contain markdown code blocks.
+    
+    Args:
+        response_text: Text response from an AI model that might contain JSON
+        
+    Returns:
+        Extracted and validated JSON string or original text if no valid JSON found
+    """
+    if not response_text:
+        return response_text
+        
+    # Try to find JSON within markdown code blocks
+    json_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', response_text, re.DOTALL)
+    if json_match:
+        json_str = json_match.group(1).strip()
+        try:
+            # Validate it's proper JSON by parsing and re-serializing
+            parsed = json.loads(json_str)
+            return json.dumps(parsed, ensure_ascii=False)
+        except json.JSONDecodeError:
+            logger.warning("Found JSON block but couldn't parse it, returning original")
+            return response_text
+    
+    # If no code blocks, try to find JSON directly
+    try:
+        # Look for JSON object pattern
+        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(0)
+            parsed = json.loads(json_str)
+            return json.dumps(parsed, ensure_ascii=False)
+    except json.JSONDecodeError:
+        pass
+        
+    # Return original if no valid JSON found
+    return response_text

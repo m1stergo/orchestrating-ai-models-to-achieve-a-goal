@@ -3,7 +3,7 @@ Service for image description using AI models.
 """
 import logging
 
-from .schemas import DescribeImageRequest, ServiceResponse
+from app.shared.schemas import DescribeImageRequest, ServiceResponse
 from .adapters.factory import ImageDescriptionAdapterFactory
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # No se requiere una función auxiliar ya que usaremos directamente la clase ServiceResponse
 
 
-async def describe_image(
+async def inference(
     request: DescribeImageRequest
 ) -> ServiceResponse:
     """
@@ -28,7 +28,7 @@ async def describe_image(
         adapter = ImageDescriptionAdapterFactory.get_adapter(request.model)
         
         # Delegate to adapter which now handles formatting
-        result = await adapter.describe_image(request.image_url, request.prompt)
+        result = await adapter.inference(request.image_url, request.prompt)
         
         return ServiceResponse(
             status="success",

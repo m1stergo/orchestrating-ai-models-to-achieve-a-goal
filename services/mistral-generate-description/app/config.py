@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Model configurations
-    MISTRAL_MODEL: str = "mistralai/Mistral-7B-Instruct-v0.1"
+    MISTRAL_MODEL_NAME: str = "mistralai/Mistral-7B-Instruct-v0.1"
     
     # HuggingFace cache directory
     HF_TOKEN: Optional[str] = None

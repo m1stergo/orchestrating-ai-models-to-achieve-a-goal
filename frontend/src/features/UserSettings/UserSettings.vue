@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import Drawer from 'primevue/drawer'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Textarea from 'primevue/textarea'
@@ -106,7 +106,7 @@ const categories = computed({
         <div class="flex flex-col gap-4">
           <div>
             <label class="block text-sm font-medium mb-2">Image Description Model</label>
-            <Dropdown
+            <Select
               id="describe-strategy"
               v-model="describe_image_model"
               :options="data?.describe_image_models"
@@ -120,7 +120,7 @@ const categories = computed({
 
           <div>
             <label class="block text-sm font-medium mb-2">Product Description Model</label>
-            <Dropdown
+            <Select
               id="generate-strategy"
               v-model="generate_description_model"
               :options="data?.generate_description_models"

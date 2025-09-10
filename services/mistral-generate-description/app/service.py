@@ -1,5 +1,4 @@
 import logging
-import asyncio
 import threading
 import time
 import uuid
@@ -62,6 +61,9 @@ def _load_model_in_thread(job_id: str):
             )
         }
         
+        # Log for debugging
+        logger.info(f"Job {job_id} failed with error: {error_msg}")      
+        
         # Asignar None al finalizar
         model_loading_job_id = None
 
@@ -78,7 +80,8 @@ def _process_job_in_thread(job_id: str, text: str, prompt: Optional[str] = None)
         # Set model state to PROCESSING before starting generation
         model_instance._state = ModelState.PROCESSING
         # Use synchronous processing to avoid threading issues with async
-        result = model_instance.generate_description(text, prompt)
+        result = model_instance.inference(text, prompt)
+
         # Reset state to IDLE after processing
         model_instance._state = ModelState.IDLE
         
@@ -91,7 +94,9 @@ def _process_job_in_thread(job_id: str, text: str, prompt: Optional[str] = None)
                 data=result
             )
         }
-        logger.info(f"Job {job_id} completed successfully")
+        
+        # Log for debugging
+        logger.info(f"Job {job_id} completed successfully with result: {result[:50]}...")
         
     except Exception as e:
         error_msg = f"Inference failed: {str(e)}"
@@ -194,15 +199,20 @@ def check_job_status(job_id: str) -> JobResponse:
     Returns:
         JobResponse with the current job status
     """
+    logger.info(f"Checking status for job ID: {job_id}")
+    logger.info(f"Current pending jobs: {list(pending_jobs.keys())}")
+    
     # Check if job exists
     if job_id not in pending_jobs:
-        # If job doesn't exist, return an error
+        logger.warning(f"Job ID {job_id} not found in pending_jobs dictionary")
+        # If job doesn't exist, return completed with IDLE status instead of error
+        # This makes it more compatible with the PodAdapter polling mechanism
         return JobResponse(
             id=job_id,
             status="COMPLETED",
             detail=JobDetail(
                 status="IDLE",
-                message=f"Job ID {job_id} not found",
+                message=f"Job ready or not found",
                 data=""
             )
         )

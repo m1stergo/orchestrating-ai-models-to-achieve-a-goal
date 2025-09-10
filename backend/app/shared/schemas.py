@@ -1,4 +1,4 @@
-from typing import Optional, Generic, TypeVar, Any
+from typing import Optional, Generic, TypeVar, List
 from pydantic import BaseModel
 from pydantic.generics import GenericModel
 
@@ -6,9 +6,15 @@ from pydantic.generics import GenericModel
 T = TypeVar('T')
 
 # API Request schemas
+class GenerateDescriptionRequest(BaseModel):
+    model: str = "openai"
+    text: str
+    prompt: Optional[str] = None
+    categories: Optional[List[str]] = None
+
 class DescribeImageRequest(BaseModel):
+    model: str = "openai"
     image_url: str
-    model: str = "openai"  # Default model
     prompt: Optional[str] = None
     
 class WarmupRequest(BaseModel):

@@ -4,7 +4,7 @@ Factory for creating and managing text generation adapters.
 import logging
 from typing import Dict, Type, List
 
-from .base import TextGenerationAdapter
+from .base import GenerateDescriptionAdapter
 from .openai_adapter import OpenAIAdapter
 from .gemini_adapter import GeminiAdapter
 from .mistral_adapter import MistralAdapter
@@ -12,18 +12,18 @@ from .mistral_adapter import MistralAdapter
 logger = logging.getLogger(__name__)
 
 
-class TextGenerationAdapterFactory:
+class GenerateDescriptionAdapterFactory:
     """Factory for creating and managing text generation adapters (strategy pattern)."""
     
     # Available adapters mapped by name
-    _adapters: Dict[str, Type[TextGenerationAdapter]] = {
+    _adapters: Dict[str, Type[GenerateDescriptionAdapter]] = {
         "openai": OpenAIAdapter,
         "gemini": GeminiAdapter,
         "mistral": MistralAdapter,
     }
     
     @classmethod
-    def get_adapter(cls, model_name: str) -> TextGenerationAdapter:
+    def get_adapter(cls, model_name: str) -> GenerateDescriptionAdapter:
         """
         Get a text generation adapter by model name.
         
@@ -31,7 +31,7 @@ class TextGenerationAdapterFactory:
             model_name: Name of the model to use
             
         Returns:
-            TextGenerationAdapter: An adapter for the specified model
+            GenerateDescriptionAdapter: An adapter for the specified model
             
         Raises:
             ValueError: If the model is not supported

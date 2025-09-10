@@ -4,7 +4,7 @@ import threading
 import uuid
 from typing import Optional
 
-from .schemas import DescribeImageRequest, JobDetail, JobResponse
+from .schemas import InferenceRequest, JobDetail, JobResponse
 from .shared import model_instance
 from .model import ModelState
 
@@ -107,7 +107,7 @@ def _process_job_in_thread(job_id: str, image_url: str, prompt: Optional[str] = 
             )
         }
 
-def describe_image(request: DescribeImageRequest) -> JobResponse:
+def describe_image(request: InferenceRequest) -> JobResponse:
     """
     Describe an image using the preloaded adapter.
     Now returns a JobResponse with status for async simulation.

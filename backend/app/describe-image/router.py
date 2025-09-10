@@ -1,10 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Body, HTTPException
 from typing import List
-from .schemas import (
+from app.shared.schemas import (
     DescribeImageRequest, WarmupRequest, ServiceResponse
 )
-from .service import describe_image, warmup, get_available_models
-from fastapi import Body
+from .service import inference, warmup, get_available_models
 
 router = APIRouter()
 
@@ -60,7 +59,7 @@ async def run_describe_image(
     )
 ):
     try:
-        return await describe_image(request)
+        return await inference(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error describing image: {str(e)}")
 

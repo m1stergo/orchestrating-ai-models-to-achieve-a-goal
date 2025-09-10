@@ -39,7 +39,7 @@ class ChatterboxAdapter(TextToSpeechAdapter):
         Returns:
             bytes: Audio data as WAV bytes
         """
-        if not self.is_available():
+        if not self._is_available():
             raise ValueError("Chatterbox TTS service URL is not configured.")
 
         try:

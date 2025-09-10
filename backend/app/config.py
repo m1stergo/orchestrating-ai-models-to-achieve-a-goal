@@ -44,13 +44,12 @@ class Settings(BaseSettings):
     # Microservice base URLs with API prefix
     DESCRIBE_IMAGE_QWEN_URL: str = "http://localhost:8001/api/v1"
     GENERATE_DESCRIPTION_MISTRAL_URL: str = "http://localhost:8002/api/v1"
-    MISTRAL_SERVICE_URL: str = "http://localhost:8002/api/v1"
     TTS_CHATTERBOX_URL: str = "http://localhost:8003/api/v1"
     
     # API Keys for external services
     OPENAI_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
-    QWEN_API_TOKEN: Optional[str] = None
+    EXTERNAL_API_TOKEN: Optional[str] = None
     OPENAI_VISION_MODEL: Optional[str] = None
     GEMINI_VISION_MODEL: Optional[str] = None
     QWEN_VISION_MODEL: Optional[str] = None

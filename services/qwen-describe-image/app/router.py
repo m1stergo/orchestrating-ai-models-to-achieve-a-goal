@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .schemas import DescribeImageRequest, JobRequest, JobResponse, JobDetail
+from .schemas import InferenceRequest, JobRequest, JobResponse, JobDetail
 from .service import describe_image, warmup_model, check_job_status
 import logging
 
@@ -35,7 +35,7 @@ async def run_job(request: JobRequest):
                 )
 
             # Create request and call service
-            request_obj = DescribeImageRequest(
+            request_obj = InferenceRequest(
                 image_url=image_url,
                 prompt=prompt
             )

@@ -1,12 +1,7 @@
-from fastapi import APIRouter, HTTPException, Body
-from .schemas import GenerateDescriptionRequest, ServiceResponse, GeneratePromotionalAudioScriptRequest, ServiceResponse, WarmupRequest
-from pydantic import BaseModel
-from typing import Dict, Any, List
-from .service import generate_description, generate_promotional_audio_script, get_available_models
-
-
-class ServicesHealthResponse(BaseModel):
-    services: Dict[str, Any]
+from fastapi import APIRouter, Body, HTTPException
+from typing import List
+from app.shared.schemas import GenerateDescriptionRequest, ServiceResponse, WarmupRequest
+from .service import inference_text, inference_promotional_audio_script, get_available_models, warmup
 
 router = APIRouter()
 
@@ -54,7 +49,7 @@ router = APIRouter()
     - `gemini`: Google Gemini (balanced, versatile content)
     """
 )
-async def generate_product_description(
+async def run_generate_description(
     request: GenerateDescriptionRequest = Body(
         ...,
         example={
@@ -65,7 +60,7 @@ async def generate_product_description(
 ):
     try:
         # Call the service directly using the adapter pattern
-        return await generate_description(request)
+        return await inference_text(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating description: {str(e)}")
 
@@ -111,8 +106,8 @@ async def generate_product_description(
     - `gemini`: Google Gemini (balanced, versatile content)
     """
 )
-async def generate_promotional_audio_script(
-    request: GeneratePromotionalAudioScriptRequest = Body(
+async def run_generate_promotional_audio_script(
+    request: GenerateDescriptionRequest = Body(
         ...,
         example={
             "text": "Premium smartphone with elegant black finish, large touchscreen display, and advanced multi-camera system for professional photos.",
@@ -121,7 +116,7 @@ async def generate_promotional_audio_script(
     )
 ):
     try:
-        return await generate_promotional_audio_script(request)
+        return await inference_promotional_audio_script(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating promotional audio script: {str(e)}")
 

@@ -1,33 +1,22 @@
 """
 Base adapter interfaces for AI models.
 """
+from app.shared.api_adapter import ApiAdapter
+from typing import Tuple, Optional
+from ..shared.utils import convert_image_to_base64, get_image_description_prompt
 from abc import ABC, abstractmethod
 
-class ImageDescriptionAdapter(ABC):
-    """Base interface for image description adapters."""
+class ImageDescriptionAdapter(ApiAdapter, ABC):
+    async def get_inputs(self, image_url: str, prompt: Optional[str] = None) -> Tuple[str, str]:
+        final_prompt = get_image_description_prompt(prompt)
+        image_data = await convert_image_to_base64(image_url)
+
+        return final_prompt, image_data
 
     @abstractmethod
-    def is_available(self) -> bool:
-        """Check if the adapter is available."""
-        pass
+    async def inference(self, image_url: str, prompt: Optional[str] = None) -> str:
+        """Run inference with the model to describe an image."""
+        raise NotImplementedError
     
-    @abstractmethod
-    async def describe_image(self, image_url: str, prompt: str = None) -> str:
-        """
-        Describe the image at the given URL, optionally using a prompt.
-        Args:
-            image_url: URL of the image to describe
-            prompt: Optional prompt to guide the description
-        Returns:
-            str: Description of the image
-        """
-        pass
 
-    @abstractmethod
-    async def warmup(self) -> str:
-        """
-        Warmup the adapter service for faster response times.
-        Returns:
-            str: Warmup status
-        """
-        pass
+        

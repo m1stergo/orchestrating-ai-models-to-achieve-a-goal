@@ -2,126 +2,45 @@
 Gemini adapter for text generation.
 """
 import logging
-import asyncio
-import json
-import re
 import google.generativeai as genai
-from typing import Optional, List
+from typing import Optional
 
 from app.config import settings
-from .base import TextGenerationAdapter
-from ..shared.prompts import get_product_description_prompt, get_promotional_audio_script_prompt
+from .base import GenerateDescriptionAdapter
+from ..shared.utils import extract_json_from_response
 
 logger = logging.getLogger(__name__)
 
 
-class GeminiAdapter(TextGenerationAdapter):
+class GeminiAdapter(GenerateDescriptionAdapter):
     def __init__(self):
-        self.api_key = settings.GEMINI_API_KEY
-        self.model_name = settings.GEMINI_TEXT_MODEL  # e.g., "gemini-1.5-pro-latest"
-        self.model = None
-        
-        if self.is_available():
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel(self.model_name)
-
-    def is_available(self) -> bool:
-        """Check if the Gemini API key is available."""
-        available = bool(self.api_key and self.api_key.strip())
-        if not available:
-            logger.warning("Gemini API key not found. Set GEMINI_API_KEY environment variable.")
-        return available
-
-    async def generate_text(self, text: str, prompt: Optional[str] = None, categories: Optional[List[str]] = None) -> str:
-        """Generate text using Gemini's text model."""
-        logger.info("Gemini generating text for input text")
-
-        if not self.is_available():
-            raise ValueError("Gemini API key is not configured.")
-
-        final_prompt = get_product_description_prompt(prompt, text, categories)
-
-        try:
-            result_text = await asyncio.to_thread(self.generate_text_sync, final_prompt)
-            logger.info("Gemini text generated successfully")
-            return result_text.strip() if result_text else "No response generated"
-        except Exception as e:
-            logger.error(f"Gemini text generation error: {e}")
-            raise
-
-    async def generate_promotional_audio_script(self, text: str, prompt: Optional[str] = None) -> str:
-        """Generate a promotional audio script using Gemini's text model."""
-        logger.info("Gemini generating promotional audio script for input text")
-
-        if not self.is_available():
-            raise ValueError("Gemini API key is not configured.")
-
-        final_prompt = get_promotional_audio_script_prompt(prompt, text)
-
-        try:
-            result_text = await asyncio.to_thread(self.generate_text_sync, final_prompt)
-            logger.info("Gemini promotional audio script generated successfully")
-            return result_text.strip() if result_text else "No response generated"
-        except Exception as e:
-            logger.error(f"Gemini promotional audio script generation error: {e}")
-            raise
-
-    def generate_text_sync(self, final_prompt: str) -> str:
-        if self.model is None:
-            # Fallback si el modelo no se inicializó en el constructor
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel(self.model_name)
-            
-        result = self.model.generate_content(
-            final_prompt,
-            generation_config={
-                "temperature": 0.7,
-                "max_output_tokens": 1000,
-            },
+        super().__init__(
+            api_key=settings.GEMINI_API_KEY,
+            model_name=settings.GEMINI_TEXT_MODEL,  # e.g., "gemini-1.5-pro-latest"
+            service_name="Gemini"
         )
 
-        return self._extract_json_from_response(result.text)
-    
-    def _extract_json_from_response(self, response_text: str) -> str:
-        """Extract JSON from response text that may contain markdown code blocks."""
-        if not response_text:
-            return response_text
-            
-        # Try to find JSON within markdown code blocks
-        json_match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', response_text, re.DOTALL)
-        if json_match:
-            json_str = json_match.group(1).strip()
-            try:
-                # Validate it's proper JSON by parsing and re-serializing
-                parsed = json.loads(json_str)
-                return json.dumps(parsed, ensure_ascii=False)
-            except json.JSONDecodeError:
-                logger.warning("Found JSON block but couldn't parse it, returning original")
-                return response_text
-        
-        # If no code blocks, try to find JSON directly
-        try:
-            # Look for JSON object pattern
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-                parsed = json.loads(json_str)
-                return json.dumps(parsed, ensure_ascii=False)
-        except json.JSONDecodeError:
-            pass
-            
-        # Return original if no valid JSON found
-        return response_text
+    def _init_model(self) -> None:
+        """Initialize the Gemini model."""
+        genai.configure(api_key=self.api_key)
+        self.model = genai.GenerativeModel(self.model_name)
 
-    async def warmup(self) -> str:
-        """
-        Warmup the OpenAI adapter.
-        
-        Returns:
-            str with warmup status and information
-        """
-        if not self.is_available():
-            raise ValueError("Gemini API key is not configured.")
-            
-        logger.info("Gemini warmup successful")
-        return "Gemini adapter is ready"
+    async def inference(self, prompt: Optional[str] = None) -> str:
+        """Run inference to generate text using Gemini's text model."""
+        try:
+            result_text = await self.run_inference(
+                lambda: extract_json_from_response(
+                    self.model.generate_content(
+                        prompt,
+                        generation_config={
+                            "temperature": 0.7,
+                            "max_output_tokens": 1000,
+                        },
+                    ).text
+                )
+            )
+            logger.info("Gemini inference successfully")
+            return result_text
+        except Exception as e:
+            logger.error(f"Gemini inference error: {e}")
+            raise

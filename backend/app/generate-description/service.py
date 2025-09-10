@@ -3,12 +3,12 @@ Service for text generation using AI models.
 """
 import logging
 
-from .schemas import GenerateDescriptionRequest, ServiceResponse, GeneratePromotionalAudioScriptRequest
-from .adapters.factory import TextGenerationAdapterFactory
+from app.shared.schemas import GenerateDescriptionRequest, ServiceResponse
+from .adapters.factory import GenerateDescriptionAdapterFactory
 
 logger = logging.getLogger(__name__)
 
-async def generate_description(
+async def inference_text(
     request: GenerateDescriptionRequest
 ) -> ServiceResponse:
     """
@@ -22,8 +22,8 @@ async def generate_description(
     """
     try:
         logger.info(f"Generating description for text: {request.text}")
-        adapter = TextGenerationAdapterFactory.get_adapter(request.model)
-        result = await adapter.generate_text(request.text, request.prompt, request.categories)
+        adapter = GenerateDescriptionAdapterFactory.get_adapter(request.model)
+        result = await adapter.inference_text(request.text, request.prompt, request.categories)
         logger.info("Text generation completed successfully")
         return ServiceResponse(
             status="success", 
@@ -35,8 +35,8 @@ async def generate_description(
         raise Exception(f"Text generation failed: {str(e)}")
 
 
-async def generate_promotional_audio_script(
-    request: GeneratePromotionalAudioScriptRequest
+async def inference_promotional_audio_script(
+    request: GenerateDescriptionRequest
 ) -> ServiceResponse:
     """
     Generate promotional audio script using the selected adapter with concurrency control.
@@ -49,8 +49,8 @@ async def generate_promotional_audio_script(
     """
     try:
         logger.info(f"Generating promotional audio script for text: {request.text[:50]}...")
-        adapter = TextGenerationAdapterFactory.get_adapter(request.model)
-        result = await adapter.generate_promotional_audio_script(request.text, request.prompt)
+        adapter = GenerateDescriptionAdapterFactory.get_adapter(request.model)
+        result = await adapter.inference_promotional_audio(request.text, request.prompt)
         logger.info("Promotional audio script generation completed successfully")
         return ServiceResponse(status="success", message="Promotional audio script generated successfully", data=result)
     except Exception as e:
@@ -68,7 +68,7 @@ async def warmup(model_name: str) -> ServiceResponse:
         ServiceResponse with warmup status for the adapter
     """
     try:
-        adapter = TextGenerationAdapterFactory.get_adapter(model_name)
+        adapter = GenerateDescriptionAdapterFactory.get_adapter(model_name)
         result = await adapter.warmup()
 
         return ServiceResponse(
@@ -94,8 +94,7 @@ async def get_available_models() -> ServiceResponse:
         dict: A standardized JSON response with status, message, and data containing the list of available models
     """
     try:
-        models = TextGenerationAdapterFactory.list_available_models()
-        logger.info(f"#\n##\n#\n#\n#\n#\n#\n#\n#\n#\n#\n#\n#\n#\n#\n#\n#\n############## Available models: {models}")
+        models = GenerateDescriptionAdapterFactory.list_available_models()
         return ServiceResponse(
             status="success",
             message="Available models retrieved successfully",

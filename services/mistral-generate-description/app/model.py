@@ -25,6 +25,16 @@ class MistralModel:
         self._state = ModelState.COLD
         self._loading_start_time = None
         self._error_message = None
+        
+    @property
+    def has_gpu(self) -> bool:
+        """Check if GPU is available for model inference."""
+        return torch.cuda.is_available()
+        
+    @property
+    def device(self):
+        """Get the device to use for model inference."""
+        return torch.device('cuda') if self.has_gpu else torch.device('cpu')
     
     def load_model(self):
         """Ensures that the model is loaded synchronously."""
@@ -37,8 +47,9 @@ class MistralModel:
         self._error_message = None
 
         start_time = time.time()
-        logger.info(f"======== Loading Mistral model: {self.model_name}... This may take several minutes. ========")
+        # Usar MISTRAL_MODEL_NAME en lugar de MISTRAL_MODEL_NAME_NAME
         self.model_name = settings.MISTRAL_MODEL_NAME
+        logger.info(f"======== Loading Mistral model: {self.model_name}... This may take several minutes. ========")
 
         # Set HuggingFace cache directory if specified
         if settings.HUGGINGFACE_CACHE_DIR:
@@ -62,7 +73,7 @@ class MistralModel:
 
         try:
             # Load tokenizer
-            tokenizer_kwargs = {"trust_remote_code": True, "token": settings.HUGGINGFACE_TOKEN}
+            tokenizer_kwargs = {"trust_remote_code": True, "token": settings.HF_TOKEN}
             if hasattr(settings, 'HUGGINGFACE_CACHE_DIR') and settings.HUGGINGFACE_CACHE_DIR:
                 tokenizer_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
                 
@@ -79,7 +90,7 @@ class MistralModel:
                 "torch_dtype": dtype,
                 "device_map": device_map,
                 "trust_remote_code": True,
-                "token": settings.HUGGINGFACE_TOKEN
+                "token": settings.HF_TOKEN
             }
             
             if hasattr(settings, 'HUGGINGFACE_CACHE_DIR') and settings.HUGGINGFACE_CACHE_DIR:
@@ -125,7 +136,7 @@ class MistralModel:
         """Get loading start time."""
         return self._loading_start_time
 
-    async def generate_description(self, text: str, prompt: str) -> str:
+    async def inference(self, text: str, prompt: str) -> str:
         logger.info(f"======== Processing text content ========")
 
         try:
@@ -151,6 +162,11 @@ class MistralModel:
         except Exception as e:
             logger.error(f"======== Error: {str(e)} ========")
             raise
+            
+    # Alias for backward compatibility
+    async def generate_description(self, text: str, prompt: str) -> str:
+        """Alias for inference method for backward compatibility."""
+        return await self.inference(text, prompt)
 
     def _build_chat_prompt(self, text: str, prompt: str) -> str:
         messages = [

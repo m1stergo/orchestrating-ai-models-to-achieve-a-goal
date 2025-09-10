@@ -8,7 +8,7 @@ const isWarmingUp = ref(false)
 const isLoading = ref(false)
 const error = ref('')
 
-export function useService(service: string, options?: { onSuccess?: (response: ServiceResponse<string>) => void, onError?: (error: Error) => void }) {
+export function useService(service: string, options?: { onSuccess?: (response: ServiceResponse<string>) => void, onError?: (error: Error) => void, }) {
     const { data: settings } = useQuery({
         key: ['settings'],
         query: () => getSettings(),
@@ -34,12 +34,6 @@ export function useService(service: string, options?: { onSuccess?: (response: S
         }
     })
 
-    watch(settings, (newSettings, oldSettings) => {
-        if (newSettings?.describe_image_model !== oldSettings?.describe_image_model && newSettings?.describe_image_model) {
-            triggerWarmup({ model: newSettings.describe_image_model })
-        }
-    })
-
     async function run(params: { image_url: string, prompt?: string, model: string }) {
         await inferenceMutation(params)
     }
@@ -56,6 +50,8 @@ export function useService(service: string, options?: { onSuccess?: (response: S
         isWarmingUp,
         isLoading,
         run,
-        error
+        error,
+        settings,
+        triggerWarmup,
     }
 }
