@@ -117,12 +117,12 @@ class PodAdapter:
         logger.info(f"Final result after polling: {final_result}")
         return final_result
 
-    async def warmup(self) -> Union[str, Dict[str, Any]]:
+    async def warmup(self) -> str:
         """
         Warmup the service by calling its warmup endpoint.
             
         Returns:
-            Result with warmup status or message
+            str: String message with warmup status information
         """
         if not self._is_available():
             raise ValueError(f"{self.service_name} service URL is not configured")
@@ -146,8 +146,8 @@ class PodAdapter:
             
             try:
                 result = await self._poll_until_complete(job_id)
-                # Return message or full result
-                return result.get("detail", {}).get("message", "Model warmed up successfully")
+                # Siempre retornar un string con el mensaje de resultado
+                return str(result.get("detail", {}).get("message", "Model warmed up successfully"))
             except Exception as e:
                 logger.info(f"Job ID {job_id} not found, model likely already warmed up")
                 return str(e)

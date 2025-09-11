@@ -69,12 +69,13 @@ async def warmup(model_name: str) -> ServiceResponse:
     """
     try:
         adapter = GenerateDescriptionAdapterFactory.get_adapter(model_name)
+        # La función warmup del adaptador siempre debe retornar un string
         result = await adapter.warmup()
 
         return ServiceResponse(
-            status=result.get('status', 'success'),
-            message=result.get('message', f'{model_name} adapter is ready'),
-            data=result
+            status="success",
+            message=result,
+            data=None
         )
     except Exception as e:
         error_msg = str(e)

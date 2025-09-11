@@ -58,12 +58,13 @@ async def warmup(model_name: str) -> ServiceResponse:
     """
     try:
         adapter = ImageDescriptionAdapterFactory.get_adapter(model_name)
+        # La función warmup del adaptador siempre debe retornar un string
         result = await adapter.warmup()
         
         return ServiceResponse(
             status="success",
-            message="Model warmup completed successfully",
-            data=result
+            message=result,
+            data=None
         )
         
     except Exception as e:

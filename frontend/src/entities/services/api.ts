@@ -84,7 +84,11 @@ export async function warmup(service: string, params: DescribeImageWarmupParams)
   if (!response.ok) {
     throw new Error(`Failed to warmup ${service} model ${params.model}: ${response.statusText}`)
   }
-  return response.json()
+  const data = await response.json()
+  if (data.status === 'error') {
+    throw new Error(data.message)
+  }
+  return data
 }
 
 export async function status(service: string, params: DescribeImageStatusParams): Promise<ServiceResponse<string>> {
@@ -98,7 +102,11 @@ export async function status(service: string, params: DescribeImageStatusParams)
   if (!response.ok) {
     throw new Error(`Failed to get status of ${service} model ${params.model}: ${response.statusText}`)
   }
-  return response.json()
+  const data = await response.json()
+  if (data.status === 'error') {
+    throw new Error(data.message)
+  }
+  return data
 }
 
 export async function inference(service: string, params: DescribeImageInferenceParams): Promise<ServiceResponse<string>> {
@@ -116,7 +124,11 @@ export async function inference(service: string, params: DescribeImageInferenceP
     if (!response.ok) {
       throw new Error(`Failed to ${service} model ${params.model}: ${response.statusText}`)
     }
-    return response.json()
+    const data = await response.json()
+    if (data.status === 'error') {
+      throw new Error(data.message)
+    }
+    return data
 }
 
 export async function uploadImage(formData: FormData): Promise<UploadImageResponse> {
