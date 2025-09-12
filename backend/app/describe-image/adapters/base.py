@@ -1,7 +1,8 @@
 """
 Base adapter interfaces for AI models.
 """
-from app.shared.api_adapter import ApiAdapter
+from abc import ABC, abstractmethod
+
 from typing import Tuple, Optional
 from ..shared.utils import convert_image_to_base64, get_image_description_prompt
 from abc import ABC, abstractmethod

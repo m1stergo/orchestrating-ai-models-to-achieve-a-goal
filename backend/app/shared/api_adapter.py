@@ -30,10 +30,6 @@ class   ApiAdapter(ABC):
         self.model_name = model_name
         self.service_name = service_name
         self.model = None
-        
-        # Initialize model if possible
-        if self._is_available():
-            self._init_model()
 
     def _is_available(self) -> bool:
         """Check if the API key is available."""
@@ -41,11 +37,6 @@ class   ApiAdapter(ABC):
         if not available:
             logger.warning(f"{self.service_name} API key not found.")
         return available
-
-    @abstractmethod
-    def _init_model(self) -> None:
-        """Initialize the model with the API key. Must be implemented by subclasses."""
-        pass
 
     async def run_inference(self, 
                               sync_func: Callable[..., T], 

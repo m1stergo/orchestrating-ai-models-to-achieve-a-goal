@@ -15,9 +15,6 @@ class GeminiAdapter(ImageDescriptionAdapter):
             model_name=settings.GEMINI_VISION_MODEL,  # e.g., "gemini-1.5-pro-vision-latest"
             service_name="Gemini"
         )
-    
-    def _init_model(self) -> None:
-        """Initialize the Gemini model."""
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel(self.model_name)
 

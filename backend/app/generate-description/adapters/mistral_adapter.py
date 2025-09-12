@@ -30,11 +30,6 @@ class MistralAdapter(PodAdapter, GenerateDescriptionAdapter):
             service_name="Mistral"  # Esto sobreescribirá el valor de PodAdapter, pero es el mismo
         )
     
-    def _init_model(self) -> None:
-        """No se necesita inicializar un modelo local para servicios externos."""
-        # No es necesario código aquí para PodAdapter ya que usa un servicio externo
-        pass
-    
     async def inference_text(self, text: str, prompt: Optional[str] = None, categories: Optional[List[str]] = None) -> str:
         """
         Run inference with Mistral to generate text.

@@ -66,7 +66,13 @@ def get_promotional_audio_script_prompt(custom_prompt: Optional[str] = None, tex
     Avoid being too formal, use common social media expressions, and keep the length suitable for a video under 30 seconds.
     Do not use emojis!
     """
-    return base_instruction + "\n\n" + "Product: " + text
+
+    json_structure = """Return a valid JSON response with the following structure:
+    {
+    "description": "Inferred product description",
+    }"""
+    
+    return base_instruction + "\n\n" + "Product: " + text + "\n\n" + json_structure
 
 
 def extract_json_from_response(response_text: str) -> str:

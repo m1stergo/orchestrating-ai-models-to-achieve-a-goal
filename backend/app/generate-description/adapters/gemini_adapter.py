@@ -19,9 +19,6 @@ class GeminiAdapter(GenerateDescriptionAdapter):
             model_name=settings.GEMINI_TEXT_MODEL,  # e.g., "gemini-1.5-pro-latest"
             service_name="Gemini"
         )
-
-    def _init_model(self) -> None:
-        """Initialize the Gemini model."""
         genai.configure(api_key=self.api_key)
         self.model = genai.GenerativeModel(self.model_name)
 

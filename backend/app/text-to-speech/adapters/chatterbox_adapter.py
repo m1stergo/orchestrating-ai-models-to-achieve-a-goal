@@ -2,33 +2,38 @@
 Chatterbox TTS adapter for text-to-speech generation.
 """
 import logging
-import aiohttp
-import uuid
-import aiofiles
 from typing import Optional
-from pathlib import Path
-from app.config import settings
 
+from app.config import settings
 from .base import TextToSpeechAdapter
+from app.shared.api_adapter import ApiAdapter
+from app.shared.pod_adapter import PodAdapter
 
 logger = logging.getLogger(__name__)
 
-
-class ChatterboxAdapter(TextToSpeechAdapter):
+class ChatterboxAdapter(PodAdapter, TextToSpeechAdapter):
     """Adapter for Chatterbox TTS service."""
-    
     def __init__(self):
-        self.service_url = settings.TTS_CHATTERBOX_URL
-        self.timeout = aiohttp.ClientTimeout(total=60.0)  # TTS can take longer than regular API calls
+        # Inicializar PodAdapter primero
+        PodAdapter.__init__(self,
+            service_url=settings.TTS_CHATTERBOX_URL,
+            api_token=settings.EXTERNAL_API_TOKEN,
+            service_name="Chatterbox",
+            timeout=60,
+            poll_interval=5,
+            max_retries=40
+        )
+
+        # Luego inicializar ApiAdapter a través de ImageDescriptionAdapter
+        ApiAdapter.__init__(self, 
+            api_key="",  # No necesitamos una API key para servicios externos
+            model_name="",  # No necesitamos un nombre de modelo para servicios externos
+            service_name="Chatterbox"  # Sobreescribe el valor de PodAdapter, pero es el mismo
+        )
+
+        logger.info(f"ChatterboxAdapter inicializado con service_url={self.service_url}")
     
-    def is_available(self) -> bool:
-        """Check if the Chatterbox service URL is available."""
-        available = bool(self.service_url and self.service_url.strip())
-        if not available:
-            logger.warning("Chatterbox service URL not found. Set TTS_CHATTERBOX_URL environment variable.")
-        return available
-    
-    async def generate_speech(self, text: str, voice_url: Optional[str] = None) -> bytes:
+    async def inference(self, text: str, voice_url: Optional[str] = None) -> bytes:
         """
         Generate speech using Chatterbox TTS service.
         
@@ -43,42 +48,34 @@ class ChatterboxAdapter(TextToSpeechAdapter):
             raise ValueError("Chatterbox TTS service URL is not configured.")
 
         try:
-            async with aiohttp.ClientSession(timeout=self.timeout) as session:
-                # First check if the service is healthy
-                try:
-                    health_url = f"{self.service_url}/healthz"
-                    async with session.get(health_url) as health_resp:
-                        health_data = await health_resp.json()
-                        if not health_resp.ok or not health_data.get("loaded", False):
-                            logger.error(f"Chatterbox TTS service not ready: {health_resp.status}")
-                            raise Exception("Service not available. The model is still loading or not responding.")
-                except Exception as e:
-                    logger.error(f"Failed to check Chatterbox TTS service health: {str(e)}")
-                    raise Exception("Service health check failed. The service may be down.")
+            payload = {
+                "text": text
+            }
+            
+            if voice_url:
+                payload["voice_url"] = voice_url
 
-                # Prepare request payload
-                payload = {
-                    "text": text
-                }
-                
-                if voice_url:
-                    payload["voice_url"] = voice_url
-                
-                # Call the generate-audio endpoint
-                async with session.post(f"{self.service_url}/generate-audio", json=payload) as resp:
-                    if resp.status != 200:
-                        error_text = await resp.text()
-                        logger.error(f"Chatterbox TTS service error: {resp.status}, {error_text}")
-                        raise Exception(f"Service error: {resp.status}")
-                    
-                    # Return the audio bytes directly
-                    audio_bytes = await resp.read()
-                    logger.info("Chatterbox TTS service generated audio successfully")
-                    return audio_bytes
+            final_result = await self.run_inference(payload)
+            
+            # Extract audio bytes from the result
+            logger.info(f"#\n#\n#\n\#\n final_result: {final_result}")
 
-        except aiohttp.ClientError as e:
-            logger.error(f"Chatterbox TTS service connection error: {str(e)}")
-            raise Exception(f"Service connection error: {str(e)}")
+
+            if "output" in final_result and "audio" in final_result["output"]:
+                # If audio is returned as base64, decode it
+                import base64
+                audio_bytes = base64.b64decode(final_result["output"]["audio"])
+            elif "detail" in final_result and "data" in final_result["detail"]:
+                # Alternative structure
+                import base64
+                audio_bytes = base64.b64decode(final_result["detail"]["data"])
+            else:
+                logger.error(f"Unexpected response structure: {final_result}")
+                raise ValueError(f"Unexpected response structure from TTS service")
+            
+            logger.info("Chatterbox TTS service generated audio successfully")
+            return audio_bytes
+
         except Exception as e:
             logger.error(f"Chatterbox TTS adapter error: {str(e)}")
             raise

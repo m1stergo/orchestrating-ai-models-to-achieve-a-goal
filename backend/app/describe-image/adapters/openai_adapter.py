@@ -17,11 +17,8 @@ class OpenAIAdapter(ImageDescriptionAdapter):
             model_name=settings.OPENAI_VISION_MODEL,  # e.g., "gpt-4o"
             service_name="OpenAI"
         )
-    
-    def _init_model(self) -> None:
-        """Initialize the OpenAI model."""
         self.model = OpenAI(api_key=self.api_key)
-
+    
     async def inference(self, image_url: str, prompt: Optional[str] = None) -> str:
         logger.info(f"OpenAI: describing image from {image_url}")
 

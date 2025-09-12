@@ -20,11 +20,8 @@ class OpenAIAdapter(GenerateDescriptionAdapter):
             model_name=settings.OPENAI_TEXT_MODEL,  # e.g., "gpt-4o-mini"
             service_name="OpenAI"
         )
-    
-    def _init_model(self) -> None:
-        """Initialize the OpenAI model."""
         self.model = OpenAI(api_key=self.api_key)
-
+    
     async def inference(self, prompt: Optional[str] = None) -> str:
         """Run inference to generate text using OpenAI's text model."""
         try:

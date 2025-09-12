@@ -34,13 +34,6 @@ class QwenAdapter(PodAdapter, ImageDescriptionAdapter):
         
         logger.info(f"QwenAdapter inicializado con service_url={self.service_url}")
 
-    def _init_model(self) -> None:
-        """No se necesita inicializar un modelo local para servicios externos."""
-        # No es necesario código aquí para PodAdapter ya que usa un servicio externo
-        pass
-        
-    # El método _is_available ya está implementado en PodAdapter
-        
     async def inference(self, image_url: str, prompt: Optional[str] = None) -> str:
         """
         Run inference with Qwen to describe an image.

@@ -47,8 +47,9 @@ const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoading
     model: props.model!,
     prompt: userSettings.value?.generate_promotional_audio_script_prompt || undefined
   }),
-  onSuccess: (data) => {
-    form.setFieldValue('audio_description', data.text)
+  onSuccess: ({ data }) => {
+    const parsedData = parseDescriptionResponse(data)
+    form.setFieldValue('audio_description', parsedData.description)
     dirty.value = false
   },
   onError: () => {
@@ -84,6 +85,28 @@ async function generatePromotionalAudio() {
     } catch (error) {
         console.error('Error generating promotional audio:', error)
     }
+}
+
+
+function parseDescriptionResponse(data: string) {
+  try {
+    // Try to parse as JSON
+    const parsed = JSON.parse(data)
+    
+    // Validate that it has the expected structure
+    if (typeof parsed === 'object' && parsed !== null) {
+      return {
+        description: parsed.description,
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to parse description as JSON:', error)
+  }
+  
+  // Fallback: return original description with empty other fields
+  return {
+    description: data,
+  }
 }
 
 watch(voices, (newVoices) => {
