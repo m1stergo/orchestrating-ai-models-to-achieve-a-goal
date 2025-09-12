@@ -1,10 +1,10 @@
 import logging
 import time
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 from .config import settings
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from .common import InferenceModel
+from .common import InferenceModel, ModelState
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class MistralModel(InferenceModel):
             )
 
             # Successfully loaded
-            self._state = ModelState.IDLE
+            self.state = ModelState.IDLE
             total_time = time.time() - self.loading_start_time
             logger.info(f"======== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ========")
             
@@ -62,30 +62,15 @@ class MistralModel(InferenceModel):
             
         except Exception as e:
             logger.error(f"======== Failed to load Mistral model: {str(e)} ========")
-            self._state = ModelState.ERROR
-            self._error_message = str(e)
+            self.state = ModelState.ERROR
+            self.error_message = str(e)
             raise Exception(f"Model loading failed: {str(e)}")
             
     def is_loaded(self):
         """Check if model is loaded."""
         return self.model is not None and self.tokenizer is not None
 
-    @property
-    def state(self) -> ModelState:
-        """Get current model state."""
-        return self._state
-    
-    @property
-    def error_message(self) -> str:
-        """Get error message if state is ERROR."""
-        return self._error_message
-    
-    @property
-    def loading_start_time(self) -> float:
-        """Get loading start time."""
-        return self._loading_start_time
-
-    async def inference(self, text: str, prompt: str) -> str:
+    def inference(self, request_data: Dict[str, Any]) -> str:
         logger.info(f"======== Processing text content ========")
 
         try:
@@ -93,29 +78,51 @@ class MistralModel(InferenceModel):
                 self.load_model()
             
             # Set state to PROCESSING before starting generation
-            self._state = ModelState.PROCESSING
+            self.state = ModelState.PROCESSING
             
-            prompt = settings.PROMPT if prompt is None else prompt
+            # Extract text and prompt from request_data
+            text = request_data.get('text', '')
+            prompt = request_data.get('prompt', settings.PROMPT)
+
             
             input_text = self._build_chat_prompt(text, prompt)
 
-            logger.info("======== Generating description ========")
-            generated = self._generate_sync(input_text)
-            
+            inputs = self.tokenizer(
+                input_text,
+                return_tensors="pt",
+                truncation=True,
+                max_length=2048
+            )
+
+            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+
+            gen_kwargs = dict(
+                max_new_tokens=500,
+                temperature=0.7,
+                do_sample=True,
+                top_p=0.9,
+                top_k=50,
+                eos_token_id=self.tokenizer.eos_token_id,
+                pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
+                use_cache=True,
+            )
+
+            with torch.inference_mode():
+                outputs = self.model.generate(**inputs, **gen_kwargs)
+
+            prompt_len = inputs["input_ids"].shape[1]
+            generated_tokens = outputs[0][prompt_len:]
+            text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+
             # Reset state to IDLE after processing
-            self._state = ModelState.IDLE
+            self.state = ModelState.IDLE
             
             logger.info("======== Description generated successfully ========")
-            logger.info(f"======== {generated} ========")
-            return generated.strip()
+            logger.info(f"======== {text} ========")
+            return text.strip()
         except Exception as e:
             logger.error(f"======== Error: {str(e)} ========")
             raise
-            
-    # Alias for backward compatibility
-    async def generate_description(self, text: str, prompt: str) -> str:
-        """Alias for inference method for backward compatibility."""
-        return await self.inference(text, prompt)
 
     def _build_chat_prompt(self, text: str, prompt: str) -> str:
         messages = [
@@ -123,17 +130,16 @@ class MistralModel(InferenceModel):
             {"role": "user", "content": text}
         ]
 
-        if hasattr(self.tokenizer, "apply_chat_template"):
-            try:
-                return self.tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=False,
-                    add_generation_prompt=True
-                )
-            except Exception:
-                pass
-
-        return f"<s>[INST] {prompt} {text} [/INST]"
+        try:
+            logger.info("======== Using apply_chat_template ========")
+            return self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
+        except Exception:
+            logger.info("======== Using fallback prompt ========")
+            pass
 
     def _generate_sync(self, input_text: str) -> str:
         inputs = self.tokenizer(

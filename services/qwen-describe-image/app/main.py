@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from .config import settings
+from app.config import settings
 
 # Configure logging
 logging.basicConfig(
@@ -12,7 +12,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import router after shared globals to avoid circular imports
-from .router import router
+from app.router import router
 
 app = FastAPI(
     title=settings.API_TITLE,
@@ -30,7 +30,8 @@ app.add_middleware(
 )
 
 # Include router
-app.include_router(router, prefix="/api/v1", tags=["describe-image"])
+app.include_router(router, prefix="/api/v1", tags=["generate-description"])
+
 
 if __name__ == "__main__":
     import uvicorn

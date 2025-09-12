@@ -11,11 +11,11 @@ class ChatterboxModel:
     """Chatterbox TTS model."""
 
     def __init__(self):
-        self._model = None
+        self.model = None
 
     def is_loaded(self):
         """Ensures that the model is loaded."""
-        if self._model is None:
+        if self.model is None:
             logger.info("Loading Chatterbox TTS model...")
             
             # Debug info
@@ -30,21 +30,21 @@ class ChatterboxModel:
             try:
                 if torch.cuda.is_available():
                     logger.info("Attempting to load ChatterboxTTS with CUDA...")
-                    self._model = ChatterboxTTS.from_pretrained(device="cuda")
+                    self.model = ChatterboxTTS.from_pretrained(device="cuda")
                     logger.info("Successfully loaded ChatterboxTTS with CUDA")
                 else:
                     raise Exception("PyTorch CUDA not available")
             except Exception as e:
                 logger.warning(f"ChatterboxTTS CUDA failed: {str(e)}, falling back to CPU")
                 try:
-                    self._model = ChatterboxTTS.from_pretrained(device="cpu")
+                    self.model = ChatterboxTTS.from_pretrained(device="cpu")
                     logger.info("Successfully loaded ChatterboxTTS with CPU")
                 except Exception as cpu_e:
                     logger.error(f"ChatterboxTTS CPU also failed: {str(cpu_e)}")
                     raise
             logger.info("Chatterbox TTS model loaded successfully")
 
-        return self._model
+        return self.model
 
     def generate_audio(self, text: str, audio_prompt_url: str = None) -> bytes:
         logger.info(f"ChatterboxModel: generating audio from {text}")

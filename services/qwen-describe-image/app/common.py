@@ -33,7 +33,6 @@ class JobResponse(BaseModel):
     """RunPod-compatible job response."""
     id: str = Field(..., description="Job ID")
     status: str = Field(..., description="Job status")
-    workerId: str = Field(default="qwen-worker", description="Worker ID")
     detail: Optional[JobDetail] = None
 
 class InferenceRequest(BaseModel):
@@ -68,10 +67,10 @@ class InferenceModel(ABC):
     All model implementations must inherit from this class and implement the required methods.
     """
     def __init__(self):
-        self._model = None
-        self._state = ModelState.COLD
-        self._loading_start_time = None
-        self._error_message = None
+        self.model = None
+        self.state = ModelState.COLD
+        self.loading_start_time = None
+        self.error_message = None
         self.model_name = None
 
     def require_gpu(self) -> bool:
@@ -89,12 +88,12 @@ class InferenceModel(ABC):
         self.require_gpu()
         
         if self.is_loaded():
-            self._state = ModelState.IDLE
+            self.state = ModelState.IDLE
             return
             
-        self._state = ModelState.WARMINGUP
-        self._loading_start_time = time.time()
-        self._error_message = None
+        self.state = ModelState.WARMINGUP
+        self.loading_start_time = time.time()
+        self.error_message = None
         
         logger.info("======== Model loading... This may take several minutes. ========")
 
@@ -117,21 +116,6 @@ class InferenceModel(ABC):
     def is_loaded(self):
         """Check if model is loaded."""
         pass
-    
-    @property
-    def state(self) -> ModelState:
-        """Get current model state."""
-        return self._state
-    
-    @property
-    def error_message(self) -> str:
-        """Get error message if state is ERROR."""
-        return self._error_message
-    
-    @property
-    def loading_start_time(self) -> float:
-        """Get loading start time."""
-        return self._loading_start_time
 
 class InferenceHandler:
     """ Class that handles inference requests. """
@@ -209,7 +193,7 @@ class InferenceHandler:
             self.model_loading_job_id = None
             
         except Exception as e:
-            error_msg = f"Model warmup failed kakaka: {str(e)}"
+            error_msg = f"Model warmup failed: {str(e)}"
             logger.error(f"======== {error_msg} ========")
             self.model._state = ModelState.ERROR
             self.model._error_message = error_msg
