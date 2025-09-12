@@ -32,7 +32,6 @@ app.add_middleware(
 # Include router
 app.include_router(router, prefix="/api/v1", tags=["describe-image"])
 
-
 if __name__ == "__main__":
     import uvicorn
     # Important: Use only 1 worker per GPU

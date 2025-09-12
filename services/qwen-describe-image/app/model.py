@@ -7,27 +7,18 @@ import torch
 import logging
 import time
 import os
-from enum import Enum
+from typing import Dict, Any
 from .config import settings
+from .common import ModelState, InferenceModel
 
 logger = logging.getLogger(__name__)
 
-class ModelState(Enum):
-    COLD = "COLD" 
-    WARMINGUP = "WARMINGUP"
-    PROCESSING = "PROCESSING"
-    IDLE = "IDLE"
-    ERROR = "ERROR"
-
-class QwenModel:
+class QwenModel(InferenceModel):
     """ImageDescriptionModel for image description using model (local)."""
     def __init__(self, max_width: int = 512):
-        self._model = None
+        super().__init__()
         self._processor = None
         self.max_width = max_width
-        self._state = ModelState.COLD
-        self._loading_start_time = None
-        self._error_message = None
 
     def load_model(self):
         """Ensures that the model is loaded synchronously."""
@@ -112,21 +103,6 @@ class QwenModel:
         """Check if model is loaded."""
         return self._model is not None and self._processor is not None
     
-    @property
-    def state(self) -> ModelState:
-        """Get current model state."""
-        return self._state
-    
-    @property
-    def error_message(self) -> str:
-        """Get error message if state is ERROR."""
-        return self._error_message
-    
-    @property
-    def loading_start_time(self) -> float:
-        """Get loading start time."""
-        return self._loading_start_time
-    
     def _download_and_resize_image(self, image_url: str) -> Image.Image:
         """Downloads the image and resizes it to max_width if necessary."""
         resp = requests.get(image_url)
@@ -140,16 +116,23 @@ class QwenModel:
 
         return img
 
-    def describe_image(self, image_url: str, prompt: str = None) -> str:
+    def inference(self, request_data: Dict[str, Any]) -> str:
+        image_url = request_data.get('image_url')
+        
+        if not image_url:
+            raise ValueError("The 'image_url' parameter is required for this model")
+            
         logger.info(f"======== Describing image from {image_url} ========")
+        
         try:
             # Ensure model is loaded
             if not self.is_loaded():
                 self.load_model()
 
             image = self._download_and_resize_image(image_url)
-
-            prompt = settings.PROMPT if prompt is None else prompt
+            
+            # Obtener prompt del diccionario
+            prompt = request_data.get('prompt', settings.PROMPT)
 
             messages = [
                 {

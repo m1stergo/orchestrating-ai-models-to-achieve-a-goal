@@ -1,11 +1,8 @@
 import logging
-from typing import Any, Dict
-
 import runpod
-from .service import warmup_model, describe_image
-from .schemas import InferenceRequest
+from typing import Any, Dict
+from .shared import handler
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -13,57 +10,14 @@ logger = logging.getLogger(__name__)
 #                               RunPod Handler                                 #
 # ---------------------------------------------------------------------------- #
 
-def handler(event: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Main RunPod handler that routes requests based on action parameter.
+def rp_handler(event: Dict[str, Any]) -> Dict[str, Any]:
+    # Extraer el input del evento y pasarlo directamente al handler de inferencia
+    input_data = event.get("input", {})
+    logger.info(f"======== Received RunPod event with input: {input_data} ========")
     
-    Actions:
-    - warmup: Trigger model loading
-    - inference: Run image description (default)
-    """
-    action = event.get("input", {}).get("action", "inference")
-    
-    logger.info(f"======== RunPod handler called with action: {action} ========")
-    
-    try:
-        if action == "warmup":
-            result = warmup_model()
-            
-            return {
-                "status": result.detail.status if result.detail else "ERROR",
-                "message": result.detail.message if result.detail else "No detail available",
-                "data": result.detail.data if result.detail else ""
-            }
-            
-        elif action == "inference":
-            image_url = event.get("input", {}).get("image_url")
-            prompt = event.get("input", {}).get("prompt")
-            request = InferenceRequest(image_url=image_url, prompt=prompt)
-            result = describe_image(request=request)
-            
-            return {
-                "status": result.detail.status if result.detail else "ERROR",
-                "message": result.detail.message if result.detail else "No detail available",
-                "data": result.detail.data if result.detail else ""
-            }
-            
-        else:
-            return {
-                "status": "ERROR",
-                "message": f"Unknown action: {action}. Valid actions: warmup, inference",
-                "data": ""
-            }
-            
-    except Exception as exc:
-        logger.error(f"======== Handler error: {str(exc)} ========")
-        
-        return {
-            "status": "ERROR",
-            "message": str(exc),
-            "data": ""
-        }
+    return handler.run_job(input_data)
 
 
 if __name__ == "__main__":
     logger.info("======== Starting RunPod serverless handler... ========")
-    runpod.serverless.start({"handler": handler})
+    runpod.serverless.start({"handler": rp_handler})
