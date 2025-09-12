@@ -60,7 +60,7 @@ async def generate_speech(
     try:
         logger.info(f"Generating speech for text: {request.text[:50]}...")
         adapter = TextToSpeechAdapterFactory.get_adapter(request.model)
-        audio_bytes = await adapter.generate_speech(request.text, request.audio_prompt_url)
+        audio_bytes = await adapter.generate_speech(request.text, request.voice_url)
         
         # Save the audio bytes to file and get the URL
         audio_info = await save_generated_audio(audio_bytes)

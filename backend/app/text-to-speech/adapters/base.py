@@ -14,13 +14,13 @@ class TextToSpeechAdapter(ABC):
         pass
 
     @abstractmethod
-    async def generate_speech(self, text: str, audio_prompt_url: Optional[str] = None) -> bytes:
+    async def generate_speech(self, text: str, voice_url: Optional[str] = None) -> bytes:
         """
         Generate speech from text using the TTS model.
         
         Args:
             text: Text to convert to speech
-            audio_prompt_url: Optional URL to audio prompt file for voice cloning
+            voice_url: Optional URL to audio prompt file for voice cloning
             
         Returns:
             bytes: Audio data as WAV bytes

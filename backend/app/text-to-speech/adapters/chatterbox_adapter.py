@@ -28,13 +28,13 @@ class ChatterboxAdapter(TextToSpeechAdapter):
             logger.warning("Chatterbox service URL not found. Set TTS_CHATTERBOX_URL environment variable.")
         return available
     
-    async def generate_speech(self, text: str, audio_prompt_url: Optional[str] = None) -> bytes:
+    async def generate_speech(self, text: str, voice_url: Optional[str] = None) -> bytes:
         """
         Generate speech using Chatterbox TTS service.
         
         Args:
             text: Text to convert to speech
-            audio_prompt_url: Optional URL to audio prompt file for voice cloning
+            voice_url: Optional URL to audio prompt file for voice cloning
             
         Returns:
             bytes: Audio data as WAV bytes
@@ -61,8 +61,8 @@ class ChatterboxAdapter(TextToSpeechAdapter):
                     "text": text
                 }
                 
-                if audio_prompt_url:
-                    payload["audio_prompt_url"] = audio_prompt_url
+                if voice_url:
+                    payload["voice_url"] = voice_url
                 
                 # Call the generate-audio endpoint
                 async with session.post(f"{self.service_url}/generate-audio", json=payload) as resp:

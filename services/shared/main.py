@@ -30,7 +30,7 @@ app.add_middleware(
 )
 
 # Include router
-app.include_router(router, prefix="/api/v1", tags=["generate-description"])
+app.include_router(router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

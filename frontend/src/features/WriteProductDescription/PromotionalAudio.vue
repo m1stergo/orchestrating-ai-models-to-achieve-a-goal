@@ -79,7 +79,7 @@ async function generatePromotionalAudio() {
         await triggerGenerateAudio({
             text: form?.values.audio_description,
             model: 'chatterbox',
-            audio_prompt_url: selectedVoice.value.audio_url
+            voice_url: selectedVoice.value.audio_url
         })
     } catch (error) {
         console.error('Error generating promotional audio:', error)

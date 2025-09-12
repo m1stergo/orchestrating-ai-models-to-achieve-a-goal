@@ -51,7 +51,7 @@ router = APIRouter()
     **Input Requirements:**
     - `text`: Text to convert to speech (required)
     - `model`: TTS model to use - currently supports 'chatterbox' (optional, defaults to 'chatterbox')
-    - `audio_prompt_url`: URL to audio file for voice cloning (optional)
+    - `voice_url`: URL to audio file for voice cloning (optional)
     """
 )
 async def generate_speech_proxy(
@@ -60,7 +60,7 @@ async def generate_speech_proxy(
         example={
             "text": "Hello, this is a sample text that will be converted to speech using artificial intelligence.",
             "model": "chatterbox",
-            "audio_prompt_url": "https://example.com/voice_sample.wav"
+            "voice_url": "https://example.com/voice_sample.wav"
         }
     )
 ):

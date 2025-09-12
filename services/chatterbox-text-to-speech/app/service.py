@@ -31,7 +31,7 @@ def generate_audio(request: GenerateAudioRequest) -> bytes:
         
         logger.info(f"Generating audio for text: {request.text}")
         # Use the global model instance
-        result = model_instance.generate_audio(request.text, request.audio_prompt_url)
+        result = model_instance.generate_audio(request.text, request.voice_url)
         logger.info("Audio generation completed successfully")
         return result
     except Exception as e:
