@@ -1,18 +1,5 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
-import tomllib
-from pathlib import Path
-
-
-def get_version() -> str:
-    """Read version from pyproject.toml"""
-    try:
-        pyproject_path = Path(__file__).parent / "pyproject.toml"
-        with open(pyproject_path, "rb") as f:
-            pyproject_data = tomllib.load(f)
-        return pyproject_data["project"]["version"]
-    except (FileNotFoundError, KeyError, tomllib.TOMLDecodeError):
-        return "1.0.0"  # fallback version
 
 
 class Settings(BaseSettings):
@@ -21,7 +8,7 @@ class Settings(BaseSettings):
     # API settings
     API_TITLE: str = "Generate Description Service"
     API_DESCRIPTION: str = "AI service for text generation and description"
-    API_VERSION: str = get_version()
+    API_VERSION: str = "/api/v1"
     PORT: int = 8000
 
     # Model configurations

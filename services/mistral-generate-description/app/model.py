@@ -1,35 +1,18 @@
 import logging
 import time
-import os
-from enum import Enum
 from typing import Any, Optional
 from .config import settings
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from .common import InferenceModel
 
 logger = logging.getLogger(__name__)
 
-class ModelState(Enum):
-    COLD = "COLD"
-    WARMINGUP = "WARMINGUP"
-    PROCESSING = "PROCESSING"
-    IDLE = "IDLE"
-    ERROR = "ERROR"
-
-class MistralModel:
+class MistralModel(InferenceModel):
     """Local Mistral model for text generation (aligned with other providers)."""
     def __init__(self):
-        self.model_name = None
-        self.model: Optional[Any] = None
+        super().__init__()
         self.tokenizer: Optional[Any] = None
-        self._state = ModelState.COLD
-        self._loading_start_time = None
-        self._error_message = None
-        
-    @property
-    def has_gpu(self) -> bool:
-        """Check if GPU is available for model inference."""
-        return torch.cuda.is_available()
         
     @property
     def device(self):
@@ -38,43 +21,15 @@ class MistralModel:
     
     def load_model(self):
         """Ensures that the model is loaded synchronously."""
-        if self.is_loaded():
-            self._state = ModelState.IDLE
-            return
-            
-        self._state = ModelState.WARMINGUP
-        self._loading_start_time = time.time()
-        self._error_message = None
-
-        start_time = time.time()
-        # Usar MISTRAL_MODEL_NAME en lugar de MISTRAL_MODEL_NAME_NAME
-        self.model_name = settings.MISTRAL_MODEL_NAME
-        logger.info(f"======== Loading Mistral model: {self.model_name}... This may take several minutes. ========")
-
-        # Set HuggingFace cache directory if specified
-        if settings.HUGGINGFACE_CACHE_DIR:
-            cache_dir = settings.HUGGINGFACE_CACHE_DIR
-            os.environ['TRANSFORMERS_CACHE'] = cache_dir
-            os.environ['HF_HOME'] = cache_dir
-            logger.info(f"======== Using custom HuggingFace cache directory: {cache_dir} ========")
-        else:
-            logger.info("======== Using default HuggingFace cache directory ========")
-
-        # Check if CUDA is available - REQUIRE GPU
-        device_available = torch.cuda.is_available()
-        logger.info(f"======== CUDA available: {device_available} ========")
-        
-        if not device_available:
-            error_msg = "GPU is required for this service. No CUDA-compatible GPU detected. Terminating process."
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
-
-        logger.info("======== Starting model download and initialization... ========")
+        super().load_model()
 
         try:
             # Load tokenizer
-            tokenizer_kwargs = {"trust_remote_code": True, "token": settings.HF_TOKEN}
-            if hasattr(settings, 'HUGGINGFACE_CACHE_DIR') and settings.HUGGINGFACE_CACHE_DIR:
+            tokenizer_kwargs = {
+                "trust_remote_code": True, 
+                "token": settings.HF_TOKEN
+            }
+            if settings.HUGGINGFACE_CACHE_DIR:
                 tokenizer_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
                 
             self.tokenizer = AutoTokenizer.from_pretrained(
@@ -82,18 +37,15 @@ class MistralModel:
                 **tokenizer_kwargs
             )
 
-            # Load model with appropriate settings based on hardware
-            dtype = "auto" if self.has_gpu else torch.float32
-            device_map = "auto" if self.has_gpu else None
-
+            # Load model
             model_kwargs = {
-                "torch_dtype": dtype,
-                "device_map": device_map,
+                "torch_dtype": "auto",
+                "device_map": "auto",
                 "trust_remote_code": True,
                 "token": settings.HF_TOKEN
             }
             
-            if hasattr(settings, 'HUGGINGFACE_CACHE_DIR') and settings.HUGGINGFACE_CACHE_DIR:
+            if settings.HUGGINGFACE_CACHE_DIR:
                 model_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
 
             self.model = AutoModelForCausalLM.from_pretrained(
@@ -101,12 +53,9 @@ class MistralModel:
                 **model_kwargs
             )
 
-            if not self.has_gpu and device_map is None:
-                self.model = self.model.to(self.device)
-
-            # Successfully loaded model
+            # Successfully loaded
             self._state = ModelState.IDLE
-            total_time = time.time() - start_time
+            total_time = time.time() - self.loading_start_time
             logger.info(f"======== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ========")
             
             return self.model, self.tokenizer

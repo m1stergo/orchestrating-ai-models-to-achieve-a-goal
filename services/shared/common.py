@@ -6,7 +6,9 @@ import time
 import threading
 import uuid
 import logging
-
+import torch
+import os
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -71,11 +73,40 @@ class InferenceModel(ABC):
         self._loading_start_time = None
         self._error_message = None
         self.model_name = None
+
+    def require_gpu(self) -> bool:
+        """Check if GPU is available for model inference."""
+        device_available = torch.cuda.is_available()
+        logger.info(f"======== CUDA available: {device_available} ========")
+        
+        if not device_available:
+            error_msg = "GPU is required for this service. No CUDA-compatible GPU detected. Terminating process."
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
     
-    @abstractmethod
     def load_model(self):
-        """Load the model. Must be implemented by subclasses."""
-        pass
+        """Ensures that the model is loaded synchronously."""
+        self.require_gpu()
+        
+        if self.is_loaded():
+            self._state = ModelState.IDLE
+            return
+            
+        self._state = ModelState.WARMINGUP
+        self._loading_start_time = time.time()
+        self._error_message = None
+        
+        logger.info("======== Model loading... This may take several minutes. ========")
+
+        # Set HuggingFace cache directory if specified
+        if settings.HUGGINGFACE_CACHE_DIR:
+            cache_dir = settings.HUGGINGFACE_CACHE_DIR
+            os.environ['TRANSFORMERS_CACHE'] = cache_dir
+            os.environ['HF_HOME'] = cache_dir
+            logger.info(f"======== Using custom HuggingFace cache directory: {cache_dir} ========")
+        else:
+            logger.info("======== Using default HuggingFace cache directory ========")
+    
     
     @abstractmethod
     def inference(self, request_data: Dict[str, Any]):
@@ -105,11 +136,11 @@ class InferenceModel(ABC):
 class InferenceHandler:
     """ Class that handles inference requests. """
     def __init__(self, model: InferenceModel, model_name: str):
-        self.model_name = model_name
         self.model = model
         self.model_loaded = False
         self.pending_jobs = {}
         self.model_loading_job_id = None
+        self.model.model_name = model_name
 
     def run_job(self, request_data: Dict[str, Any]):
         """
@@ -158,9 +189,6 @@ class InferenceHandler:
         Background model loading process.
         Loads the model asynchronously and updates job status.
         """
-        # Wait a bit to simulate loading time
-        time.sleep(3)
-        
         try:
             # Set model state to WARMINGUP
             self.model._state = ModelState.WARMINGUP
@@ -171,7 +199,7 @@ class InferenceHandler:
             # Update job status to completed
             self.pending_jobs[job_id] = {
                 "status": "COMPLETED",
-                "result": JobDetail(
+                "detail": JobDetail(
                     status="IDLE",
                     message="Model warmup completed successfully",
                     data=""
@@ -181,18 +209,23 @@ class InferenceHandler:
             self.model_loading_job_id = None
             
         except Exception as e:
-            error_msg = f"Model warmup failed: {str(e)}"
+            error_msg = f"Model warmup failed kakaka: {str(e)}"
             logger.error(f"======== {error_msg} ========")
+            self.model._state = ModelState.ERROR
+            self.model._error_message = error_msg
             
             # Update with error
             self.pending_jobs[job_id] = {
                 "status": "ERROR",
-                "result": JobDetail(
+                "detail": JobDetail(
                     status="ERROR",
                     message=error_msg,
                     data=""
                 )
             }
+
+            logger.info(f"======== Model warmup failed: {error_msg} ========")
+            logger.error(self.pending_jobs[job_id])
             
             self.model_loading_job_id = None
 
@@ -201,26 +234,23 @@ class InferenceHandler:
         Simulation of asynchronous background processing.
         In a real environment, this would run on a separate server.
         """
-        # Wait a bit to simulate processing time
-        time.sleep(5)
-        
         try:
             # Set model state to PROCESSING before starting inference
             self.model._state = ModelState.PROCESSING
             
             logger.info(f"======== Processing job {job_id} with request_data: {request_data} ========")
             
-            result = self.model.inference(request_data)
+            detail = self.model.inference(request_data)
             # Reset state to IDLE after processing
             self.model._state = ModelState.IDLE
             
             # Update job status
             self.pending_jobs[job_id] = {
                 "status": "COMPLETED",
-                "result": JobDetail(
+                "detail": JobDetail(
                     status="IDLE",
                     message="Inference completed successfully",
-                    data=result
+                    data=detail
                 )
             }
             logger.info(f"======== Job {job_id} completed successfully ========")
@@ -232,7 +262,7 @@ class InferenceHandler:
             # Update with error
             self.pending_jobs[job_id] = {
                 "status": "ERROR",
-                "result": JobDetail(
+                "detail": JobDetail(
                     status="ERROR",
                     message=error_msg,
                     data=""
@@ -265,13 +295,11 @@ class InferenceHandler:
         # Get job information
         job_info = self.pending_jobs[job_id]
         job_status = job_info["status"]
-        job_result = job_info["result"]
+        job_detail = job_info["detail"]
         
         # Create response based on current status
         if job_status == "IN_PROGRESS":
-            # Si no hay resultado aún, necesitamos diferenciar entre warmup y processing
-            if job_result is None:
-                # Verificamos si este job es el job de warmup
+            if job_detail is None:
                 if job_id == self.model_loading_job_id:
                     detail = JobDetail(
                         status="WARMINGUP",
@@ -285,7 +313,7 @@ class InferenceHandler:
                         data=""
                     )
             else:
-                detail = job_result
+                detail = job_detail
                 
             return JobResponse(
                 id=job_id,
@@ -293,14 +321,14 @@ class InferenceHandler:
                 detail=detail
             )
         elif job_status == "COMPLETED":
-            if job_result is None:
+            if job_detail is None:
                 detail = JobDetail(
                     status="IDLE",
                     message="Job completed successfully",
                     data=""
                 )
             else:
-                detail = job_result
+                detail = job_detail
                 
             return JobResponse(
                 id=job_id,
@@ -308,14 +336,14 @@ class InferenceHandler:
                 detail=detail
             )
         else:  # ERROR
-            if job_result is None:
+            if job_detail is None:
                 detail = JobDetail(
                     status="ERROR",
                     message="Unknown error occurred",
                     data=""
                 )
             else:
-                detail = job_result
+                detail = job_detail
                 
             return JobResponse(
                 id=job_id,
@@ -325,6 +353,18 @@ class InferenceHandler:
 
     def inference(self, request_data: Dict[str, Any]) -> JobResponse:
         job_id = str(uuid.uuid4())
+
+        # skip if model is in error state
+        if self.model.state == ModelState.ERROR:
+            return JobResponse(
+                id=job_id,
+                status="ERROR",
+                detail=JobDetail(
+                    status="ERROR",
+                    message=f"Model is in ERROR state: {self.model.error_message}",
+                    data=""
+                )
+            )
         
         if self.model.state == ModelState.COLD:
             detail = JobDetail(
@@ -365,7 +405,7 @@ class InferenceHandler:
         # Register job as in progress
         self.pending_jobs[job_id] = {
             "status": "IN_PROGRESS",
-            "result": None
+            "detail": None
         }
         
         # Start background processing
@@ -395,9 +435,21 @@ class InferenceHandler:
         Returns:
             JobResponse: Job status with ID for tracking the loading process
         """
+        job_id = str(uuid.uuid4())
+
+        # skip if model is in error state
+        if self.model.state == ModelState.ERROR:
+            return JobResponse(
+                id=job_id,
+                status="ERROR",
+                detail=JobDetail(
+                    status="ERROR",
+                    message=f"Model is in ERROR state: {self.model.error_message}",
+                    data=""
+                )
+            )
         
         if self.model.state == ModelState.IDLE:
-            job_id = str(uuid.uuid4())
             return JobResponse(
                 id=job_id,
                 status="COMPLETED",
@@ -409,7 +461,6 @@ class InferenceHandler:
             )
         
         if self.model.state == ModelState.PROCESSING:
-            job_id = str(uuid.uuid4())
             return JobResponse(
                 id=job_id,
                 status="IN_QUEUE",
@@ -431,19 +482,15 @@ class InferenceHandler:
                 )
             )
         
-        # Create a new job for model loading
-        job_id = str(uuid.uuid4())
         self.model_loading_job_id = job_id
         
-        # Register job as in progress
         self.pending_jobs[job_id] = {
             "status": "IN_PROGRESS",
-            "result": None
+            "detail": None
         }
         
         logger.info(f"======== Starting model warmup in background thread... (job_id: {job_id}) ========")
         
-        # Start loading in background thread
         thread = threading.Thread(
             target=self._load_model_in_thread,
             args=(job_id,)

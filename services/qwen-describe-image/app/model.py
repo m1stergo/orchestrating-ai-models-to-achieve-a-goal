@@ -3,13 +3,12 @@ from io import BytesIO
 import requests
 from transformers import Qwen2_5_VLForConditionalGeneration
 from qwen_vl_utils import process_vision_info
-import torch
 import logging
 import time
-import os
 from typing import Dict, Any
 from .config import settings
 from .common import ModelState, InferenceModel
+from transformers import AutoProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -22,45 +21,16 @@ class QwenModel(InferenceModel):
 
     def load_model(self):
         """Ensures that the model is loaded synchronously."""
-        if self.is_loaded():
-            self._state = ModelState.IDLE
-            return
-            
-        self._state = ModelState.WARMINGUP
-        self._loading_start_time = time.time()
-        self._error_message = None
-        
-        start_time = time.time()
-        logger.info("======== Qwen model loading... This may take several minutes. ========")
-        self.model_name = settings.QWEN_MODEL_NAME
+        super().load_model()
 
-        # Set HuggingFace cache directory if specified
-        if settings.HUGGINGFACE_CACHE_DIR:
-            cache_dir = settings.HUGGINGFACE_CACHE_DIR
-            os.environ['TRANSFORMERS_CACHE'] = cache_dir
-            os.environ['HF_HOME'] = cache_dir
-            logger.info(f"======== Using custom HuggingFace cache directory: {cache_dir} ========")
-        else:
-            logger.info("======== Using default HuggingFace cache directory ========")
-
-        # Check if CUDA is available - REQUIRE GPU
-        device_available = torch.cuda.is_available()
-        logger.info(f"======== CUDA available: {device_available} ========")
-        
-        if not device_available:
-            error_msg = "GPU is required for this service. No CUDA-compatible GPU detected. Terminating process."
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
-        
-        logger.info("======== Starting model download and initialization... ========")
-        
         try:
-            # Pass cache_dir to from_pretrained if specified
+            # Load model
             model_kwargs = {
                 "torch_dtype": "auto",
                 "device_map": "auto",
                 "trust_remote_code": True
             }
+
             if settings.HUGGINGFACE_CACHE_DIR:
                 model_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
                 
@@ -68,15 +38,8 @@ class QwenModel(InferenceModel):
                 self.model_name,
                 **model_kwargs
             )
-        except Exception as e:
-            logger.error(f"======== Failed to load model with GPU: {e} ========")
-            self._state = ModelState.ERROR
-            self._error_message = str(e)
-            raise RuntimeError(f"Failed to load model on GPU: {str(e)}")
-            
-        # Load processor too
-        try:
-            from transformers import AutoProcessor
+
+            # Load processor
             processor_kwargs = {"trust_remote_code": True}
             if settings.HUGGINGFACE_CACHE_DIR:
                 processor_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
@@ -86,9 +49,9 @@ class QwenModel(InferenceModel):
                 **processor_kwargs
             )
             
-            # Successfully loaded both model and processor
+            # Successfully loaded
             self._state = ModelState.IDLE
-            total_time = time.time() - start_time
+            total_time = time.time() - self.loading_start_time
             logger.info(f"======== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ========")
 
             return self._model, self._processor
