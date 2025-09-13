@@ -57,8 +57,8 @@ jobs:
       - name: Build & Push Qwen Service
         uses: docker/build-push-action@v6
         with:
-          context: ./services/qwen-describe_image
-          file: ./services/qwen-describe_image/Dockerfile
+          context: ./services/qwen-describe-image
+          file: ./services/qwen-describe-image/Dockerfile
           push: true
           platforms: linux/amd64
           tags: ${{ steps.tags.outputs.tags }}

@@ -57,8 +57,8 @@ jobs:
       - name: Build & Push Backend Service
         uses: docker/build-push-action@v6
         with:
-          context: ./services/backend
-          file: ./services/backend/Dockerfile
+          context: ./backend
+          file: ./backend/dockerfile
           push: true
           platforms: linux/amd64
           tags: ${{ steps.tags.outputs.tags }}

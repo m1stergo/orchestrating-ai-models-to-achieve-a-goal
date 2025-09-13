@@ -1,1 +1,1 @@
-# FastAPI application package for qwen-describe_image
+# FastAPI application package for qwen_describe_image
