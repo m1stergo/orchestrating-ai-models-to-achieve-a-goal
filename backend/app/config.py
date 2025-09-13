@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     STATIC_URL: str = "http://localhost:8000/static"
     
     # Voice models configuration
-    VOICE_MODELS_CONFIG: Path = Path("app/config/voice_models.json")
+    VOICE_MODELS_CONFIG: Path = Path("app/features/text_to_speech/voice_models.json")
     
     # Audio storage settings
     AUDIO_DIR: Path = Path("app/static/audio")

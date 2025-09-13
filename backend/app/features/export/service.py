@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
 from app.config import settings
-from app.products.models import Product
+from app.features.products.models import Product
 
 
 async def create_export_zip(db: Session, product_id: int) -> dict:

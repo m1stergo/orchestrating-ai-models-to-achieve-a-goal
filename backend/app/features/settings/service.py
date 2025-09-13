@@ -115,18 +115,18 @@ class SettingsService:
     
     async def _fetch_available_models(self) -> Dict[str, List[str]]:
         """Fetch available models from internal backend services."""
-        # Get models from describe-image service (internal backend endpoint)
+        # Get models from describe_image service (internal backend endpoint)
         describe_models = await self._get_models_from_service(
             f"{settings.BASE_URL}{settings.API_VERSION}/describe-image/models"
         )
         
-        # Get models from generate-description service (internal backend endpoint)
+        # Get models from generate_description service (internal backend endpoint)
         generate_models = await self._get_models_from_service(
             f"{settings.BASE_URL}{settings.API_VERSION}/generate-description/models"
         )
 
-        logger.info(f"Available describe-image models: {describe_models}")
-        logger.info(f"Available generate-description models: {generate_models}")
+        logger.info(f"Available describe_image models: {describe_models}")
+        logger.info(f"Available generate_description models: {generate_models}")
         
         return {
             "describe_image_models": describe_models,

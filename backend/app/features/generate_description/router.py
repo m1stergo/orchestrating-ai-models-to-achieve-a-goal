@@ -40,7 +40,7 @@ router = APIRouter()
     description="""
     Transform a basic image description into an engaging, marketing-ready product description.
     
-    This endpoint acts as a proxy to the generate-description microservice, automatically
+    This endpoint acts as a proxy to the generate_description microservice, automatically
     selecting the user's preferred AI model for content generation.
     
     **Supported models:**

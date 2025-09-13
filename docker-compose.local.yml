@@ -2,9 +2,9 @@ version: '3.8'
 
 services:
   # Describe Image Service (AI - GPU intensive) - LOCAL RTX 5090
-  describe-image-service:
+  describe_image-service:
     build:
-      context: ./services/describe-image
+      context: ./services/describe_image
       dockerfile: Dockerfile.local  # Uses CUDA 12.8 for RTX 5090
     ports:
       - "8001:8001"
@@ -12,7 +12,7 @@ services:
       - MODEL_CACHE_DIR=/app/models
     volumes:
       - model_cache:/app/models
-      - ./services/describe-image:/app  # Hot-reload para desarrollo
+      - ./services/describe_image:/app  # Hot-reload para desarrollo
     networks:
       - app-network
     deploy:
@@ -36,14 +36,14 @@ services:
       - app-network
 
   # Generate Description Service
-  generate-description-service:
+  generate_description-service:
     build:
-      context: ./services/generate-description
+      context: ./services/generate_description
       dockerfile: Dockerfile
     ports:
       - "8003:8003"
     volumes:
-      - ./services/generate-description:/app
+      - ./services/generate_description:/app
     networks:
       - app-network
 
@@ -63,9 +63,9 @@ services:
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres
       - DATABASE_NAME=orchestration_db
-      - DESCRIBE_IMAGE_QWEN_URL=http://describe-image-service:8001
+      - DESCRIBE_IMAGE_QWEN_URL=http://describe_image-service:8001
       - EXTRACT_WEBCONTENT_SERVICE_URL=http://extract-webcontent-service:8002
-      - GENERATE_DESCRIPTION_MISTRAL_URL=http://generate-description-service:8003
+      - GENERATE_DESCRIPTION_MISTRAL_URL=http://generate_description-service:8003
     volumes:
       - ./backend:/app
     networks:

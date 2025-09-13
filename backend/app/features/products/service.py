@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from app.products import models, schemas
+from app.features.products import models, schemas
 
 
 async def get_products(db: Session, skip: int = 0, limit: int = 100) -> List[models.Product]:

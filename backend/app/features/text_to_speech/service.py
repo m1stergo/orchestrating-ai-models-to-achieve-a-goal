@@ -1,5 +1,5 @@
 """
-Service for text-to-speech generation using TTS models.
+Service for text_to_speech generation using TTS models.
 """
 import logging
 import json

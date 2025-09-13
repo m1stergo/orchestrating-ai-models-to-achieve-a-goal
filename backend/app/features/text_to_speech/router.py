@@ -32,7 +32,7 @@ router = APIRouter()
                 "application/json": {
                     "example": {
                         "detail": "Service unavailable: Connection timeout",
-                        "service": "text-to-speech"
+                        "service": "text_to_speech"
                     }
                 }
             }
@@ -40,9 +40,9 @@ router = APIRouter()
     },
     summary="Generate Speech from Text",
     description="""
-    Convert text to speech using AI-powered text-to-speech models.
+    Convert text to speech using AI-powered text_to_speech models.
     
-    This endpoint acts as a proxy to the chatterbox-text-to-speech microservice,
+    This endpoint acts as a proxy to the chatterbox-text_to_speech microservice,
     providing high-quality voice synthesis with optional voice cloning capabilities.
     
     **Supported models:**

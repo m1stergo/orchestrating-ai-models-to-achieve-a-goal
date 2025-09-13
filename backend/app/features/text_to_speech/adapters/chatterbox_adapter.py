@@ -1,5 +1,5 @@
 """
-Chatterbox TTS adapter for text-to-speech generation.
+Chatterbox TTS adapter for text_to_speech generation.
 """
 import logging
 import aiohttp

@@ -1,5 +1,5 @@
 """
-Utility functions for generate-description module.
+Utility functions for generate_description module.
 """
 import re
 import json

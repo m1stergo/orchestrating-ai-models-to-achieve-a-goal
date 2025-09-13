@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import app settings to get DB URL and metadata
 from app.database import Base
 # Import models so that metadata contains all tables
-from app.products import models as products_models  # noqa: F401
+from app.features.products import models as products_models  # noqa: F401
 from app.settings import models as settings_models  # noqa: F401
 from app.config import settings as app_settings
 

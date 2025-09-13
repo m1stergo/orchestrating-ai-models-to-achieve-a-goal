@@ -1,5 +1,5 @@
-from app.extract_web_content.schemas import ExtractWebContentResponse
-from app.extract_web_content.scrapers.factory import ScraperFactory
+from app.features.extract_web_content.schemas import ExtractWebContentResponse
+from app.features.extract_web_content.scrapers.factory import ScraperFactory
 from pydantic import HttpUrl
 from typing import Union
 

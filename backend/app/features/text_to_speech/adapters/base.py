@@ -1,5 +1,5 @@
 """
-Base adapter interface for text-to-speech models.
+Base adapter interface for text_to_speech models.
 """
 from abc import ABC, abstractmethod
 from typing import Optional

@@ -1,5 +1,5 @@
 """
-Factory for creating and managing text-to-speech adapters.
+Factory for creating and managing text_to_speech adapters.
 """
 import logging
 from typing import Dict, Type, List
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class TextToSpeechAdapterFactory:
-    """Factory for creating and managing text-to-speech adapters (strategy pattern)."""
+    """Factory for creating and managing text_to_speech adapters (strategy pattern)."""
     
     # Available adapters mapped by name
     _adapters: Dict[str, Type[TextToSpeechAdapter]] = {
@@ -21,7 +21,7 @@ class TextToSpeechAdapterFactory:
     @classmethod
     def get_adapter(cls, model_name: str = None) -> TextToSpeechAdapter:
         """
-        Get a text-to-speech adapter by model name.
+        Get a text_to_speech adapter by model name.
         
         Args:
             model_name: Name of the model to use (defaults to 'chatterbox')
@@ -46,7 +46,7 @@ class TextToSpeechAdapterFactory:
     @classmethod
     def list_available_models(cls) -> List[str]:
         """
-        List all available text-to-speech models.
+        List all available text_to_speech models.
         
         Returns:
             List[str]: List of available model names
