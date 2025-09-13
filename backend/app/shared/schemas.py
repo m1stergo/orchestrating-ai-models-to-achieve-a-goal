@@ -1,6 +1,6 @@
 from typing import Optional, Generic, TypeVar, List
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
+# No necesitamos importar GenericModel, ahora BaseModel es suficiente
 
 # Tipo genérico para el campo data
 T = TypeVar('T')
@@ -25,7 +25,7 @@ class StatusRequest(BaseModel):
     job_id: Optional[str] = None
 
 # Modelo de respuesta estandarizado para APIs
-class ServiceResponse(GenericModel, Generic[T]):
+class ServiceResponse(BaseModel, Generic[T]):
     status: str
     message: str
     data: Optional[T] = None

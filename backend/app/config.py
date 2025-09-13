@@ -25,6 +25,7 @@ class Settings(BaseSettings):
             self.DATABASE_URL = f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
     
     # Backend URL settings
+    PORT: int = 8000
     BASE_URL: str = "http://localhost:8000"
     
     # Image storage settings

@@ -13,7 +13,7 @@ router = APIRouter()
             "description": "Enhanced product description generated successfully",
             "content": {
                 "application/json": {
-                    "example": {
+                    "examples": {
                         "example": {
                         "status": "success",
                         "message": "Image description generated successfully",
@@ -52,7 +52,7 @@ router = APIRouter()
 async def run_generate_description(
     request: GenerateDescriptionRequest = Body(
         ...,
-        example={
+        examples={
             "text": "A black smartphone with a large screen and multiple cameras",
             "model": "openai"
         }
@@ -109,7 +109,7 @@ async def run_generate_description(
 async def run_generate_promotional_audio_script(
     request: GenerateDescriptionRequest = Body(
         ...,
-        example={
+        examples={
             "text": "Premium smartphone with elegant black finish, large touchscreen display, and advanced multi-camera system for professional photos.",
             "model": "openai"
         }

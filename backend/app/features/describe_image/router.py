@@ -15,7 +15,7 @@ router = APIRouter()
             "description": "Image description generated successfully",
             "content": {
                 "application/json": {
-                    "example": {
+                    "examples": {
                         "status": "success",
                         "message": "Image description generated successfully",
                         "data": "A modern smartphone with a sleek black design, featuring a large touchscreen display and multiple camera lenses on the back."
@@ -27,7 +27,7 @@ router = APIRouter()
             "description": "Service unavailable",
             "content": {
                 "application/json": {
-                    "example": {
+                    "examples": {
                         "status": "error",
                         "message": "Service unavailable: Connection timeout",
                         "data": None
@@ -52,7 +52,7 @@ router = APIRouter()
 async def run_describe_image(
     request: DescribeImageRequest = Body(
         ...,
-        example={
+        examples={
             "image_url": "https://example.com/product-image.jpg",
             "model": "openai"
         }

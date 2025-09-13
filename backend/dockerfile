@@ -2,19 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Poetry and dependencies in a single layer, no color or prompts
-RUN pip install --upgrade pip \
-    && pip install "poetry==1.8.2" \
-    && poetry config virtualenvs.create false
+# Install pip and upgrade it
+RUN pip install --upgrade pip
 
-# Copy Poetry files first for better build cache
-COPY pyproject.toml poetry.lock* ./
+# Copy requirements file first for better build cache
+COPY requirements.txt ./
 
-# Install main dependencies without interaction or ANSI colors
-RUN poetry install --only=main --no-dev --no-interaction --no-ansi
+# Install dependencies
+RUN pip install -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
 
 # Production command
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "main.py"]

@@ -20,7 +20,7 @@ router = APIRouter()
             "description": "Audio generated successfully",
             "content": {
                 "application/json": {
-                    "example": {
+                    "examples": {
                         "audio_url": "http://localhost:8003/audio/generated_audio_123.wav"
                     }
                 }
@@ -30,7 +30,7 @@ router = APIRouter()
             "description": "Service unavailable",
             "content": {
                 "application/json": {
-                    "example": {
+                    "examples": {
                         "detail": "Service unavailable: Connection timeout",
                         "service": "text_to_speech"
                     }
@@ -57,7 +57,7 @@ router = APIRouter()
 async def generate_speech_proxy(
     request: TextToSpeechRequest = Body(
         ...,
-        example={
+        examples={
             "text": "Hello, this is a sample text that will be converted to speech using artificial intelligence.",
             "model": "chatterbox",
             "voice_url": "https://example.com/voice_sample.wav"
