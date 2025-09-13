@@ -2,6 +2,7 @@
 Chatterbox TTS adapter for text-to-speech generation.
 """
 import logging
+import aiohttp
 from typing import Optional
 
 from app.config import settings
@@ -33,7 +34,7 @@ class ChatterboxAdapter(PodAdapter, TextToSpeechAdapter):
 
         logger.info(f"ChatterboxAdapter inicializado con service_url={self.service_url}")
     
-    async def inference(self, text: str, voice_url: Optional[str] = None) -> bytes:
+    async def inference(self, text: str, voice_url: Optional[str] = None) -> str:
         """
         Generate speech using Chatterbox TTS service.
         
@@ -42,7 +43,7 @@ class ChatterboxAdapter(PodAdapter, TextToSpeechAdapter):
             voice_url: Optional URL to audio prompt file for voice cloning
             
         Returns:
-            bytes: Audio data as WAV bytes
+            str: Audio URL
         """
         if not self._is_available():
             raise ValueError("Chatterbox TTS service URL is not configured.")
@@ -57,24 +58,8 @@ class ChatterboxAdapter(PodAdapter, TextToSpeechAdapter):
 
             final_result = await self.run_inference(payload)
             
-            # Extract audio bytes from the result
-            logger.info(f"#\n#\n#\n\#\n final_result: {final_result}")
-
-
-            if "output" in final_result and "audio" in final_result["output"]:
-                # If audio is returned as base64, decode it
-                import base64
-                audio_bytes = base64.b64decode(final_result["output"]["audio"])
-            elif "detail" in final_result and "data" in final_result["detail"]:
-                # Alternative structure
-                import base64
-                audio_bytes = base64.b64decode(final_result["detail"]["data"])
-            else:
-                logger.error(f"Unexpected response structure: {final_result}")
-                raise ValueError(f"Unexpected response structure from TTS service")
-            
             logger.info("Chatterbox TTS service generated audio successfully")
-            return audio_bytes
+            return final_result.get("detail", {}).get("data", "")
 
         except Exception as e:
             logger.error(f"Chatterbox TTS adapter error: {str(e)}")

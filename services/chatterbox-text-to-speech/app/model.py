@@ -1,14 +1,17 @@
 import logging
 import time
+import os
 import torchaudio as ta
 from chatterbox.tts import ChatterboxTTS
 import io
 import requests
 import tempfile
-import os
 from typing import Dict, Any
 from .config import settings
 from .common import InferenceModel, ModelState
+from uuid import uuid4
+from minio import Minio
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +69,6 @@ class ChatterboxModel(InferenceModel):
             if not text:
                 raise ValueError("Text is required")
             
-            if not self.is_loaded():
-                logger.warning("Model not loaded, attempting to load now")
-                self.load_model()
-            
             audio_prompt_path = None
             temp_file = None
             
@@ -102,15 +101,49 @@ class ChatterboxModel(InferenceModel):
                 except Exception as e:
                     logger.warning(f"Could not clean up temp file: {str(e)}")
             
-            # Save to memory buffer instead of file
-            buffer = io.BytesIO()
-            ta.save(buffer, wav, self.model.sr, format="wav")
-            audio_bytes = buffer.getvalue()
-            buffer.close()
+            try:
+                buffer = io.BytesIO()
+                ta.save(buffer, wav, self.model.sr, format="wav")
+                buffer.seek(0)
+                
+                client = Minio(
+                    endpoint=settings.MINIO_ENDPOINT_URL,
+                    access_key=settings.MINIO_ACCESS_KEY,
+                    secret_key=settings.MINIO_SECRET_KEY,
+                    secure=True,
+                    cert_check=False
+                )
 
-            
-            logger.info("ChatterboxModel: audio generated successfully")
-            return audio_bytes
+                bucket_exists = client.bucket_exists(settings.MINIO_BUCKET_NAME)
+                
+                if not bucket_exists:
+                    client.make_bucket(settings.MINIO_BUCKET_NAME)
+                
+                bucket_name = settings.MINIO_BUCKET_NAME
+                
+                audio_filename = f"{uuid4()}.wav"
+                
+                buffer_size = buffer.getbuffer().nbytes
+                
+                logger.info(f"Uploading to MinIO: {bucket_name}/{audio_filename}")
+                client.put_object(
+                    bucket_name,
+                    audio_filename,
+                    buffer,
+                    buffer_size,
+                    content_type="audio/wav"
+                )
+
+                base_url = settings.MINIO_ENDPOINT_URL
+                
+                audio_url = f"https://{base_url}/{bucket_name}/{audio_filename}"
+                logger.info(f"Audio uploaded to MinIO: {audio_url}")
+                
+                return audio_url
+                
+            except Exception as storage_error:
+                logger.error(f"Error uploading to MinIO: {storage_error}")
+                raise
 
         except Exception as e:
             logger.error(f"ChatterboxModel error: {str(e)}")

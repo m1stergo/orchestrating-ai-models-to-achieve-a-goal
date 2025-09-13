@@ -3,8 +3,6 @@ Service for text-to-speech generation using TTS models.
 """
 import logging
 import json
-import uuid
-import os
 from typing import List
 from pathlib import Path
 
@@ -14,37 +12,6 @@ from app.shared.schemas import ServiceResponse
 from app.config import settings
 
 logger = logging.getLogger(__name__)
-
-async def save_generated_audio(audio_bytes: bytes) -> dict:
-    """
-    Saves generated audio bytes to the audio directory.
-    
-    Args:
-        audio_bytes: The audio data as bytes
-        
-    Returns:
-        A dictionary with information about the saved file
-    """
-    # Ensure the directory exists
-    os.makedirs(settings.AUDIO_DIR, exist_ok=True)
-    
-    # Generate a unique filename
-    unique_filename = f"{uuid.uuid4()}.wav"
-    file_path = settings.AUDIO_DIR / unique_filename
-    
-    # Save the file
-    with open(file_path, "wb") as buffer:
-        buffer.write(audio_bytes)
-    
-    # Calculate the absolute URL to access the audio
-    audio_url = f"{settings.audio_url}/{unique_filename}"
-    
-    return {
-        "filename": unique_filename,
-        "content_type": "audio/wav",
-        "audio_url": audio_url,
-        "size": os.path.getsize(file_path)
-    }
 
 async def inference(
     request: TextToSpeechRequest
@@ -61,17 +28,15 @@ async def inference(
     try:
         logger.info(f"Generating speech for text: {request.text[:50]}...")
         adapter = TextToSpeechAdapterFactory.get_adapter(request.model)
-        audio_bytes = await adapter.inference(request.text, request.voice_url)
+        audio_url = await adapter.inference(request.text, request.voice_url)
         
-        # Save the audio bytes to file and get the URL
-        audio_info = await save_generated_audio(audio_bytes)
         logger.info("Speech generation completed successfully")
         
         return ServiceResponse(
             status="success",
             message="Speech generated successfully",
             data={
-                "audio_url": audio_info["audio_url"]
+                "audio_url": audio_url
             }
         )
     except Exception as e:

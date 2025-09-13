@@ -12,6 +12,12 @@ class Settings(BaseSettings):
 
     HUGGINGFACE_CACHE_DIR: Optional[str] = None
     
+    # MinIO storage settings
+    MINIO_BUCKET_NAME: str # Nombre predeterminado del bucket
+    MINIO_ENDPOINT_URL: str
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
+    
     # Custom prompt template
     PROMPT: Optional[str] = """
     Create a short VOICEOVER TEXT for a Reels/TikTok promotional video about the product.

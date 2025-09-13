@@ -50,7 +50,6 @@ const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoading
   onSuccess: ({ data }) => {
     const parsedData = parseDescriptionResponse(data)
     form.setFieldValue('audio_description', parsedData.description)
-    debugger
     dirty.value = false
   },
   onError: () => {
@@ -62,7 +61,6 @@ const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoading
 const { mutateAsync: triggerGenerateAudio, isLoading: isLoadingGenerateAudio } = useMutation({
   mutation: generateTextToSpeech,
   onSuccess: ({ data }) => {
-    debugger
     form.setFieldValue('audio', data.audio_url)
   },
   onError: (error) => {
