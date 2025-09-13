@@ -4,6 +4,7 @@ import { RouterView } from 'vue-router'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { useService } from '@/entities/services/useService'
+import { onMounted } from 'vue'
 
 const toast = useToast()
 
@@ -25,6 +26,20 @@ const { settings: settingsGenerateDescription, triggerWarmup: triggerWarmupGener
       detail: 'Unable to connect to generate description service. Please refresh the page.',
     })
   }
+})
+
+const { triggerWarmup: triggerWarmupGenerateAudio } = useService('text-to-speech', {
+  onError: () => {
+    toast.add({
+      severity: 'error',
+      summary: 'Service Unavailable',
+      detail: 'Unable to connect to generate audio service. Please refresh the page.',
+    })
+  }
+})
+
+onMounted(() => {
+  triggerWarmupGenerateAudio({ model: 'chatterbox' })
 })
 
 watch(settingsDescribeImage, (newSettings, oldSettings) => {

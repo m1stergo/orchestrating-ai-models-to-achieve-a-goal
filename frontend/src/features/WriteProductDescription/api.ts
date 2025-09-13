@@ -76,7 +76,9 @@ export async function getAvailableVoices(): Promise<VoiceModelsResponse> {
   if (!response.ok) {
     throw new Error(`Failed to get available voices: ${response.statusText}`)
   }
-  return response.json()
+  const { data } = await response.json()
+
+  return data
 }
 
 export async function generatePromotionalAudioScript(params: { text: string, model: string, prompt?: string }): Promise<ServiceResponse> {

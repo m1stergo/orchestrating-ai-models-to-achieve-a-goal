@@ -1,20 +1,20 @@
 from fastapi import APIRouter, HTTPException, Body
+import logging
+from typing import List
+from app.shared.schemas import WarmupRequest, ServiceResponse
+
+logger = logging.getLogger(__name__)
 from .schemas import (
     TextToSpeechRequest,
-    TextToSpeechResponse,
-    VoiceModelsResponse
+    VoiceModel
 )
-from pydantic import BaseModel
-from typing import Dict, Any
-
-class ServicesHealthResponse(BaseModel):
-    services: Dict[str, Any]
+from .service import inference, warmup, list_available_voices
 
 router = APIRouter()
 
 @router.post(
     "/",
-    response_model=TextToSpeechResponse,
+    response_model=ServiceResponse[dict],
     responses={
         200: {
             "description": "Audio generated successfully",
@@ -65,41 +65,42 @@ async def generate_speech_proxy(
     )
 ):
     try:
-        # Call the service directly using the adapter pattern
-        from .service import generate_speech
-        return await generate_speech(request)
+        return await inference(request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating speech: {str(e)}")
 
-@router.get(
-    "/models",
-    response_model=Dict[str, Any],
-    summary="Get Available TTS Models",
-    description="Get a list of available text-to-speech models and their capabilities."
+@router.post(
+    "/warmup",
+    response_model=ServiceResponse[dict],
+    summary="Warmup Model",
+    description="Trigger warmup of a specific image description model. Returns status of the warmup process."
 )
-async def get_available_models():
-    """Get available TTS models."""
+async def warmup_model(request: WarmupRequest):
+    """Warmup a specific text generation model."""
     try:
-        from .service import get_available_models
-        models = await get_available_models()
-        return {
-            "models": models,
-            "default": "chatterbox"
-        }
+        # Usar la función warmup que ya está importada al comienzo del archivo
+        return await warmup(request.model)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting models: {str(e)}")
+        # La función warmup ya maneja internamente los errores
+        # Esto solo se ejecutaría si hay un error inesperado
+        raise HTTPException(status_code=500, detail=f"Warmup failed for {request.model}: {str(e)}")
 
 @router.get(
     "/voices",
-    response_model=VoiceModelsResponse,
+    response_model=ServiceResponse[List[VoiceModel]],
     summary="Get Available Voice Models",
     description="Get a list of available voice models for voice cloning from the configuration file."
 )
 async def get_available_voices():
     """Get available voice models."""
     try:
-        from .service import list_available_voices
         voices = await list_available_voices()
-        return VoiceModelsResponse(voices=voices, count=len(voices))
+        return ServiceResponse(status="success", message="Available voices retrieved successfully", data=voices)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error getting voices: {str(e)}")
+        error_msg = str(e)
+        logger.error(f"Error retrieving available voices: {error_msg}")
+        return ServiceResponse(
+            status="error",
+            message=f"Error retrieving available voices: {error_msg}",
+            data=None
+        )

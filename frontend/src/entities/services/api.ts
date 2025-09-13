@@ -192,7 +192,7 @@ export async function generatePromotionalAudioScript(params: { text: string, mod
   return response.json()
 }
 
-export async function generateTextToSpeech(params: { text: string, model?: string, voice_url?: string }): Promise<TextToSpeechResponse> {
+export async function generateTextToSpeech(params: { text: string, model?: string, voice_url?: string }): Promise<ServiceResponse<TextToSpeechResponse>> {
   const response = await fetch(`${API_BASE_URL}/v1/text-to-speech/`, {
     method: 'POST',
     headers: {

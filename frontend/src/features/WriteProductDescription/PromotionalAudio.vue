@@ -50,6 +50,7 @@ const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoading
   onSuccess: ({ data }) => {
     const parsedData = parseDescriptionResponse(data)
     form.setFieldValue('audio_description', parsedData.description)
+    debugger
     dirty.value = false
   },
   onError: () => {
@@ -60,7 +61,8 @@ const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoading
 // Text-to-speech mutation
 const { mutateAsync: triggerGenerateAudio, isLoading: isLoadingGenerateAudio } = useMutation({
   mutation: generateTextToSpeech,
-  onSuccess: (data) => {
+  onSuccess: ({ data }) => {
+    debugger
     form.setFieldValue('audio', data.audio_url)
   },
   onError: (error) => {
@@ -110,8 +112,8 @@ function parseDescriptionResponse(data: string) {
 }
 
 watch(voices, (newVoices) => {
-  if (newVoices?.voices && newVoices.voices.length > 0 && !selectedVoice.value) {
-    selectedVoice.value = newVoices.voices[0]
+  if (newVoices.length > 0 && !selectedVoice.value) {
+    selectedVoice.value = newVoices[0]
   }
 })
 </script>
@@ -124,7 +126,7 @@ watch(voices, (newVoices) => {
             :label="isLoadingGeneratePromotionalAudioScript ? 'Generating promotional audio script...' : 'Generate promotional audio script'"     
             :severity="form?.values.audio_description ? 'primary' : 'help'"
             variant="outlined"
-            @click="() => triggerGeneratePromotionalAudioScript()" />
+            @click="triggerGeneratePromotionalAudioScript" />
         <div v-if="isLoadingGeneratePromotionalAudioScript">
             <Skeleton height="5rem" />
         </div>
@@ -139,7 +141,7 @@ watch(voices, (newVoices) => {
             <label class="text-sm font-medium text-gray-700 mb-2">Select a voice actor:</label>
             <div class="space-y-2">
                 <div
-                    v-for="voice in voices?.voices || []"
+                    v-for="voice in voices || []"
                     :key="voice.name"
                     :class="[
                         'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-sm',

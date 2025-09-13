@@ -1,8 +1,7 @@
 import { watch, ref } from "vue"
 import { inference, warmup, type ServiceResponse, type DescribeImageInferenceParams, type DescribeImageWarmupParams } from "./api"
-import { useQuery } from "@pinia/colada"
 import { getSettings } from "@/features/UserSettings/api"
-import { useMutation } from "@pinia/colada"
+import { useMutation, useQuery } from "@pinia/colada"
 
 const isWarmingUp = ref(false)
 const isLoading = ref(false)

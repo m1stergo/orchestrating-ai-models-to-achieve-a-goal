@@ -8,8 +8,9 @@ import os
 from typing import List
 from pathlib import Path
 
-from .schemas import TextToSpeechRequest, TextToSpeechResponse, VoiceModel
+from .schemas import TextToSpeechRequest, VoiceModel
 from .adapters.factory import TextToSpeechAdapterFactory
+from app.shared.schemas import ServiceResponse
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -45,9 +46,9 @@ async def save_generated_audio(audio_bytes: bytes) -> dict:
         "size": os.path.getsize(file_path)
     }
 
-async def generate_speech(
+async def inference(
     request: TextToSpeechRequest
-) -> TextToSpeechResponse:
+) -> ServiceResponse:
     """
     Generate speech using the selected adapter with concurrency control.
     
@@ -66,13 +67,47 @@ async def generate_speech(
         audio_info = await save_generated_audio(audio_bytes)
         logger.info("Speech generation completed successfully")
         
-        return TextToSpeechResponse(
-            audio_url=audio_info["audio_url"]
+        return ServiceResponse(
+            status="success",
+            message="Speech generated successfully",
+            data={
+                "audio_url": audio_info["audio_url"]
+            }
         )
     except Exception as e:
         logger.error(f"Error generating speech: {str(e)}")
         raise Exception(f"Speech generation failed: {str(e)}")
 
+async def warmup(model_name: str) -> ServiceResponse:
+    """
+    Warmup a specific adapter using the factory pattern.
+    
+    Args:
+        model_name: Name of the model/adapter to warmup
+    
+    Returns:
+        ServiceResponse: A standardized JSON response with status, message, and data
+    """
+    try:
+        adapter = TextToSpeechAdapterFactory.get_adapter(model_name)
+        # La función warmup del adaptador siempre debe retornar un string
+        result = await adapter.warmup()
+        
+        return ServiceResponse(
+            status="success",
+            message="Model warmup successful",
+            data={"message": result}
+        )
+        
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"Warmup failed for {model_name}: {error_msg}")
+        
+        return ServiceResponse(
+            status="error",
+            message=f"Warmup failed for {model_name}: {error_msg}",
+            data={"error": error_msg}
+        )
 
 async def list_available_voices() -> List[VoiceModel]:
     """
@@ -111,6 +146,8 @@ async def list_available_voices() -> List[VoiceModel]:
             voices.append(VoiceModel(name=name, audio_url=audio_url))
         
         logger.info(f"Loaded {len(voices)} voice models from config")
+        logger.info(f"###################### Available voices retrieved successfully: {voices}")
+
         return voices
     except Exception as e:
         logger.error(f"Error reading voice models config: {str(e)}")

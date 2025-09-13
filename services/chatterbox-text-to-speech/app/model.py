@@ -58,10 +58,11 @@ class ChatterboxModel(InferenceModel):
     def inference(self, request_data: Dict[str, Any]) -> bytes:
         try:
             text = request_data.get('text', '')
+            logger.info(f"\n\n\n# Processing text: {text}")
+
             voice_url = request_data.get('voice_url', None)
             logger.info(f"ChatterboxModel: generating audio from {text} with voice_url: {voice_url}")
 
-            
             if not text:
                 raise ValueError("Text is required")
             
