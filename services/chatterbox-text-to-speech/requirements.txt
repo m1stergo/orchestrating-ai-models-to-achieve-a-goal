@@ -1,0 +1,19 @@
+accelerate==1.9.0
+fastapi==0.116.1
+httpx>=0.27.0
+pillow==11.0.0
+pydantic-settings>=2.0.0
+requests==2.32.4
+urllib3==2.5.0
+uvicorn[standard]==0.35.0
+transformers==4.46.3
+runpod>=1.7.0
+chatterbox-tts==0.1.4
+setuptools==68.2.2
+wheel==0.41.2
+pkuseg==0.0.25
+minio==7.2.4
+# Already included in the base image
+# torch>=2.0.0
+# torchaudio>=2.6.0
+# torchvision>=0.23.0

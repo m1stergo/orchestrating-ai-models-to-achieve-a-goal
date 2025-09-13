@@ -9,9 +9,6 @@ import Button from 'primevue/button'
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { CreateProductSchema, type CreateProductFormData } from '@/entities/products';
-import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
-import { useService } from '@/entities/services/useService';
 
 const queryCache = useQueryCache()
 
@@ -37,9 +34,6 @@ const {
 const visible = ref(false)
 
 const validationSchema = toTypedSchema(CreateProductSchema)
-
-const { isLoading: isLoadingDescribeImage, error: errorDescribeImage, isSuccess: isSuccessDescribeImage } = useService('describeImage');
-const { isLoading: isLoadingGenerateDescription, error: errorGenerateDescription, isSuccess: isSuccessGenerateDescription } = useService('generateDescription');
 
 const form = useForm({
   validationSchema,
@@ -71,19 +65,8 @@ function onClose() {
 <template>
   <Button icon="pi pi-sparkles" label="Write product description" size="small" outlined severity="primary" @click="() => visible = true" />
   <Drawer v-model:visible="visible" header="Write product description" position="right" class="w-1/2" :pt="{ content: { class: 'flex flex-col gap-2' } }" @hide="onClose">
-    <Message v-if="isLoadingDescribeImage || isLoadingGenerateDescription" severity="warn" class="flex justify-center">
-        <div class="flex items-center gap-2 justify-center text-center">
-            <ProgressSpinner class="w-6 h-6" />
-            Models are warming up, please wait a few seconds...
-        </div>
-    </Message>  
-    <Message v-else-if="errorDescribeImage || errorGenerateDescription" severity="error" class="flex justify-center">
-        <div class="flex items-center gap-2 justify-center text-center">
-            An error occurred while warming up the models, please try again later.
-        </div>
-    </Message>  
-    <WriteProductDescription v-if="isSuccessDescribeImage && isSuccessGenerateDescription"/>
-    <template #footer v-if="isSuccessDescribeImage && isSuccessGenerateDescription">
+    <WriteProductDescription/>
+    <template #footer>
       <Button 
         :disabled="Object.keys(form.errors.value).length > 0" 
         type="submit" 

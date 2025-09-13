@@ -1,44 +1,58 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { RouterView } from 'vue-router'
 import Toast from 'primevue/toast'
-import { useService } from '@/entities/services/useService'
-import { useQuery } from '@pinia/colada'
-import { getSettings } from '@/features/UserSettings/api'
-import { watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import { useService } from '@/entities/services/useService'
+import { onMounted } from 'vue'
 
 const toast = useToast()
-const { data: settings } = useQuery({
-  key: ['settings'],
-  query: () => getSettings(),
-  refetchOnWindowFocus: false,
-})
-const { model: describeImageModel, error: describeImageError } = useService('describeImage')
-const { model: generateDescriptionModel, error: generateDescriptionError } = useService('generateDescription')
 
-watch(settings, () => {
-    describeImageModel.value = settings.value?.describe_image_model || ''
-    generateDescriptionModel.value = settings.value?.generate_description_model || ''
+const { settings: settingsDescribeImage, triggerWarmup: triggerWarmupDescribeImage } = useService('describe-image', {
+  onError: () => {
+    toast.add({
+      severity: 'error',
+      summary: 'Service Unavailable',
+      detail: 'Unable to connect to image description service. Please refresh the page.',
+    })
+  }
 })
 
-watch(describeImageError, () => {
-    if (describeImageError.value) {
-        toast.add({
-            severity: 'error',
-            summary: 'Service Unavailable',
-            detail: 'Unable to connect to image description service. Please refresh the page.',
-        })
-    }
+const { settings: settingsGenerateDescription, triggerWarmup: triggerWarmupGenerateDescription } = useService('generate-description', {
+  onError: () => {
+    toast.add({
+      severity: 'error',
+      summary: 'Service Unavailable',
+      detail: 'Unable to connect to generate description service. Please refresh the page.',
+    })
+  }
 })
-watch(generateDescriptionError, () => {
-    if (generateDescriptionError.value) {
-        toast.add({
-            severity: 'error',
-            summary: 'Service Unavailable',
-            detail: 'Unable to connect to product description service. Please refresh the page.',
-        })
-    }
-})  
+
+const { triggerWarmup: triggerWarmupGenerateAudio } = useService('text-to-speech', {
+  onError: () => {
+    toast.add({
+      severity: 'error',
+      summary: 'Service Unavailable',
+      detail: 'Unable to connect to generate audio service. Please refresh the page.',
+    })
+  }
+})
+
+onMounted(() => {
+  triggerWarmupGenerateAudio({ model: 'chatterbox' })
+})
+
+watch(settingsDescribeImage, (newSettings, oldSettings) => {
+  if (newSettings?.describe_image_model !== oldSettings?.describe_image_model && newSettings?.describe_image_model) {
+    triggerWarmupDescribeImage({ model: newSettings.describe_image_model })
+  }
+})
+
+watch(settingsGenerateDescription, (newSettings, oldSettings) => {
+  if (newSettings?.generate_description_model !== oldSettings?.generate_description_model && newSettings?.generate_description_model) {
+    triggerWarmupGenerateDescription({ model: newSettings.generate_description_model })
+  }
+})
 </script>
 
 <template>
@@ -49,6 +63,6 @@ watch(generateDescriptionError, () => {
 html, body {
   background-color: var(--color-slate-100);
   height: 100%;
-  overflow: hidden; 
+  overflow: hidden;
 }
 </style>

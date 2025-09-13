@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 import logging
-from .config import settings
+from app.config import settings
 
 # Configure logging
 logging.basicConfig(
@@ -12,39 +11,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Import shared globals
-from .shared import model_instance, model_loaded
-
 # Import router after shared globals to avoid circular imports
-from .router import router
-
-@asynccontextmanager
-async def lifespan(app):
-    """
-    Lifespan context manager to preload the model at startup.
-    This ensures the model is loaded only once when the server starts.
-    """
-    global model_instance, model_loaded
-    
-    # Load model at startup
-    logger.info("Starting model preloading...")
-    try:
-        model_instance.load_model()
-        logger.info("Model preloaded successfully")
-    except Exception as e:
-        logger.error(f"Failed to preload model: {str(e)}")
-    
-    yield
-    
-    # Cleanup (if needed)
-    logger.info("Shutting down, performing cleanup...")
-
+from app.router import router
 
 app = FastAPI(
     title=settings.API_TITLE,
     description=settings.API_DESCRIPTION,
     version=settings.API_VERSION,
-    lifespan=lifespan
 )
 
 # Configure CORS
@@ -57,7 +30,7 @@ app.add_middleware(
 )
 
 # Include router
-app.include_router(router, prefix="/api/v1", tags=["describe-image"])
+app.include_router(router, prefix="/api/v1", tags=["generate_description"])
 
 
 if __name__ == "__main__":

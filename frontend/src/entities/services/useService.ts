@@ -1,193 +1,56 @@
-import { computed, ref, watch } from "vue";
-import { describeImageWarmup, generateDescriptionWarmup, describeImageHealthCheck, generateDescriptionHealthCheck } from "./api";
-import { useMutation } from '@pinia/colada'
+import { watch, ref } from "vue"
+import { inference, warmup, type ServiceResponse, type DescribeImageInferenceParams, type DescribeImageWarmupParams } from "./api"
+import { getSettings } from "@/features/UserSettings/api"
+import { useMutation, useQuery } from "@pinia/colada"
 
-const services = ref({
-    generateDescription: {
-        isSuccess: false,
-        isLoading: false,
-        retryCount: 0,
-        error: false,
-        isWarmingUp: false
-    },
-    describeImage: {
-        isSuccess: false,
-        isLoading: false,
-        retryCount: 0,
-        error: false,
-        isWarmingUp: false
-    }
-})
+const isWarmingUp = ref(false)
+const isLoading = ref(false)
+const error = ref('')
 
-let generateDescriptionHealthCheckInterval: any = null
-let describeImageHealthCheckInterval: any = null
-
-type ServiceName = keyof typeof services.value;
-
-export function useService(serviceName: ServiceName) {
-    const isLoading = computed(() => services.value[serviceName].isLoading)
-    const error = computed(() => services.value[serviceName].error)
-    const isSuccess = computed(() => services.value[serviceName].isSuccess)
-    const model = ref<string>('')
-    
-    const MAX_RETRIES = 10
-
-    const { mutateAsync: triggerDescribeImageWarmup } = useMutation({
-        mutation: describeImageWarmup,
+export function useService(service: string, options?: { onSuccess?: (response: ServiceResponse<string>) => void, onError?: (error: Error) => void, }) {
+    const { data: settings } = useQuery({
+        key: ['settings'],
+        query: () => getSettings(),
+        refetchOnWindowFocus: false,
     })
 
-    const { mutateAsync: triggerGenerateDescriptionWarmup } = useMutation({
-        mutation: generateDescriptionWarmup,
+    const { mutateAsync: triggerWarmup, isLoading: isLoadingWarmup } = useMutation({
+        mutation: (params: DescribeImageWarmupParams) => warmup(service, params),
+        onError: (err: Error) => {
+            options?.onError?.(err)
+            error.value = err.message
+        }
     })
 
-    const { mutateAsync: triggerDescribeImageHealthCheck } = useMutation({
-        mutation: describeImageHealthCheck,
-        onSuccess: (result) => {
-            const status = result.status
-            
-            if (status === 'healthy') {
-                services.value[serviceName].isSuccess = true
-                services.value[serviceName].isLoading = false
-                services.value[serviceName].retryCount = 0
-                services.value[serviceName].error = false
-                clearInterval(describeImageHealthCheckInterval)
-            } else if (status === 'error' || status === 'unhealthy') {
-                // Service is not healthy - trigger warmup on first retry
-                services.value[serviceName].isSuccess = false
-                
-                if (services.value[serviceName].retryCount < 1) {
-                    triggerDescribeImageWarmup(model.value)
-                }
-                
-                services.value[serviceName].retryCount++
-                
-                if (services.value[serviceName].retryCount >= MAX_RETRIES) {
-                    services.value[serviceName].error = true
-                    services.value[serviceName].isLoading = false
-                    clearInterval(describeImageHealthCheckInterval)
-                }
-            } else if (result.status === 'loading') {
-                // Service is loading/warming up - keep checking
-                services.value[serviceName].isSuccess = false
-                // Don't increment retry count for loading status
-            }
+    const { mutateAsync: inferenceMutation, isLoading: isLoadingInference } = useMutation({
+        mutation: (params: DescribeImageInferenceParams) => inference(service, params),
+        onError: (err: Error) => {
+            options?.onError?.(err)
+            error.value = err.message
         },
-        onError: () => {
-            // This handles actual network errors, not HTTP 503 responses
-            services.value[serviceName].retryCount++
-            
-            if (services.value[serviceName].retryCount >= MAX_RETRIES) {
-                services.value[serviceName].error = true
-                services.value[serviceName].isLoading = false
-                clearInterval(describeImageHealthCheckInterval)
-            }
+        onSuccess: (data: ServiceResponse<string>) => {
+            options?.onSuccess?.(data)
         }
     })
 
-    const { mutateAsync: triggerGenerateDescriptionHealthCheck } = useMutation({
-        mutation: generateDescriptionHealthCheck,
-        onSuccess: (result) => {
-            const status = result.status
-            
-            if (status === 'healthy') {
-                services.value[serviceName].isSuccess = true
-                services.value[serviceName].isLoading = false
-                services.value[serviceName].retryCount = 0
-                services.value[serviceName].error = false
-                clearInterval(generateDescriptionHealthCheckInterval)
-            } else if (status === 'error' || status === 'unhealthy') {
-                // Service is not healthy - trigger warmup on first retry
-                services.value[serviceName].isSuccess = false
-                
-                if (services.value[serviceName].retryCount < 1) {
-                    triggerGenerateDescriptionWarmup(model.value)
-                }
-                
-                services.value[serviceName].retryCount++
-                
-                if (services.value[serviceName].retryCount >= MAX_RETRIES) {
-                    services.value[serviceName].error = true
-                    services.value[serviceName].isLoading = false
-                    clearInterval(generateDescriptionHealthCheckInterval)
-                }
-            } else if (result.status === 'loading') {
-                // Service is loading/warming up - keep checking
-                services.value[serviceName].isSuccess = false
-                // Don't increment retry count for loading status
-            }
-        },
-        onError: () => {
-            // This handles actual network errors, not HTTP 503 responses
-            services.value[serviceName].retryCount++
-            
-            if (services.value[serviceName].retryCount >= MAX_RETRIES) {
-                services.value[serviceName].error = true
-                services.value[serviceName].isLoading = false
-                clearInterval(generateDescriptionHealthCheckInterval)
-            }
-        }
+    async function run(params: { image_url: string, prompt?: string, model: string }) {
+        await inferenceMutation(params)
+    }
+
+    watch(isLoadingWarmup, (value) => {
+        isWarmingUp.value = value
     })
 
-    function healthCheckGenerateDescription(model: string ) {
-        if (generateDescriptionHealthCheckInterval) {
-           return
-        }
-        // Execute immediately first time (like do-while)
-        const executeHealthCheck = () => {
-            triggerGenerateDescriptionHealthCheck(model)
-        }
-        
-        // Then set interval for subsequent checks
-        generateDescriptionHealthCheckInterval = setInterval(executeHealthCheck, 10000)
-
-        // Execute immediately
-        return executeHealthCheck()
-    }
-
-    function healthCheckDescribeImage(model: string) {
-        if (describeImageHealthCheckInterval) {
-            return
-        }
-        // Execute immediately first time (like do-while)
-        const executeHealthCheck = () => {
-            triggerDescribeImageHealthCheck(model)
-        }
-        
-        // Then set interval for subsequent checks
-        describeImageHealthCheckInterval = setInterval(executeHealthCheck, 10000)
-
-        // Execute immediately
-        return executeHealthCheck()
-    }
-
-    watch(model, async (newValue) => {
-        if (!newValue) return
-        if (serviceName === 'describeImage') {
-            services.value['describeImage'].isLoading = true
-            services.value['describeImage'].error = false
-            services.value['describeImage'].isSuccess = false
-            services.value['describeImage'].retryCount = 0
-            services.value['describeImage'].isWarmingUp = false
-            clearInterval(describeImageHealthCheckInterval)
-            describeImageHealthCheckInterval = null
-            healthCheckDescribeImage(model.value)
-        }
-        if (serviceName === 'generateDescription') {
-            services.value['generateDescription'].isLoading = true
-            services.value['generateDescription'].error = false
-            services.value['generateDescription'].isSuccess = false
-            services.value['generateDescription'].retryCount = 0
-            services.value['generateDescription'].isWarmingUp = false
-            clearInterval(generateDescriptionHealthCheckInterval)
-            generateDescriptionHealthCheckInterval = null
-            healthCheckGenerateDescription(model.value)
-        }
+    watch(isLoadingInference, (value) => {
+        isLoading.value = value
     })
 
     return {
+        isWarmingUp,
         isLoading,
+        run,
         error,
-        isSuccess,
-        model,
+        settings,
+        triggerWarmup,
     }
 }

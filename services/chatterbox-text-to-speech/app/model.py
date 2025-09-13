@@ -1,97 +1,149 @@
 import logging
+import time
+import os
 import torchaudio as ta
 from chatterbox.tts import ChatterboxTTS
 import io
 import requests
 import tempfile
-import os
+from typing import Dict, Any
+from .config import settings
+from .common import InferenceModel, ModelState
+from uuid import uuid4
+from minio import Minio
+from urllib.parse import urlparse
+
 logger = logging.getLogger(__name__)
 
-class ChatterboxModel:
+class ChatterboxModel(InferenceModel):
     """Chatterbox TTS model."""
 
     def __init__(self):
-        self._model = None
+        super().__init__()
+
+    def load_model(self):
+        self.loading_start_time = time.time()
+        try:
+            # Load model
+            model_kwargs = {
+                "device": "cuda",
+                "trust_remote_code": True,
+            }
+            
+            if settings.HUGGINGFACE_CACHE_DIR:
+                model_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
+
+            try:
+                self.model = ChatterboxTTS.from_pretrained(
+                    device="cuda"
+                )
+            except Exception as cuda_error:
+                # Based on memory from previous issues with ChatterboxTTS and CUDA
+                logger.warning(f"Failed to load model with CUDA: {str(cuda_error)}. Falling back to CPU.")
+                raise
+
+            # Successfully loaded
+            self.state = ModelState.IDLE
+            total_time = time.time() - self.loading_start_time
+            logger.info(f"======== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ========")
+            
+            return self.model
+        except Exception as e:
+            logger.error(f"Chatterbox TTS model loading failed: {str(e)}")
+            self.state = ModelState.ERROR
+            self.error_message = str(e)
+            raise
 
     def is_loaded(self):
-        """Ensures that the model is loaded."""
-        if self._model is None:
-            logger.info("Loading Chatterbox TTS model...")
-            
-            # Debug info
-            import torch
-            logger.info(f"PyTorch version: {torch.__version__}")
-            logger.info(f"CUDA available: {torch.cuda.is_available()}")
-            if torch.cuda.is_available():
-                logger.info(f"CUDA device count: {torch.cuda.device_count()}")
-                logger.info(f"Current CUDA device: {torch.cuda.current_device()}")
-            
-            # Try CUDA first, fallback to CPU if ChatterboxTTS has issues
-            try:
-                if torch.cuda.is_available():
-                    logger.info("Attempting to load ChatterboxTTS with CUDA...")
-                    self._model = ChatterboxTTS.from_pretrained(device="cuda")
-                    logger.info("Successfully loaded ChatterboxTTS with CUDA")
-                else:
-                    raise Exception("PyTorch CUDA not available")
-            except Exception as e:
-                logger.warning(f"ChatterboxTTS CUDA failed: {str(e)}, falling back to CPU")
-                try:
-                    self._model = ChatterboxTTS.from_pretrained(device="cpu")
-                    logger.info("Successfully loaded ChatterboxTTS with CPU")
-                except Exception as cpu_e:
-                    logger.error(f"ChatterboxTTS CPU also failed: {str(cpu_e)}")
-                    raise
-            logger.info("Chatterbox TTS model loaded successfully")
-
-        return self._model
-
-    def generate_audio(self, text: str, audio_prompt_url: str = None) -> bytes:
-        logger.info(f"ChatterboxModel: generating audio from {text}")
+        """Check if model is loaded."""
+        return self.model is not None
+    
+    def inference(self, request_data: Dict[str, Any]) -> bytes:
         try:
-            model = self.is_loaded()
+            text = request_data.get('text', '')
+            logger.info(f"\n\n\n# Processing text: {text}")
+
+            voice_url = request_data.get('voice_url', None)
+            logger.info(f"ChatterboxModel: generating audio from {text} with voice_url: {voice_url}")
+
+            if not text:
+                raise ValueError("Text is required")
             
             audio_prompt_path = None
             temp_file = None
             
-            # If audio prompt URL is provided, download it to a temporary file
-            if audio_prompt_url:
+            # If voice URL is provided, download it to a temporary file
+            if voice_url:
                 try:
-                    response = requests.get(audio_prompt_url)
+                    response = requests.get(voice_url)
                     response.raise_for_status()
                     
                     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
                     temp_file.write(response.content)
                     temp_file.close()
                     audio_prompt_path = temp_file.name
-                    logger.info(f"Downloaded audio prompt from URL: {audio_prompt_url}")
+                    logger.info(f"Downloaded voice from URL: {voice_url}")
                 except Exception as e:
-                    logger.error(f"Error downloading audio prompt: {str(e)}")
+                    logger.error(f"Error downloading voice: {str(e)}")
                     audio_prompt_path = None
 
             
             if audio_prompt_path:
-                wav = model.generate(text, exaggeration=0.7, cfg_weight=0.4, audio_prompt_path=audio_prompt_path)
+                wav = self.model.generate(text, exaggeration=0.7, cfg_weight=0.4, audio_prompt_path=audio_prompt_path)
             else:
-                wav = model.generate(text, exaggeration=0.7, cfg_weight=0.4)
+                wav = self.model.generate(text, exaggeration=0.7, cfg_weight=0.4)
             
             # Clean up temporary file
             if temp_file and audio_prompt_path:
                 try:
                     os.unlink(audio_prompt_path)
-                    logger.info("Cleaned up temporary audio prompt file")
+                    logger.info("Cleaned up temporary voice file")
                 except Exception as e:
                     logger.warning(f"Could not clean up temp file: {str(e)}")
             
-            # Save to memory buffer instead of file
-            buffer = io.BytesIO()
-            ta.save(buffer, wav, model.sr, format="wav")
-            audio_bytes = buffer.getvalue()
-            buffer.close()
+            try:
+                buffer = io.BytesIO()
+                ta.save(buffer, wav, self.model.sr, format="wav")
+                buffer.seek(0)
+                
+                client = Minio(
+                    endpoint=settings.MINIO_ENDPOINT_URL,
+                    access_key=settings.MINIO_ACCESS_KEY,
+                    secret_key=settings.MINIO_SECRET_KEY,
+                    secure=True,
+                    cert_check=False
+                )
 
-            
-            logger.info("ChatterboxModel: audio generated successfully")
-            return audio_bytes
+                bucket_exists = client.bucket_exists(settings.MINIO_BUCKET_NAME)
+                
+                if not bucket_exists:
+                    client.make_bucket(settings.MINIO_BUCKET_NAME)
+                
+                bucket_name = settings.MINIO_BUCKET_NAME
+                
+                audio_filename = f"{uuid4()}.wav"
+                
+                buffer_size = buffer.getbuffer().nbytes
+                
+                logger.info(f"Uploading to MinIO: {bucket_name}/{audio_filename}")
+                client.put_object(
+                    bucket_name,
+                    audio_filename,
+                    buffer,
+                    buffer_size,
+                    content_type="audio/wav"
+                )
+
+                base_url = settings.MINIO_ENDPOINT_URL
+                
+                audio_url = f"https://{base_url}/{bucket_name}/{audio_filename}"
+                logger.info(f"Audio uploaded to MinIO: {audio_url}")
+                
+                return audio_url
+                
+            except Exception as storage_error:
+                logger.error(f"Error uploading to MinIO: {storage_error}")
+                raise
 
         except Exception as e:
             logger.error(f"ChatterboxModel error: {str(e)}")

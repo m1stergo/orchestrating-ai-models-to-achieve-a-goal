@@ -1,18 +1,5 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
-import tomllib
-from pathlib import Path
-
-
-def get_version() -> str:
-    """Read version from pyproject.toml"""
-    try:
-        pyproject_path = Path(__file__).parent / "pyproject.toml"
-        with open(pyproject_path, "rb") as f:
-            pyproject_data = tomllib.load(f)
-        return pyproject_data["project"]["version"]
-    except (FileNotFoundError, KeyError, tomllib.TOMLDecodeError):
-        return "1.0.0"  # fallback version
 
 
 class Settings(BaseSettings):
@@ -21,17 +8,29 @@ class Settings(BaseSettings):
     # API settings
     API_TITLE: str = "Generate Description Service"
     API_DESCRIPTION: str = "AI service for text generation and description"
-    API_VERSION: str = get_version()
-    
-    # External API Keys
-    OPENAI_API_KEY: Optional[str] = None
-    GEMINI_API_KEY: Optional[str] = None
-    HUGGINGFACE_TOKEN: Optional[str] = None
-    
+    API_VERSION: str = "/api/v1"
+    PORT: int = 8000
+
     # Model configurations
-    OPENAI_MODEL: str = "gpt-4o"
-    GEMINI_MODEL: str = "gemini-1.5-flash"
-    MISTRAL_MODEL: str = "mistralai/Mistral-7B-Instruct-v0.1"
+    MISTRAL_MODEL_NAME: str = "mistralai/Mistral-7B-Instruct-v0.1"
+    
+    # HuggingFace cache directory
+    HF_TOKEN: Optional[str] = None
+    HUGGINGFACE_CACHE_DIR: Optional[str] = None
+
+
+    # Custom prompt template
+    PROMPT: Optional[str] = """
+    You are a professional e-commerce copywriter.
+    Write a short, concise product description for ecommerce page.
+
+    Rules:
+    - Title must be concise, clear, and descriptive (max 10 words)
+    - Description must be direct, simple, and factual (40-60 words max)
+    - Use short sentences, avoid marketing fluff and adjectives like "elevate", "charming", "whimsy"
+    - Focus on features first, then benefits
+    - Keywords must not repeat, must be relevant for SEO
+    """
     
     class Config:
         env_file = ".env"

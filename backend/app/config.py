@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings."""
     
     # API settings
-    API_V1_STR: str = "/api/v1"
+    API_VERSION: str = "/api/v1"
     PROJECT_NAME: str = "AI Orchestration API"
     
     # Database settings
@@ -25,6 +25,7 @@ class Settings(BaseSettings):
             self.DATABASE_URL = f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
     
     # Backend URL settings
+    PORT: int = 8000
     BASE_URL: str = "http://localhost:8000"
     
     # Image storage settings
@@ -32,7 +33,7 @@ class Settings(BaseSettings):
     STATIC_URL: str = "http://localhost:8000/static"
     
     # Voice models configuration
-    VOICE_MODELS_CONFIG: Path = Path("app/config/voice_models.json")
+    VOICE_MODELS_CONFIG: Path = Path("app/features/text_to_speech/voice_models.json")
     
     # Audio storage settings
     AUDIO_DIR: Path = Path("app/static/audio")
@@ -44,19 +45,19 @@ class Settings(BaseSettings):
     # Microservice base URLs with API prefix
     DESCRIBE_IMAGE_QWEN_URL: str = "http://localhost:8001/api/v1"
     GENERATE_DESCRIPTION_MISTRAL_URL: str = "http://localhost:8002/api/v1"
-    MISTRAL_SERVICE_URL: str = "http://localhost:8002/api/v1"
     TTS_CHATTERBOX_URL: str = "http://localhost:8003/api/v1"
     
     # API Keys for external services
     OPENAI_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
+    EXTERNAL_API_TOKEN: Optional[str] = None
     OPENAI_VISION_MODEL: Optional[str] = None
     GEMINI_VISION_MODEL: Optional[str] = None
     QWEN_VISION_MODEL: Optional[str] = None
     OPENAI_TEXT_MODEL: Optional[str] = None
     GEMINI_TEXT_MODEL: Optional[str] = None
     MISTRAL_TEXT_MODEL: Optional[str] = None
-    
+
     # Computed property for image URL construction
     @property
     def images_url(self) -> str:

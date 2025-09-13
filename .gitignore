@@ -43,6 +43,7 @@ frontend/yarn-error.log*
 
 # Backend
 backend/app/static/images
+backend/app/static/audio
 
 # Report
 report/

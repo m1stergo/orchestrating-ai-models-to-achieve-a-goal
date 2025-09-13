@@ -1,0 +1,16 @@
+{
+  "voices": [
+    {
+      "name": "Kattie",
+      "url": "https://audios-minio.gxuq0l.easypanel.host/public/Kattie.mp3"
+    },
+    {
+      "name": "Marion",
+      "url": "https://audios-minio.gxuq0l.easypanel.host/public/Marion.mp3"
+    },
+    {
+      "name": "Joe",
+      "url": "https://audios-minio.gxuq0l.easypanel.host/public/Joe.mp3"
+    }
+  ]
+}

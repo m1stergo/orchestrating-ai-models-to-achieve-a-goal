@@ -1,20 +1,5 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
-import tomllib
-from pathlib import Path
-
-
-def get_version() -> str:
-    """Read version from pyproject.toml"""
-    try:
-        # qwen-describe-image/src/config.py -> up to service root
-        pyproject_path = Path(__file__).resolve().parents[2] / "pyproject.toml"
-        with open(pyproject_path, "rb") as f:
-            pyproject_data = tomllib.load(f)
-        return pyproject_data["project"]["version"]
-    except (FileNotFoundError, KeyError, tomllib.TOMLDecodeError):
-        return "1.0.0"  # fallback version
-
 
 class Settings(BaseSettings):
     """Describe Image Service settings."""
@@ -22,18 +7,11 @@ class Settings(BaseSettings):
     # API settings
     API_TITLE: str = "Describe Image Service"
     API_DESCRIPTION: str = "AI service for image description and analysis"
-    API_VERSION: str = get_version()
-    PORT: int = 8000
+    API_VERSION: str = "/api/v1"
+    PORT: int = 8001
     
     
-    # RunPod S3 Storage Configuration for model downloading
-    S3_ENDPOINT: Optional[str] = None  # e.g., https://s3api-us-ca-2.runpod.io
-    S3_BUCKET: Optional[str] = None    # e.g., bioy7xmmtf
-    AWS_ACCESS_KEY_ID: Optional[str] = None
-    AWS_SECRET_ACCESS_KEY: Optional[str] = None
-    MODEL_PREFIX: str = "models/"  # S3 prefix where model files are stored
-    LOCAL_MODEL_DIR: str = "./models/models--Qwen--Qwen2.5-VL-7B-Instruct"  # Local cache directory
-    
+    # Model Configuration
     QWEN_MODEL_NAME: str = "Qwen/Qwen2.5-VL-7B-Instruct"
     QWEN_MAX_MEMORY_GPU: str = "14GB"
     QWEN_MAX_MEMORY_CPU: str = "8GB"

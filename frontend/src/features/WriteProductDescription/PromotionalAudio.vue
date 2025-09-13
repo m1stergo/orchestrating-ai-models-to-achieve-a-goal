@@ -47,8 +47,9 @@ const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoading
     model: props.model!,
     prompt: userSettings.value?.generate_promotional_audio_script_prompt || undefined
   }),
-  onSuccess: (data) => {
-    form.setFieldValue('audio_description', data.text)
+  onSuccess: ({ data }) => {
+    const parsedData = parseDescriptionResponse(data)
+    form.setFieldValue('audio_description', parsedData.description)
     dirty.value = false
   },
   onError: () => {
@@ -59,7 +60,7 @@ const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoading
 // Text-to-speech mutation
 const { mutateAsync: triggerGenerateAudio, isLoading: isLoadingGenerateAudio } = useMutation({
   mutation: generateTextToSpeech,
-  onSuccess: (data) => {
+  onSuccess: ({ data }) => {
     form.setFieldValue('audio', data.audio_url)
   },
   onError: (error) => {
@@ -79,16 +80,38 @@ async function generatePromotionalAudio() {
         await triggerGenerateAudio({
             text: form?.values.audio_description,
             model: 'chatterbox',
-            audio_prompt_url: selectedVoice.value.audio_url
+            voice_url: selectedVoice.value.audio_url
         })
     } catch (error) {
         console.error('Error generating promotional audio:', error)
     }
 }
 
+
+function parseDescriptionResponse(data: string) {
+  try {
+    // Try to parse as JSON
+    const parsed = JSON.parse(data)
+    
+    // Validate that it has the expected structure
+    if (typeof parsed === 'object' && parsed !== null) {
+      return {
+        description: parsed.description,
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to parse description as JSON:', error)
+  }
+  
+  // Fallback: return original description with empty other fields
+  return {
+    description: data,
+  }
+}
+
 watch(voices, (newVoices) => {
-  if (newVoices?.voices && newVoices.voices.length > 0 && !selectedVoice.value) {
-    selectedVoice.value = newVoices.voices[0]
+  if (newVoices.length > 0 && !selectedVoice.value) {
+    selectedVoice.value = newVoices[0]
   }
 })
 </script>
@@ -101,7 +124,7 @@ watch(voices, (newVoices) => {
             :label="isLoadingGeneratePromotionalAudioScript ? 'Generating promotional audio script...' : 'Generate promotional audio script'"     
             :severity="form?.values.audio_description ? 'primary' : 'help'"
             variant="outlined"
-            @click="() => triggerGeneratePromotionalAudioScript()" />
+            @click="triggerGeneratePromotionalAudioScript" />
         <div v-if="isLoadingGeneratePromotionalAudioScript">
             <Skeleton height="5rem" />
         </div>
@@ -116,7 +139,7 @@ watch(voices, (newVoices) => {
             <label class="text-sm font-medium text-gray-700 mb-2">Select a voice actor:</label>
             <div class="space-y-2">
                 <div
-                    v-for="voice in voices?.voices || []"
+                    v-for="voice in voices || []"
                     :key="voice.name"
                     :class="[
                         'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-sm',

@@ -26,17 +26,9 @@ export interface UploadImageResponse {
   size: number
 }
 
-export interface DescribeImageResponse {
-  description: string 
-}
-
 export interface UploadAudioResponse {
   audio_url: string
   filename: string
-}
-
-export interface GenerateDescriptionResponse {
-  text: string
 }
 
 export interface VoiceModel {
@@ -49,8 +41,10 @@ export interface VoiceModelsResponse {
   count: number
 }
 
-export interface GeneratePromotionalAudioScriptResponse {
-  text: string
+export interface ServiceResponse {
+  status: string
+  message: string
+  data: string
 }
 
 export interface TextToSpeechResponse {
@@ -61,4 +55,16 @@ export enum Status {
   PENDING = 'pending',
   SUCCESS = 'success',
   ERROR = 'error'
+}
+
+/**
+ * Response from status endpoints
+ */
+export interface StatusResponse {
+  status: string
+  job_status?: string
+  message?: string
+  http_status?: number
+  status_code?: number
+  detail?: any
 }
