@@ -66,7 +66,7 @@ export async function extractWebContent(url: string): Promise<ExtractWebContentR
   return response.json() as Promise<ExtractWebContentResponse>
 }
 
-export async function getAvailableVoices(): Promise<VoiceModelsResponse> {
+export async function getAvailableVoices(): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/v1/text-to-speech/voices`, {
     method: 'GET',
     headers: {

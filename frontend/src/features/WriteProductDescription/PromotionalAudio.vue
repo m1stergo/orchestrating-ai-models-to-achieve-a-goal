@@ -60,7 +60,7 @@ const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoading
 // Text-to-speech mutation
 const { mutateAsync: triggerGenerateAudio, isLoading: isLoadingGenerateAudio } = useMutation({
   mutation: generateTextToSpeech,
-  onSuccess: ({ data }) => {
+  onSuccess: ({ data }: any) => {
     form.setFieldValue('audio', data.audio_url)
   },
   onError: (error) => {
@@ -124,7 +124,7 @@ watch(voices, (newVoices) => {
             :label="isLoadingGeneratePromotionalAudioScript ? 'Generating promotional audio script...' : 'Generate promotional audio script'"     
             :severity="form?.values.audio_description ? 'primary' : 'help'"
             variant="outlined"
-            @click="triggerGeneratePromotionalAudioScript" />
+            @click="() => triggerGeneratePromotionalAudioScript()" />
         <div v-if="isLoadingGeneratePromotionalAudioScript">
             <Skeleton height="5rem" />
         </div>
