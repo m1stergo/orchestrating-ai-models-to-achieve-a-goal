@@ -54,8 +54,6 @@ class Adapter(ABC):
                 raise ValueError(f"{self.service_name} API key is not configured.")
             
             logger.info(f"==== Warming up {self.service_name}... ====")
-            logger.warning(f"==== Warming up {self.service_name}... ====")
-            logger.error(f"==== Warming up {self.service_name}... ====")
             
             return ServiceResponse(
                 status="IDLE",
