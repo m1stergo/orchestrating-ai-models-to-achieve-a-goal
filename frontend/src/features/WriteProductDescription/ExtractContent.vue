@@ -49,7 +49,7 @@ const { data: extractWebContentData, mutateAsync: triggerExtractWebContent, isLo
   mutation: extractWebContent,
   onError: () => {
     toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error extracting the content, please try again', life: 3000 })
-    emit('update:status', Status.ERROR)
+    emit('update:status', Status.FAILED)
   },
 })
 
@@ -69,7 +69,7 @@ const { run: describeImage, isLoading } = useService('describe-image', {
     emit('update:status', Status.SUCCESS)
   },
   onError: () => {
-    emit('update:status', Status.ERROR)
+    emit('update:status', Status.FAILED)
   }
 })
 

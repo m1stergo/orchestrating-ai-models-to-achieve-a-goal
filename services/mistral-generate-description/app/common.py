@@ -17,7 +17,7 @@ class JobStatus(str, Enum):
     IN_QUEUE = "IN_QUEUE"      # Job is in queue but not processed yet
     IN_PROGRESS = "IN_PROGRESS"  # Job is being processed
     COMPLETED = "COMPLETED"    # Job is completed
-    ERROR = "ERROR"            # Job encountered an error
+    FAILED = "FAILED"            # Job encountered an error
     
 class JobDetail(BaseModel):
     status: Optional[str] = Field(None, description="Status of the operation")
@@ -59,7 +59,7 @@ class ModelState(Enum):
     WARMINGUP = "WARMINGUP"
     PROCESSING = "PROCESSING"
     IDLE = "IDLE"
-    ERROR = "ERROR"
+    FAILED = "FAILED"
 
 
 class InferenceModel(ABC):
@@ -147,9 +147,9 @@ class InferenceHandler:
             else:
                 return JobResponse(
                     id="none",
-                    status="ERROR",
+                    status="FAILED",
                     detail=JobDetail(
-                        status="ERROR",
+                        status="FAILED",
                         message=f"Unknown action: {action}. Valid actions: warmup, inference",
                         data=""
                     )
@@ -160,9 +160,9 @@ class InferenceHandler:
             
             return JobResponse(
                 id="none",
-                status="ERROR",
+                status="FAILED",
                 detail=JobDetail(
-                    status="ERROR",
+                    status="FAILED",
                     message=str(e),
                     data=""
                 )
@@ -195,14 +195,14 @@ class InferenceHandler:
         except Exception as e:
             error_msg = f"Model warmup failed: {str(e)}"
             logger.error(f"======== {error_msg} ========")
-            self.model._state = ModelState.ERROR
+            self.model._state = ModelState.FAILED
             self.model._error_message = error_msg
             
             # Update with error
             self.pending_jobs[job_id] = {
-                "status": "ERROR",
+                "status": "FAILED",
                 "detail": JobDetail(
-                    status="ERROR",
+                    status="FAILED",
                     message=error_msg,
                     data=""
                 )
@@ -245,9 +245,9 @@ class InferenceHandler:
             
             # Update with error
             self.pending_jobs[job_id] = {
-                "status": "ERROR",
+                "status": "FAILED",
                 "detail": JobDetail(
-                    status="ERROR",
+                    status="FAILED",
                     message=error_msg,
                     data=""
                 )
@@ -319,10 +319,10 @@ class InferenceHandler:
                 status="COMPLETED",
                 detail=detail
             )
-        else:  # ERROR
+        else:  # FAILED
             if job_detail is None:
                 detail = JobDetail(
-                    status="ERROR",
+                    status="FAILED",
                     message="Unknown error occurred",
                     data=""
                 )
@@ -331,7 +331,7 @@ class InferenceHandler:
                 
             return JobResponse(
                 id=job_id,
-                status="ERROR",
+                status="FAILED",
                 detail=detail
             )
 
@@ -339,13 +339,13 @@ class InferenceHandler:
         job_id = str(uuid.uuid4())
 
         # skip if model is in error state
-        if self.model.state == ModelState.ERROR:
+        if self.model.state == ModelState.FAILED:
             return JobResponse(
                 id=job_id,
-                status="ERROR",
+                status="FAILED",
                 detail=JobDetail(
-                    status="ERROR",
-                    message=f"Model is in ERROR state: {self.model.error_message}",
+                    status="FAILED",
+                    message=f"Model is in FAILED state: {self.model.error_message}",
                     data=""
                 )
             )
@@ -422,13 +422,13 @@ class InferenceHandler:
         job_id = str(uuid.uuid4())
 
         # skip if model is in error state
-        if self.model.state == ModelState.ERROR:
+        if self.model.state == ModelState.FAILED:
             return JobResponse(
                 id=job_id,
-                status="ERROR",
+                status="FAILED",
                 detail=JobDetail(
-                    status="ERROR",
-                    message=f"Model is in ERROR state: {self.model.error_message}",
+                    status="FAILED",
+                    message=f"Model is in FAILED state: {self.model.error_message}",
                     data=""
                 )
             )

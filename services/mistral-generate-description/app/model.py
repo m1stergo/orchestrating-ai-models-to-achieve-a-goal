@@ -62,7 +62,7 @@ class MistralModel(InferenceModel):
             
         except Exception as e:
             logger.error(f"======== Failed to load Mistral model: {str(e)} ========")
-            self.state = ModelState.ERROR
+            self.state = ModelState.FAILED
             self.error_message = str(e)
             raise Exception(f"Model loading failed: {str(e)}")
             

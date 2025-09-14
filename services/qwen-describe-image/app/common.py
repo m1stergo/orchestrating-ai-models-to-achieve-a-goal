@@ -23,7 +23,7 @@ class InferenceStatus(str, Enum):
     WARMINGUP = "WARMINGUP"
     PROCESSING = "PROCESSING"
     IDLE = "IDLE"
-    ERROR = "ERROR"
+    FAILED = "FAILED"
 
 # RunPod-like schemas
 class JobRequest(BaseModel):
@@ -112,10 +112,10 @@ class InferenceHandler(ABC):
 
     def getInferenceStatus(self) -> InferenceResponse:
         # Usar self.status directamente en lugar de self.model.status
-        if self.status == InferenceStatus.ERROR:
+        if self.status == InferenceStatus.FAILED:
             return InferenceResponse(
-                status=InferenceStatus.ERROR,
-                message=f"Model is in ERROR status: {self.error_message}",
+                status=InferenceStatus.FAILED,
+                message=f"Model is in FAILED status: {self.error_message}",
                 data=""
             )
         
@@ -163,20 +163,18 @@ class RunPodSimulator:
         Args:
             request_data: Dict[str, Any]: Dictionary containing request parameters
         """
+
+        if self.busy:
+            return JobResponse(
+                id=self.job['id'],
+                status=self.job['status'],
+                output=self.job['output']
+            )
+
         job_id = str(uuid.uuid4())
         
         try:
             logger.info(f"======== Processing job {job_id} with request_data: {request_data} ========")
-
-            # status = self.model.getInferenceStatus()
-
-            # if self.job['status'] != JobStatus.IN_QUEUE:
-            #     logger.info(f"======== Model is not idle. Skipping job. Current status: {self.job['status']} ========")
-            #     return JobResponse(
-            #         id=job_id,
-            #         status=JobStatus.COMPLETED,
-            #         output=status
-            #     )
 
             action = request_data.get('action')
 
@@ -194,12 +192,13 @@ class RunPodSimulator:
                 
         except Exception as e:
             logger.error(f"Job execution failed: {str(e)}")
+            self.busy = False
             
             return JobResponse(
                 id=job_id,
                 status=JobStatus.COMPLETED,
                 output=InferenceResponse(
-                    status=InferenceStatus.ERROR,
+                    status=InferenceStatus.FAILED,
                     message=str(e),
                     data=""
                 )
@@ -225,7 +224,7 @@ class RunPodSimulator:
             logger.error(f"Error processing job {job_id}: {str(e)}")
             self.job['status'] = JobStatus.COMPLETED
             self.job['output'] = InferenceResponse(
-                status=InferenceStatus.ERROR,
+                status=InferenceStatus.FAILED,
                 message=f"Error: {str(e)}",
                 data=""
             )
@@ -241,14 +240,6 @@ class RunPodSimulator:
         Returns:
             JobResponse with the current job status
         """
-        # Check if job exists
-        if (self.job['status'] == JobStatus.COMPLETED):
-            return JobResponse(
-                id=job_id,
-                status=JobStatus.COMPLETED,
-                output=self.job['output']
-            )
-    
         return JobResponse(
             id=job_id,
             status=self.job['status'],

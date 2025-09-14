@@ -61,10 +61,10 @@ class QwenHandler(InferenceHandler):
             
         except Exception as e:
             logger.error(f"======== Failed to load model: {e} ========")
-            self.status = InferenceStatus.ERROR
+            self.status = InferenceStatus.FAILED
             self.error_message = str(e)
             return InferenceResponse(
-                status=InferenceStatus.ERROR,
+                status=InferenceStatus.FAILED,
                 message=f"Failed to load model: {str(e)}",
                 data=""
             )
@@ -152,7 +152,7 @@ class QwenHandler(InferenceHandler):
         except Exception as e:
             logger.error(f"======== Error: {str(e)} ========")
             return InferenceResponse(
-                status=InferenceStatus.ERROR,
+                status=InferenceStatus.FAILED,
                 message=f"Error: {str(e)}",
                 data=""
             )

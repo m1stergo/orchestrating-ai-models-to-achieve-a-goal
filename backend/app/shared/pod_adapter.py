@@ -105,7 +105,7 @@ class PodAdapter:
         # Submit the job
         initial_result = await self._call_endpoint("run", "POST", runpod_payload)
         
-        if initial_result.get("status") == "ERROR":
+        if initial_result.get("status") == "FAILED":
             raise Exception(initial_result.get("message") or "Unknown error")
             
         job_id = initial_result.get("id", "")
@@ -137,7 +137,7 @@ class PodAdapter:
             
             initial_result = await self._call_endpoint("run", "POST", payload)
             
-            if initial_result.get("status") == "ERROR":
+            if initial_result.get("status") == "FAILED":
                 raise Exception(initial_result.get("message"))
                 
             job_id = initial_result.get("id", "")
@@ -184,10 +184,10 @@ class PodAdapter:
                         error_message = f"HTTP error: {resp.status} when checking status for job {job_id}"
                         logger.error(error_message)
                         return {
-                            "status": "ERROR", 
+                            "status": "FAILED", 
                             "id": None, 
                             "detail": {
-                                "status": "ERROR", 
+                                "status": "FAILED", 
                                 "message": error_message, 
                                 "data": ""
                             }
@@ -197,7 +197,7 @@ class PodAdapter:
                     logger.info(f"Status response for job {job_id}: {result}")
                     
                     # Check if the result indicates the job doesn't exist
-                    if result.get("status") == "ERROR" and "not found" in result.get("detail", {}).get("message", "").lower():
+                    if result.get("status") == "FAILED" and "not found" in result.get("detail", {}).get("message", "").lower():
                         error_message = result.get("detail", {}).get("message", f"Job ID {job_id} not found")
                         logger.warning(error_message)
                         raise Exception(error_message)
@@ -207,10 +207,10 @@ class PodAdapter:
         except aiohttp.ClientError as e:
             logger.error(f"{self.service_name} status check connection error: {str(e)}")
             return {
-                "status": "ERROR", 
+                "status": "FAILED", 
                 "id": None, 
                 "detail": {
-                    "status": "ERROR", 
+                    "status": "FAILED", 
                     "message": f"Connection error: {str(e)}", 
                     "data": ""
                 }
@@ -218,10 +218,10 @@ class PodAdapter:
         except Exception as e:
             logger.error(f"{self.service_name} status check error: {str(e)}")
             return {
-                "status": "ERROR", 
+                "status": "FAILED", 
                 "id": None, 
                 "detail": {
-                    "status": "ERROR", 
+                    "status": "FAILED", 
                     "message": f"Unexpected error: {str(e)}", 
                     "data": ""
                 }
@@ -248,26 +248,19 @@ class PodAdapter:
             status_response = await self._status(job_id)
 
             # If job failed
-            if status_response.get("status") == "ERROR":
+            if status_response.get("status") == "FAILED":
                 error_message = status_response.get("detail", {}).get("message", "")
                 logger.error(f"Job {job_id} failed: {error_message}")
                 return status_response
 
             job_status = status_response.get("status")
-            detail_status = status_response.get("detail", {}).get("status")
-            data = status_response.get("detail", {}).get("data", "")
+            output_status = status_response.get("output", {}).get("status")
+            data = status_response.get("output", {}).get("data", "")
             
-            logger.info(f"Poll {retries}: job_status={job_status}, detail_status={detail_status} for job_id={job_id}")
-            
-            # Si tenemos datos o el estado es COMPLETED con IDLE, consideramos que el job está completo
-            if data or (job_status == "COMPLETED" and detail_status == "IDLE"):
-                logger.info(f"Job {job_id} completed successfully with data or IDLE status")
-                return status_response
+            logger.info(f"Poll {retries}: job_status={job_status}, output_status={output_status} for job_id={job_id}")
                 
-            # Si el status es COMPLETED pero no tiene datos ni es IDLE, también lo consideramos completo
-            # Esto maneja el caso de servicios que retornan COMPLETED pero sin estado detail.status
             if job_status == "COMPLETED":
-                logger.info(f"Job {job_id} completed with COMPLETED status but no IDLE flag")
+                logger.info(f"Job {job_id} completed")
                 return status_response
                     
             # Wait before checking again
@@ -279,10 +272,10 @@ class PodAdapter:
         error_message = f"Timed out waiting for job {job_id} after {max_retries} retries"
         logger.error(error_message)
         return {
-            "status": "ERROR", 
+            "status": "FAILED", 
             "id": job_id, 
             "detail": {
-                "status": "ERROR", 
+                "status": "FAILED", 
                 "message": error_message, 
                 "data": ""
             }

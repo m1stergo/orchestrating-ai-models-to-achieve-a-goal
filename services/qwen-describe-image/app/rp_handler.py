@@ -24,7 +24,7 @@ def rp_handler(event: Dict[str, Any]) -> Dict[str, Any]:
             response = handler.load_model()
         else:
             response = InferenceResponse(
-                status=InferenceStatus.ERROR,
+                status=InferenceStatus.FAILED,
                 message="Invalid action",
                 data=""
             )
@@ -35,11 +35,11 @@ def rp_handler(event: Dict[str, Any]) -> Dict[str, Any]:
             return response.dict()
         else:
             logger.warning(f"Unable to serialize response of type {type(response)}")
-            return {"status": "ERROR", "message": "Serialization error", "data": ""}
+            return {"status": "FAILED", "message": "Serialization error", "data": ""}
     
     except Exception as e:
         logger.error(f"Error in handler: {str(e)}")
-        return {"status": "ERROR", "message": f"Error: {str(e)}", "data": ""}
+        return {"status": "FAILED", "message": f"Error: {str(e)}", "data": ""}
 
 
 if __name__ == "__main__":

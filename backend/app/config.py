@@ -41,6 +41,16 @@ class Settings(BaseSettings):
     
     # Export storage settings
     EXPORTS_DIR: Path = Path("app/static/exports")
+
+    # Minio storage settings
+    MINIO_ENDPOINT: str = "audios-minio.gxuq0l.easypanel.host"
+    MINIO_ACCESS_KEY: str = "cl4yTORRES"
+    MINIO_SECRET_KEY: str = "cl4yTORRES"
+    MINIO_SECURE: bool = True
+    MINIO_REGION: Optional[str] = None
+    MINIO_PUBLIC_BUCKET: str = "audios"
+    MINIO_TEMP_PREFIX: str = "temp/"
+    MINIO_PUBLIC_URL: str = "https://audios-minio.gxuq0l.easypanel.host"
     
     # Microservice base URLs with API prefix
     DESCRIBE_IMAGE_QWEN_URL: str = "http://localhost:8001/api/v1"

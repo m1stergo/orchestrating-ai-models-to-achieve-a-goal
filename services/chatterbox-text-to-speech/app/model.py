@@ -50,7 +50,7 @@ class ChatterboxModel(InferenceModel):
             return self.model
         except Exception as e:
             logger.error(f"Chatterbox TTS model loading failed: {str(e)}")
-            self.state = ModelState.ERROR
+            self.state = ModelState.FAILED
             self.error_message = str(e)
             raise
 

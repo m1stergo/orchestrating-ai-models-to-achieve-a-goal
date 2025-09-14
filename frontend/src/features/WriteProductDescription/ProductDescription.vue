@@ -68,8 +68,8 @@ watch(statusGenerateDescription, () => {
     if (statusGenerateDescription.value === Status.SUCCESS) {
         emit('update:status', Status.SUCCESS)
     }
-    if (statusGenerateDescription.value === Status.ERROR) {
-        emit('update:status', Status.ERROR)
+    if (statusGenerateDescription.value === Status.FAILED) {
+        emit('update:status', Status.FAILED)
     }
     if (statusGenerateDescription.value === Status.PENDING) {
         emit('update:status', Status.PENDING)
