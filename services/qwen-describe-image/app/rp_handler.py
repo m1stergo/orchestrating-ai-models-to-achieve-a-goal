@@ -11,22 +11,35 @@ logger = logging.getLogger(__name__)
 #                               RunPod Handler                                 #
 # ---------------------------------------------------------------------------- #
 
-def rp_handler(event: Dict[str, Any]) -> InferenceResponse:
+def rp_handler(event: Dict[str, Any]) -> Dict[str, Any]:
     input_data = event.get("input", {})
     logger.info(f"======== Received RunPod event with input: {input_data} ========")
     
     action = input_data.get("action", "inference");
     
-    if action == "inference":
-        return handler.infer(input_data)
-    elif action == "warmup":
-        return handler.load_model()
-    else:
-        return InferenceResponse(
-            status=InferenceStatus.ERROR,
-            message="Invalid action",
-            data=""
-        )
+    try:
+        if action == "inference":
+            response = handler.infer(input_data)
+        elif action == "warmup":
+            response = handler.load_model()
+        else:
+            response = InferenceResponse(
+                status=InferenceStatus.ERROR,
+                message="Invalid action",
+                data=""
+            )
+        
+        if hasattr(response, "model_dump"):
+            return response.model_dump()
+        elif hasattr(response, "dict"):
+            return response.dict()
+        else:
+            logger.warning(f"Unable to serialize response of type {type(response)}")
+            return {"status": "ERROR", "message": "Serialization error", "data": ""}
+    
+    except Exception as e:
+        logger.error(f"Error in handler: {str(e)}")
+        return {"status": "ERROR", "message": f"Error: {str(e)}", "data": ""}
 
 
 if __name__ == "__main__":
