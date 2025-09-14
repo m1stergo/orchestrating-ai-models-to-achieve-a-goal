@@ -11,11 +11,17 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------- #
 
 def rp_handler(event: Dict[str, Any]) -> Dict[str, Any]:
-    # Extraer el input del evento y pasarlo directamente al handler de inferencia
     input_data = event.get("input", {})
     logger.info(f"======== Received RunPod event with input: {input_data} ========")
     
-    return handler.run_job(input_data)
+    response = handler.run_job(input_data)
+    
+    if hasattr(response, "dict"):
+        return response.dict()
+    elif hasattr(response, "model_dump"):
+        return response.model_dump()
+    else:
+        return response
 
 
 if __name__ == "__main__":
