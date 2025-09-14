@@ -29,11 +29,13 @@ async def inference(
         
         # Delegate to adapter which now handles formatting
         result = await adapter.inference(request.image_url, request.prompt)
+
+        logger.info(f"Description result: {result}")
         
         return ServiceResponse(
-            status="success",
-            message="Image description generated successfully",
-            data=result
+            status=result.get("output", {}).get("status", ""),
+            message=result.get("output", {}).get("message", ""),
+            data=result.get("output", {}).get("data", "")
         )
             
     except Exception as e:
@@ -43,7 +45,7 @@ async def inference(
         return ServiceResponse(
             status="error",
             message=f"Service error: {error_msg}",
-            data=None
+            data=result.get("output", {}).get("data", "")
         )
 
 async def warmup(model_name: str) -> ServiceResponse:
@@ -60,11 +62,13 @@ async def warmup(model_name: str) -> ServiceResponse:
         adapter = ImageDescriptionAdapterFactory.get_adapter(model_name)
         # La función warmup del adaptador siempre debe retornar un string
         result = await adapter.warmup()
+
+        logger.info(f"Warmup result: {result}")
         
         return ServiceResponse(
-            status="success",
-            message=result,
-            data=None
+            status=result.get("output", {}).get("status", ""),
+            message=result.get("output", {}).get("message", ""),
+            data=result.get("output", {}).get("data", "")
         )
         
     except Exception as e:

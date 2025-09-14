@@ -62,7 +62,7 @@ function handleExtractContentStatusUpdate(status: Status) {
     </Message> 
     <Message v-else-if="errorDescribeImageService" severity="error" class="flex justify-center">
         <div class="flex items-center gap-2 justify-center text-center">
-            An error occurred please try again later.
+            An error occurred please try again later. {{ errorDescribeImageService }}
         </div>
     </Message>
     <div v-else class="card">

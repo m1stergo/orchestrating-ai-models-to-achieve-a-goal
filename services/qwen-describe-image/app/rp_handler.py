@@ -2,6 +2,7 @@ import logging
 import runpod
 from typing import Any, Dict
 from .shared import handler
+from .handler import InferenceResponse, InferenceStatus
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -10,21 +11,22 @@ logger = logging.getLogger(__name__)
 #                               RunPod Handler                                 #
 # ---------------------------------------------------------------------------- #
 
-def rp_handler(event: Dict[str, Any]) -> Dict[str, Any]:
+def rp_handler(event: Dict[str, Any]) -> InferenceResponse:
     input_data = event.get("input", {})
     logger.info(f"======== Received RunPod event with input: {input_data} ========")
     
-    response = handler.run_job(input_data)
+    action = input_data.get("action", "inference");
     
-    if hasattr(response, "dict"):
-        logger.info(f"======== Response is a Pydantic model with dict method: {response.dict()} ========")
-        return response.dict()
-    elif hasattr(response, "model_dump"):
-        logger.info(f"======== Response is a Pydantic model with model_dump method: {response.model_dump()} ========")
-        return response.model_dump()
+    if action == "inference":
+        return handler.infer(input_data)
+    elif action == "warmup":
+        return handler.load_model()
     else:
-        logger.info(f"======== Response is a Pydantic model with model_dump method: {response.model_dump()} ========")
-        return response
+        return InferenceResponse(
+            status=InferenceStatus.ERROR,
+            message="Invalid action",
+            data=""
+        )
 
 
 if __name__ == "__main__":

@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     API_VERSION: str = "/api/v1"
     PORT: int = 8001
     
-    
     # Model Configuration
     QWEN_MODEL_NAME: str = "Qwen/Qwen2.5-VL-7B-Instruct"
     QWEN_MAX_MEMORY_GPU: str = "14GB"

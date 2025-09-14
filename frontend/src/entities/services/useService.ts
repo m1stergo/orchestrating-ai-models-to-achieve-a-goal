@@ -1,13 +1,19 @@
-import { watch, ref } from "vue"
+import { watch, ref, reactive } from "vue"
 import { inference, warmup, type ServiceResponse, type DescribeImageInferenceParams, type DescribeImageWarmupParams } from "./api"
 import { getSettings } from "@/features/UserSettings/api"
 import { useMutation, useQuery } from "@pinia/colada"
 
-const isWarmingUp = ref(false)
-const isLoading = ref(false)
-const error = ref('')
+const state = reactive<Record<string, any>>({})
 
 export function useService(service: string, options?: { onSuccess?: (response: ServiceResponse<string>) => void, onError?: (error: Error) => void, }) {
+    if (!state[service]) {
+        state[service] = {
+            isWarmingUp: false,
+            isLoading: false,
+            error: '',
+        }
+    }
+
     const { data: settings } = useQuery({
         key: ['settings'],
         query: () => getSettings(),
@@ -18,7 +24,7 @@ export function useService(service: string, options?: { onSuccess?: (response: S
         mutation: (params: DescribeImageWarmupParams) => warmup(service, params),
         onError: (err: Error) => {
             options?.onError?.(err)
-            error.value = err.message
+            state[service].error = err.message
         }
     })
 
@@ -26,7 +32,7 @@ export function useService(service: string, options?: { onSuccess?: (response: S
         mutation: (params: DescribeImageInferenceParams) => inference(service, params),
         onError: (err: Error) => {
             options?.onError?.(err)
-            error.value = err.message
+            state[service].error = err.message
         },
         onSuccess: (data: ServiceResponse<string>) => {
             options?.onSuccess?.(data)
@@ -38,18 +44,18 @@ export function useService(service: string, options?: { onSuccess?: (response: S
     }
 
     watch(isLoadingWarmup, (value) => {
-        isWarmingUp.value = value
+        state[service].isWarmingUp = value
     })
 
     watch(isLoadingInference, (value) => {
-        isLoading.value = value
+        state[service].isLoading = value
     })
 
     return {
-        isWarmingUp,
-        isLoading,
+        isWarmingUp: state[service].isWarmingUp,
+        isLoading: state[service].isLoading,
         run,
-        error,
+        error: state[service].error,
         settings,
         triggerWarmup,
     }

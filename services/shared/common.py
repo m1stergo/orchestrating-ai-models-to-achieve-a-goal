@@ -62,7 +62,7 @@ class ModelState(Enum):
     ERROR = "ERROR"
 
 
-class InferenceModel(ABC):
+class InferenceHandler(ABC):
     """Abstract base class for inference models.
     All model implementations must inherit from this class and implement the required methods.
     """

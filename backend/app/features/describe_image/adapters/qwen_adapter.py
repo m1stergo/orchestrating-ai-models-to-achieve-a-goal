@@ -56,9 +56,7 @@ class QwenAdapter(PodAdapter, ImageDescriptionAdapter):
                 "prompt": final_prompt
             }
             
-            final_result = await self.run_inference(payload)
-
-            return final_result.get("detail", {}).get("data", "")
+            return await self.run_inference(payload)
 
         except Exception as e:
             logger.error(f"Qwen adapter error: {str(e)}")

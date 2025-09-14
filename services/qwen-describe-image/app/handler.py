@@ -7,23 +7,22 @@ import logging
 import time
 from typing import Dict, Any
 from .config import settings
-from .common import ModelState, InferenceModel
+from .common import InferenceHandler, InferenceResponse, InferenceStatus
 from transformers import AutoProcessor
 
 logger = logging.getLogger(__name__)
 
-class QwenModel(InferenceModel):
+class QwenHandler(InferenceHandler):
     """ImageDescriptionModel for image description using model (local)."""
-    def __init__(self, max_width: int = 512):
-        super().__init__()
+    def __init__(self, model_name: str, max_width: int = 512):
+        super().__init__(model_name)
         self._processor = None
         self.max_width = max_width
 
-    def load_model(self):
-        """Ensures that the model is loaded synchronously."""
-        super().load_model()
-
+    def _do_load_model(self) -> InferenceResponse:
         try:
+            logger.info("======== Loading model... This may take several minutes. ========")
+
             # Load model
             model_kwargs = {
                 "torch_dtype": "auto",
@@ -50,17 +49,25 @@ class QwenModel(InferenceModel):
             )
             
             # Successfully loaded
-            self.state = ModelState.IDLE
+            self.status = InferenceStatus.IDLE
             total_time = time.time() - self.loading_start_time
             logger.info(f"======== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ========")
 
-            return self.model, self._processor
+            return InferenceResponse(
+                status=InferenceStatus.IDLE,
+                message="Model is ready to use.",
+                data=""
+            )
             
         except Exception as e:
-            logger.error(f"======== Failed to load processor: {e} ========")
-            self.state = ModelState.ERROR
+            logger.error(f"======== Failed to load model: {e} ========")
+            self.status = InferenceStatus.ERROR
             self.error_message = str(e)
-            raise RuntimeError(f"Failed to load processor: {str(e)}")
+            return InferenceResponse(
+                status=InferenceStatus.ERROR,
+                message=f"Failed to load model: {str(e)}",
+                data=""
+            )
     
     def is_loaded(self):
         """Check if model is loaded."""
@@ -79,22 +86,25 @@ class QwenModel(InferenceModel):
 
         return img
 
-    def inference(self, request_data: Dict[str, Any]) -> str:
-        image_url = request_data.get('image_url')
-        
-        if not image_url:
-            raise ValueError("The 'image_url' parameter is required for this model")
-            
-        logger.info(f"======== Describing image from {image_url} ========")
-        
+    def infer(self, request_data: Dict[str, Any]) -> InferenceResponse:
         try:
-            # Ensure model is loaded
+            image_url = request_data.get('image_url')
+        
+            if not image_url:
+                raise ValueError("The 'image_url' parameter is required for this model")
+            
+            logger.info(f"======== Describing image from {image_url} ========")
+        
             if not self.is_loaded():
                 self.load_model()
+                return InferenceResponse(
+                    status=InferenceStatus.WARMINGUP,
+                    message="Model is warming up...",
+                    data=""
+                )
 
             image = self._download_and_resize_image(image_url)
             
-            # Obtener prompt del diccionario
             prompt = request_data.get('prompt', settings.PROMPT)
 
             messages = [
@@ -119,6 +129,7 @@ class QwenModel(InferenceModel):
             ).to(self.model.device)
 
             logger.info("======== Generating caption ========")
+
             generated_ids = self.model.generate(**inputs, max_new_tokens=256)
             generated_ids_trimmed = [
                 out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
@@ -128,9 +139,20 @@ class QwenModel(InferenceModel):
             )
 
             description = output_text[0].strip() if output_text else "No description generated"
+
             logger.info("======== Description generated successfully ========")
-            return description
+            logger.info(description)
+
+            return InferenceResponse(
+                status=InferenceStatus.IDLE,
+                message="Description generated successfully.",
+                data=description
+            )
 
         except Exception as e:
             logger.error(f"======== Error: {str(e)} ========")
-            raise
+            return InferenceResponse(
+                status=InferenceStatus.ERROR,
+                message=f"Error: {str(e)}",
+                data=""
+            )

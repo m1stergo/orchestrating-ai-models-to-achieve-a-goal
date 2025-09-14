@@ -4,7 +4,7 @@ RunPod adapter utility base class for AI model interactions.
 import logging
 import aiohttp
 import asyncio
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -117,12 +117,12 @@ class PodAdapter:
         logger.info(f"Final result after polling: {final_result}")
         return final_result
 
-    async def warmup(self) -> str:
+    async def warmup(self) -> Dict[str, Any]:
         """
         Warmup the service by calling its warmup endpoint.
             
         Returns:
-            str: String message with warmup status information
+            Dict[str, Any]: Dictionary with job result
         """
         if not self._is_available():
             raise ValueError(f"{self.service_name} service URL is not configured")
@@ -145,9 +145,7 @@ class PodAdapter:
             logger.info(f"Waiting for warmup job {job_id} to complete...")
             
             try:
-                result = await self._poll_until_complete(job_id)
-                # Siempre retornar un string con el mensaje de resultado
-                return str(result.get("detail", {}).get("message", "Model warmed up successfully"))
+                return await self._poll_until_complete(job_id)
             except Exception as e:
                 logger.info(f"Job ID {job_id} not found, model likely already warmed up")
                 return str(e)
