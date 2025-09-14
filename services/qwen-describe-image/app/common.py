@@ -18,7 +18,7 @@ class JobStatus(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"  # Job is being processed
     COMPLETED = "COMPLETED"    # Job is completed
 
-class InferenceStatus(Enum):
+class InferenceStatus(str, Enum):
     COLD = "COLD" 
     WARMINGUP = "WARMINGUP"
     PROCESSING = "PROCESSING"
