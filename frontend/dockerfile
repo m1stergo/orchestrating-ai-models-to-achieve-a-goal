@@ -1,14 +1,24 @@
-FROM node:20
-
-# Install pnpm globally
-RUN npm install -g pnpm
-
+# -----------------------
+# STAGE 1: Build con Node
+# -----------------------
+FROM node:20-alpine AS build
 WORKDIR /app
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY package.json pnpm-lock.yaml ./
+
+RUN pnpm install --frozen-lockfile
+
 COPY . .
+COPY . .
+RUN pnpm build   # Esto genera la carpeta /app/dist
 
-# Install dependencies with pnpm
-RUN pnpm install
+# -----------------------
+# STAGE 2: Nginx para servir
+# -----------------------
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Start dev server (adjust to your setup: vite, nuxt, vue-cli, etc.)
-CMD ["pnpm", "dev"]
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
