@@ -2,12 +2,13 @@
 Factory for creating and managing image description adapters.
 """
 import logging
-from typing import Dict, Type, List
+from typing import Dict, Type
 
-from .base import ImageDescriptionAdapter
 from .openai_adapter import OpenAIAdapter
 from .gemini_adapter import GeminiAdapter
 from .qwen_adapter import QwenAdapter
+from app.shared.adapter import Adapter
+from app.shared.schemas import ServiceResponse
 
 logger = logging.getLogger(__name__)
 
@@ -16,14 +17,14 @@ class ImageDescriptionAdapterFactory:
     """Factory for creating and managing image description adapters (strategy pattern)."""
     
     # Available adapters mapped by name
-    _adapters: Dict[str, Type[ImageDescriptionAdapter]] = {
+    _adapters: Dict[str, Type[Adapter]] = {
         "openai": OpenAIAdapter,
         "gemini": GeminiAdapter,
         "qwen": QwenAdapter,
     }
     
     @classmethod
-    def get_adapter(cls, model_name: str) -> ImageDescriptionAdapter:
+    def get_adapter(cls, model_name: str) -> Adapter:
         """
         Get an adapter instance by model name.
         
@@ -44,11 +45,15 @@ class ImageDescriptionAdapterFactory:
         return adapter_class()
     
     @classmethod
-    def list_available_models(cls) -> List[str]:
+    def list_available_models(cls) -> ServiceResponse:
         """
         Get a list of all available model names.
         
         Returns:
-            List of available model names
+            ServiceResponse: Service response with list of available model names
         """
-        return list(cls._adapters.keys())
+        return ServiceResponse(
+            status="IDLE",
+            message="Available models retrieved successfully",
+            data=list(cls._adapters.keys())
+        )

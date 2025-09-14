@@ -15,6 +15,8 @@ from app.config import settings
 from pathlib import Path
 import logging
 from dotenv import load_dotenv
+import colorlog
+
 load_dotenv()
 
 # Configure logging
@@ -22,6 +24,13 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+handler = colorlog.StreamHandler()
+handler.setFormatter(colorlog.ColoredFormatter(
+	'%(log_color)s%(levelname)s:%(name)s:%(message)s'))
+
+logger = colorlog.getLogger('app')
+logger.addHandler(handler)
 
 app = FastAPI(
     title="Product description generator",

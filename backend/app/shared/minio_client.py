@@ -46,12 +46,12 @@ class MinioClient:
         try:
             if not self.client.bucket_exists(self.bucket_name):
                 self.client.make_bucket(self.bucket_name)
-                logger.info(f"Created bucket: {self.bucket_name}")
+                logger.info(f"===== Created bucket: {self.bucket_name} =====")
         except S3Error as e:
-            logger.error(f"Error ensuring bucket {self.bucket_name} exists: {e}")
+            logger.error(f"===== Error ensuring bucket {self.bucket_name} exists: {e} =====")
         
         self._initialized = True
-        logger.info(f"Minio client initialized with endpoint: {settings.MINIO_ENDPOINT}")
+        logger.info(f"===== Minio client initialized with endpoint: {settings.MINIO_ENDPOINT} =====")
     
     def upload_file(self, file_data: Union[bytes, BinaryIO], filename: Optional[str] = None, 
                   content_type: Optional[str] = None) -> str:
@@ -95,7 +95,7 @@ class MinioClient:
                 file_obj.seek(0)
             
             # Upload file
-            logger.info(f"Uploading to MinIO: {self.bucket_name}/{object_name}")
+            logger.info(f"===== Uploading to MinIO: {self.bucket_name}/{object_name}")
             self.client.put_object(
                 self.bucket_name,
                 object_name,
@@ -108,11 +108,11 @@ class MinioClient:
             base_url = settings.MINIO_PUBLIC_URL or f"https://{settings.MINIO_ENDPOINT}"
             url = f"{base_url}/{self.bucket_name}/{object_name}"
             
-            logger.info(f"File uploaded to MinIO: {url}")
+            logger.info(f"===== File uploaded to MinIO: {url} =====")
             return url
             
         except Exception as e:
-            error_msg = f"Error uploading to MinIO: {str(e)}"
+            error_msg = f"===== Error uploading to MinIO: {str(e)} ====="
             logger.error(error_msg)
             raise RuntimeError(error_msg)
     

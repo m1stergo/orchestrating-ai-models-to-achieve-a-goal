@@ -1,9 +1,25 @@
-import { watch, ref, reactive } from "vue"
+import { watch, ref, reactive, computed } from "vue"
 import { inference, warmup, type ServiceResponse, type DescribeImageInferenceParams, type DescribeImageWarmupParams } from "./api"
 import { getSettings } from "@/features/UserSettings/api"
 import { useMutation, useQuery } from "@pinia/colada"
 
-const state = reactive<Record<string, any>>({})
+const state = reactive<Record<string, any>>({
+    'describe-image': {
+        isWarmingUp: false,
+        isLoading: false,
+        error: '',
+    },
+    'generate-description': {
+        isWarmingUp: false,
+        isLoading: false,
+        error: '',
+    },
+    'text-to-speech': {
+        isWarmingUp: false,
+        isLoading: false,
+        error: '',
+    },
+})
 
 export function useService(service: string, options?: { onSuccess?: (response: ServiceResponse<string>) => void, onError?: (error: Error) => void, }) {
     if (!state[service]) {
@@ -52,10 +68,10 @@ export function useService(service: string, options?: { onSuccess?: (response: S
     })
 
     return {
-        isWarmingUp: state[service].isWarmingUp,
-        isLoading: state[service].isLoading,
+        isWarmingUp: computed(() => state[service].isWarmingUp),
+        isLoading: computed(() => state[service].isLoading),
         run,
-        error: state[service].error,
+        error: computed(() => state[service].error),
         settings,
         triggerWarmup,
     }

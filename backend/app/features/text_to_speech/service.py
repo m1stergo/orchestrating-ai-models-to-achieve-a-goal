@@ -26,11 +26,11 @@ async def inference(
         TextToSpeechResponse: The generated speech result
     """
     try:
-        logger.info(f"Generating speech for text: {request.text[:50]}...")
+        logger.info(f"===== Generating speech for text: {request.text[:50]}... =====")
         adapter = TextToSpeechAdapterFactory.get_adapter(request.model)
         audio_url = await adapter.inference(request.text, request.voice_url)
         
-        logger.info("Speech generation completed successfully")
+        logger.info("===== Speech generation completed successfully =====")
         
         return ServiceResponse(
             status="success",
@@ -40,7 +40,7 @@ async def inference(
             }
         )
     except Exception as e:
-        logger.error(f"Error generating speech: {str(e)}")
+        logger.error(f"===== Error generating speech: {str(e)} =====")
         raise Exception(f"Speech generation failed: {str(e)}")
 
 async def warmup(model_name: str) -> ServiceResponse:
@@ -66,7 +66,7 @@ async def warmup(model_name: str) -> ServiceResponse:
         
     except Exception as e:
         error_msg = str(e)
-        logger.error(f"Warmup failed for {model_name}: {error_msg}")
+        logger.error(f"===== Warmup failed for {model_name}: {error_msg} =====")
         
         return ServiceResponse(
             status="error",
@@ -88,7 +88,7 @@ async def list_available_voices() -> List[VoiceModel]:
     try:
         config_file: Path = settings.VOICE_MODELS_CONFIG
         if not config_file.exists():
-            logger.warning(f"Voice models config file does not exist: {config_file}")
+            logger.error(f"===== Voice models config file does not exist: {config_file} =====")
             return voices
 
         with open(config_file, 'r', encoding='utf-8') as f:
@@ -99,7 +99,7 @@ async def list_available_voices() -> List[VoiceModel]:
             url = voice_config.get("url", "")
             
             if not name or not url:
-                logger.warning(f"Invalid voice config entry: {voice_config}")
+                logger.error(f"===== Invalid voice config entry: {voice_config} =====")
                 continue
             
             # Convert relative URLs to absolute URLs
@@ -110,12 +110,11 @@ async def list_available_voices() -> List[VoiceModel]:
             
             voices.append(VoiceModel(name=name, audio_url=audio_url))
         
-        logger.info(f"Loaded {len(voices)} voice models from config")
-        logger.info(f"###################### Available voices retrieved successfully: {voices}")
+        logger.info(f"===== Available voices retrieved successfully: {voices} =====")
 
         return voices
     except Exception as e:
-        logger.error(f"Error reading voice models config: {str(e)}")
+        logger.error(f"===== Error reading voice models config: {str(e)} =====")
         # Fail gracefully with empty list; caller can decide how to respond
         return voices
 

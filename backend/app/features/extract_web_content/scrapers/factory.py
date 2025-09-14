@@ -36,11 +36,11 @@ class ScraperFactory:
             # Check if URL contains any of our known keywords
             for keyword, scraper_class in cls._scrapers.items():
                 if keyword in url_lower:
-                    logger.info(f"Using {keyword} scraper for URL: {url}")
+                    logger.info(f"===== Using {keyword} scraper for URL: {url} =====")
                     return scraper_class()
             
             # No specific scraper found, use default scraper
-            logger.info(f"No specific scraper found for URL: {url}, using default scraper")
+            logger.warning(f"===== No specific scraper found for URL: {url}, using default scraper =====")
             return DefaultScraper()
             
         except Exception as e:

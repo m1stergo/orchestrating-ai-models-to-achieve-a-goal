@@ -4,26 +4,20 @@ from typing import Any, Optional, Dict
 from .config import settings
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from .common import InferenceModel, ModelState
+from .common import InferenceHandler, InferenceResponse, InferenceStatus
 
 logger = logging.getLogger(__name__)
 
-class MistralModel(InferenceModel):
+class MistralHandler(InferenceHandler):
     """Local Mistral model for text generation (aligned with other providers)."""
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model_name: str):
+        super().__init__(model_name)
         self.tokenizer: Optional[Any] = None
         
-    @property
-    def device(self):
-        """Get the device to use for model inference."""
-        return torch.device('cuda') if self.has_gpu else torch.device('cpu')
-    
-    def load_model(self):
-        """Ensures that the model is loaded synchronously."""
-        super().load_model()
-
+    def _do_load_model(self) -> InferenceResponse:
         try:
+            logger.info("==== Loading model... This may take several minutes. ====")
+
             # Load tokenizer
             tokenizer_kwargs = {
                 "trust_remote_code": True, 
@@ -54,31 +48,39 @@ class MistralModel(InferenceModel):
             )
 
             # Successfully loaded
-            self.state = ModelState.IDLE
+            self.state = InferenceStatus.IDLE
             total_time = time.time() - self.loading_start_time
-            logger.info(f"======== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ========")
+            logger.info(f"==== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ====")
             
-            return self.model, self.tokenizer
+            return InferenceResponse(
+                status=InferenceStatus.IDLE,
+                message="Model is ready to use.",
+                data=""
+            )
             
         except Exception as e:
-            logger.error(f"======== Failed to load Mistral model: {str(e)} ========")
-            self.state = ModelState.FAILED
+            logger.error(f"==== Failed to load Mistral model: {str(e)} ====")
+            self.state = InferenceStatus.FAILED
             self.error_message = str(e)
-            raise Exception(f"Model loading failed: {str(e)}")
+            return InferenceResponse(
+                status=InferenceStatus.FAILED,
+                message=f"Failed to load model: {str(e)}",
+                data=""
+            )
             
     def is_loaded(self):
         """Check if model is loaded."""
         return self.model is not None and self.tokenizer is not None
 
-    def inference(self, request_data: Dict[str, Any]) -> str:
-        logger.info(f"======== Processing text content ========")
+    def infer(self, request_data: Dict[str, Any]) -> InferenceResponse:
+        logger.info(f"==== Generating product description ====")
 
         try:
             if not self.is_loaded():
                 self.load_model()
             
             # Set state to PROCESSING before starting generation
-            self.state = ModelState.PROCESSING
+            self.state = InferenceStatus.PROCESSING
             
             # Extract text and prompt from request_data
             text = request_data.get('text', '')
@@ -115,14 +117,22 @@ class MistralModel(InferenceModel):
             text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
             # Reset state to IDLE after processing
-            self.state = ModelState.IDLE
+            self.state = InferenceStatus.IDLE
             
-            logger.info("======== Description generated successfully ========")
-            logger.info(f"======== {text} ========")
-            return text.strip()
+            logger.info("==== Product description generated successfully ====")
+            logger.info(f"==== {text} ====")
+            return InferenceResponse(
+                status=InferenceStatus.IDLE,
+                message="Product description generated successfully.",
+                data=text.strip()
+            )
         except Exception as e:
-            logger.error(f"======== Error: {str(e)} ========")
-            raise
+            logger.error(f"==== Error: {str(e)} ====")
+            return InferenceResponse(
+                status=InferenceStatus.ERROR,
+                message=f"Error: {str(e)}",
+                data=""
+            )
 
     def _build_chat_prompt(self, text: str, prompt: str) -> str:
         messages = [
@@ -131,14 +141,14 @@ class MistralModel(InferenceModel):
         ]
 
         try:
-            logger.info("======== Using apply_chat_template ========")
+            logger.info("==== Using apply_chat_template ====")
             return self.tokenizer.apply_chat_template(
                 messages,
                 tokenize=False,
                 add_generation_prompt=True
             )
         except Exception:
-            logger.info("======== Using fallback prompt ========")
+            logger.info("==== Using fallback prompt ====")
             pass
 
     def _generate_sync(self, input_text: str) -> str:

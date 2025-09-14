@@ -45,7 +45,7 @@ class ChatterboxModel(InferenceModel):
             # Successfully loaded
             self.state = ModelState.IDLE
             total_time = time.time() - self.loading_start_time
-            logger.info(f"======== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ========")
+            logger.info(f"==== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ====")
             
             return self.model
         except Exception as e:
@@ -61,10 +61,10 @@ class ChatterboxModel(InferenceModel):
     def inference(self, request_data: Dict[str, Any]) -> bytes:
         try:
             text = request_data.get('text', '')
-            logger.info(f"\n\n\n# Processing text: {text}")
+            logger.info(f"==== Processing text: {text} ====")
 
             voice_url = request_data.get('voice_url', None)
-            logger.info(f"ChatterboxModel: generating audio from {text} with voice_url: {voice_url}")
+            logger.info(f"==== ChatterboxModel: generating audio from {text} with voice_url: {voice_url} ====")
 
             if not text:
                 raise ValueError("Text is required")
@@ -82,9 +82,9 @@ class ChatterboxModel(InferenceModel):
                     temp_file.write(response.content)
                     temp_file.close()
                     audio_prompt_path = temp_file.name
-                    logger.info(f"Downloaded voice from URL: {voice_url}")
+                    logger.info(f"==== Downloaded voice from URL: {voice_url} ====")
                 except Exception as e:
-                    logger.error(f"Error downloading voice: {str(e)}")
+                    logger.error(f"==== Error downloading voice: {str(e)} ====")
                     audio_prompt_path = None
 
             
@@ -97,9 +97,9 @@ class ChatterboxModel(InferenceModel):
             if temp_file and audio_prompt_path:
                 try:
                     os.unlink(audio_prompt_path)
-                    logger.info("Cleaned up temporary voice file")
+                    logger.info("==== Cleaned up temporary voice file ====")
                 except Exception as e:
-                    logger.warning(f"Could not clean up temp file: {str(e)}")
+                    logger.warning(f"==== Could not clean up temp file: {str(e)} ====")
             
             try:
                 buffer = io.BytesIO()
@@ -125,7 +125,7 @@ class ChatterboxModel(InferenceModel):
                 
                 buffer_size = buffer.getbuffer().nbytes
                 
-                logger.info(f"Uploading to MinIO: {bucket_name}/{audio_filename}")
+                logger.info(f"==== Uploading to MinIO: {bucket_name}/{audio_filename} ====")
                 client.put_object(
                     bucket_name,
                     audio_filename,
@@ -137,14 +137,14 @@ class ChatterboxModel(InferenceModel):
                 base_url = settings.MINIO_ENDPOINT_URL
                 
                 audio_url = f"https://{base_url}/{bucket_name}/{audio_filename}"
-                logger.info(f"Audio uploaded to MinIO: {audio_url}")
+                logger.info(f"==== Audio uploaded to MinIO: {audio_url} ====")
                 
                 return audio_url
                 
             except Exception as storage_error:
-                logger.error(f"Error uploading to MinIO: {storage_error}")
+                logger.error(f"==== Error uploading to MinIO: {storage_error} ====")
                 raise
 
         except Exception as e:
-            logger.error(f"ChatterboxModel error: {str(e)}")
+            logger.error(f"==== ChatterboxModel error: {str(e)} ====")
             raise

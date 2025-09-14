@@ -125,8 +125,8 @@ class SettingsService:
             f"{settings.BASE_URL}{settings.API_VERSION}/generate-description/models"
         )
 
-        logger.info(f"Available describe_image models: {describe_models}")
-        logger.info(f"Available generate_description models: {generate_models}")
+        logger.info(f"===== Available describe_image models: {describe_models} =====")
+        logger.info(f"===== Available generate_description models: {generate_models} =====")
         
         return {
             "describe_image_models": describe_models,

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, HTTPException
 from typing import List
 from app.shared.schemas import (
     DescribeImageRequest, WarmupRequest, ServiceResponse
 )
-from .service import inference, warmup, get_available_models
+from .adapters.factory import ImageDescriptionAdapterFactory
 
 router = APIRouter()
 
@@ -49,17 +49,13 @@ router = APIRouter()
     - `qwen`: Qwen-VL (local processing, privacy-focused)
     """
 )
-async def run_describe_image(
-    request: DescribeImageRequest = Body(
-        ...,
-        examples={
-            "image_url": "https://example.com/product-image.jpg",
-            "model": "openai"
-        }
-    )
+async def run(
+    request: DescribeImageRequest
 ):
     try:
-        return await inference(request)
+        adapter = ImageDescriptionAdapterFactory.get_adapter(request.model)
+        result = await adapter.infer(request.image_url, request.prompt)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error describing image: {str(e)}")
 
@@ -69,14 +65,13 @@ async def run_describe_image(
     summary="Warmup Model",
     description="Trigger warmup of a specific image description model. Returns status of the warmup process."
 )
-async def warmup_model(request: WarmupRequest):
+async def warmup(request: WarmupRequest):
     """Warmup a specific text generation model."""
     try:
-        # Usar la función warmup que ya está importada al comienzo del archivo
-        return await warmup(request.model)
+        adapter = ImageDescriptionAdapterFactory.get_adapter(request.model)
+        result = await adapter.warmup()
+        return result
     except Exception as e:
-        # La función warmup ya maneja internamente los errores
-        # Esto solo se ejecutaría si hay un error inesperado
         raise HTTPException(status_code=500, detail=f"Warmup failed for {request.model}: {str(e)}")
 
 @router.get(
@@ -85,6 +80,6 @@ async def warmup_model(request: WarmupRequest):
     summary="Get Available Models",
     description="Get list of available models for image description"
 )
-async def get_models():
+def models():
     """Get available models for image description."""
-    return await get_available_models()
+    return ImageDescriptionAdapterFactory.list_available_models()

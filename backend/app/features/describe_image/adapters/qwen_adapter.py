@@ -5,18 +5,15 @@ import logging
 from typing import Optional
 
 from app.config import settings
-from .base import ImageDescriptionAdapter
-from app.shared.api_adapter import ApiAdapter
 from app.shared.pod_adapter import PodAdapter
-from ..shared.utils import get_image_description_prompt
+from app.shared.schemas import ServiceResponse
+from ..shared.prompts import get_image_description_prompt
 
 logger = logging.getLogger(__name__)
 
-
-class QwenAdapter(PodAdapter, ImageDescriptionAdapter):
+class QwenAdapter(PodAdapter):
     def __init__(self):
-        # Inicializar PodAdapter primero
-        PodAdapter.__init__(self,
+        super().__init__(
             service_url=settings.DESCRIBE_IMAGE_QWEN_URL,
             api_token=settings.EXTERNAL_API_TOKEN,
             service_name="Qwen",
@@ -25,39 +22,14 @@ class QwenAdapter(PodAdapter, ImageDescriptionAdapter):
             max_retries=40
         )
         
-        # Luego inicializar ApiAdapter a través de ImageDescriptionAdapter
-        ApiAdapter.__init__(self, 
-            api_key="",  # No necesitamos una API key para servicios externos
-            model_name="",  # No necesitamos un nombre de modelo para servicios externos
-            service_name="Qwen"  # Sobreescribe el valor de PodAdapter, pero es el mismo
-        )
+    async def infer(self, image_url: str, prompt: Optional[str] = None) -> ServiceResponse:
+        final_prompt = get_image_description_prompt(prompt)
         
-        logger.info(f"QwenAdapter inicializado con service_url={self.service_url}")
-
-    async def inference(self, image_url: str, prompt: Optional[str] = None) -> str:
-        """
-        Run inference with Qwen to describe an image.
+        payload = {
+            "image_url": image_url,
+            "prompt": final_prompt
+        }
         
-        Args:
-            image_url: URL of the image to describe
-            prompt: Optional custom prompt to use
-            
-        Returns:
-            str: Description result
-        """
-        if not self._is_available():
-            raise ValueError("Qwen service URL is not configured")
-
-        try:
-            final_prompt = get_image_description_prompt(prompt)
-            
-            payload = {
-                "image_url": image_url,
-                "prompt": final_prompt
-            }
-            
-            return await self.run_inference(payload)
-
-        except Exception as e:
-            logger.error(f"Qwen adapter error: {str(e)}")
-            raise
+        response = await self.run(payload)
+        
+        return response

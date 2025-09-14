@@ -76,7 +76,7 @@ class InferenceModel(ABC):
     def require_gpu(self) -> bool:
         """Check if GPU is available for model inference."""
         device_available = torch.cuda.is_available()
-        logger.info(f"======== CUDA available: {device_available} ========")
+        logger.info(f"==== CUDA available: {device_available} ====")
         
         if not device_available:
             error_msg = "GPU is required for this service. No CUDA-compatible GPU detected. Terminating process."
@@ -95,16 +95,16 @@ class InferenceModel(ABC):
         self.loading_start_time = time.time()
         self.error_message = None
         
-        logger.info("======== Model loading... This may take several minutes. ========")
+        logger.info("==== Model loading... This may take several minutes. ====")
 
         # Set HuggingFace cache directory if specified
         if settings.HUGGINGFACE_CACHE_DIR:
             cache_dir = settings.HUGGINGFACE_CACHE_DIR
             os.environ['TRANSFORMERS_CACHE'] = cache_dir
             os.environ['HF_HOME'] = cache_dir
-            logger.info(f"======== Using custom HuggingFace cache directory: {cache_dir} ========")
+            logger.info(f"==== Using custom HuggingFace cache directory: {cache_dir} ====")
         else:
-            logger.info("======== Using default HuggingFace cache directory ========")
+            logger.info("==== Using default HuggingFace cache directory ====")
     
     
     @abstractmethod
@@ -136,7 +136,7 @@ class InferenceHandler:
         try:
             action = request_data.get('action')
             
-            logger.info(f"======== Inference handler called with action: {action} ========")
+            logger.info(f"==== Inference handler called with action: {action} ====")
             
             if action == "inference":
                 return self.inference(request_data)
@@ -176,9 +176,9 @@ class InferenceHandler:
         try:
             # Set model state to WARMINGUP
             self.model._state = ModelState.WARMINGUP
-            logger.info("======== Starting model loading in background thread ========")
+            logger.info("==== Starting model loading in background thread ====")
             self.model.load_model()
-            logger.info("======== Model loading completed successfully ========")
+            logger.info("==== Model loading completed successfully ====")
             
             # Update job status to completed
             self.pending_jobs[job_id] = {
@@ -194,7 +194,7 @@ class InferenceHandler:
             
         except Exception as e:
             error_msg = f"Model warmup failed: {str(e)}"
-            logger.error(f"======== {error_msg} ========")
+            logger.error(f"==== {error_msg} ====")
             self.model._state = ModelState.FAILED
             self.model._error_message = error_msg
             
@@ -208,7 +208,7 @@ class InferenceHandler:
                 )
             }
 
-            logger.info(f"======== Model warmup failed: {error_msg} ========")
+            logger.info(f"==== Model warmup failed: {error_msg} ====")
             logger.error(self.pending_jobs[job_id])
             
             self.model_loading_job_id = None
@@ -222,7 +222,7 @@ class InferenceHandler:
             # Set model state to PROCESSING before starting inference
             self.model._state = ModelState.PROCESSING
             
-            logger.info(f"======== Processing job {job_id} with request_data: {request_data} ========")
+            logger.info(f"==== Processing job {job_id} with request_data: {request_data} ====")
             
             detail = self.model.inference(request_data)
             # Reset state to IDLE after processing
@@ -237,11 +237,11 @@ class InferenceHandler:
                     data=detail
                 )
             }
-            logger.info(f"======== Job {job_id} completed successfully ========")
+            logger.info(f"==== Job {job_id} completed successfully ====")
             
         except Exception as e:
             error_msg = f"Inference failed: {str(e)}"
-            logger.error(f"======== Job {job_id} failed: {error_msg} ========")
+            logger.error(f"==== Job {job_id} failed: {error_msg} ====")
             
             # Update with error
             self.pending_jobs[job_id] = {
@@ -393,7 +393,7 @@ class InferenceHandler:
         }
         
         # Start background processing
-        logger.info(f"======== Starting background processing for job {job_id} ========")
+        logger.info(f"==== Starting background processing for job {job_id} ====")
         thread = threading.Thread(
             target=self._process_job_in_thread,
             args=(job_id, request_data)
@@ -473,7 +473,7 @@ class InferenceHandler:
             "detail": None
         }
         
-        logger.info(f"======== Starting model warmup in background thread... (job_id: {job_id}) ========")
+        logger.info(f"==== Starting model warmup in background thread... (job_id: {job_id}) ====")
         
         thread = threading.Thread(
             target=self._load_model_in_thread,

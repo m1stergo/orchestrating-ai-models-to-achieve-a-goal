@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from app.config import settings
+import colorlog
 
 # Configure logging
 logging.basicConfig(
@@ -10,6 +11,12 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+handler = colorlog.StreamHandler()
+handler.setFormatter(colorlog.ColoredFormatter(
+	'%(log_color)s%(levelname)s:%(name)s:%(message)s'))
+
+logger.addHandler(handler)
 
 # Import router after shared globals to avoid circular imports
 from app.router import router

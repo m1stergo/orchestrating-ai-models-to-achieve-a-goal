@@ -64,7 +64,7 @@ class InferenceHandler(ABC):
 
     def require_gpu(self) -> bool:
         device_available = torch.cuda.is_available()
-        logger.info(f"======== CUDA available: {device_available} ========")
+        logger.info(f"==== CUDA available: {device_available} ====")
         
         if not device_available:
             error_msg = "GPU is required for this service. No CUDA-compatible GPU detected. Terminating process."
@@ -76,7 +76,7 @@ class InferenceHandler(ABC):
         
         if self.is_loaded():
             self.status = InferenceStatus.IDLE
-            logger.info("======== Model is ready to use. ========")
+            logger.info("==== Model is ready to use. ====")
             return InferenceResponse(
                 status=InferenceStatus.IDLE,
                 message="Model is ready to use.",
@@ -92,9 +92,9 @@ class InferenceHandler(ABC):
             cache_dir = settings.HUGGINGFACE_CACHE_DIR
             os.environ['TRANSFORMERS_CACHE'] = cache_dir
             os.environ['HF_HOME'] = cache_dir
-            logger.info(f"======== Using custom HuggingFace cache directory: {cache_dir} ========")
+            logger.info(f"==== Using custom HuggingFace cache directory: {cache_dir} ====")
         else:
-            logger.info("======== Using default HuggingFace cache directory ========")
+            logger.info("==== Using default HuggingFace cache directory ====")
 
         return self._do_load_model()
     
@@ -174,7 +174,7 @@ class RunPodSimulator:
         job_id = str(uuid.uuid4())
         
         try:
-            logger.info(f"======== Processing job {job_id} with request_data: {request_data} ========")
+            logger.info(f"==== Processing job {job_id} with request_data: {request_data} ====")
 
             action = request_data.get('action')
 

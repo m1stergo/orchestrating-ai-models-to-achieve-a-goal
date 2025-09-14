@@ -12,7 +12,7 @@ async def run(request: Dict[str, Any]):
     input_data = request.get('input', request)
     
     if 'action' not in input_data:
-        logger.warning(f"======== Missing 'action' in input_data, adding default 'inference' action ========")
+        logger.warning(f"==== Missing 'action' in input_data, adding default 'inference' action ====")
         input_data['action'] = 'inference'
     
     return handler.run_job(input_data)

@@ -2,9 +2,10 @@
 Factory for creating and managing text generation adapters.
 """
 import logging
-from typing import Dict, Type, List
+from typing import Dict, Type
 
-from .base import GenerateDescriptionAdapter
+from app.shared.adapter import Adapter
+from app.shared.schemas import ServiceResponse
 from .openai_adapter import OpenAIAdapter
 from .gemini_adapter import GeminiAdapter
 from .mistral_adapter import MistralAdapter
@@ -16,14 +17,14 @@ class GenerateDescriptionAdapterFactory:
     """Factory for creating and managing text generation adapters (strategy pattern)."""
     
     # Available adapters mapped by name
-    _adapters: Dict[str, Type[GenerateDescriptionAdapter]] = {
+    _adapters: Dict[str, Type[Adapter]] = {
         "openai": OpenAIAdapter,
         "gemini": GeminiAdapter,
         "mistral": MistralAdapter,
     }
     
     @classmethod
-    def get_adapter(cls, model_name: str) -> GenerateDescriptionAdapter:
+    def get_adapter(cls, model_name: str) -> Adapter:
         """
         Get a text generation adapter by model name.
         
@@ -31,7 +32,7 @@ class GenerateDescriptionAdapterFactory:
             model_name: Name of the model to use
             
         Returns:
-            GenerateDescriptionAdapter: An adapter for the specified model
+            Adapter: An adapter for the specified model
             
         Raises:
             ValueError: If the model is not supported
@@ -44,11 +45,15 @@ class GenerateDescriptionAdapterFactory:
         return adapter_class()
     
     @classmethod
-    def list_available_models(cls) -> List[str]:
+    def list_available_models(cls) -> ServiceResponse:
         """
-        List all available text generation models.
+        Get a list of all available model names.
         
         Returns:
-            List[str]: List of available model names
+            ServiceResponse: Service response with list of available model names
         """
-        return list(cls._adapters.keys())
+        return ServiceResponse(
+            status="IDLE",
+            message="Available models retrieved successfully",
+            data=list(cls._adapters.keys())
+        )

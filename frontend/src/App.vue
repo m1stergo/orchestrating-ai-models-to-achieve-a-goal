@@ -28,19 +28,19 @@ const { settings: settingsGenerateDescription, triggerWarmup: triggerWarmupGener
   }
 })
 
-const { triggerWarmup: triggerWarmupGenerateAudio } = useService('text-to-speech', {
-  onError: () => {
-    toast.add({
-      severity: 'error',
-      summary: 'Service Unavailable',
-      detail: 'Unable to connect to generate audio service. Please refresh the page.',
-    })
-  }
-})
+// const { triggerWarmup: triggerWarmupGenerateAudio } = useService('text-to-speech', {
+//   onError: () => {
+//     toast.add({
+//       severity: 'error',
+//       summary: 'Service Unavailable',
+//       detail: 'Unable to connect to generate audio service. Please refresh the page.',
+//     })
+//   }
+// })
 
-onMounted(() => {
-  triggerWarmupGenerateAudio({ model: 'chatterbox' })
-})
+// onMounted(() => {
+//   triggerWarmupGenerateAudio({ model: 'chatterbox' })
+// })
 
 watch(settingsDescribeImage, (newSettings, oldSettings) => {
   if (newSettings?.describe_image_model !== oldSettings?.describe_image_model && newSettings?.describe_image_model) {

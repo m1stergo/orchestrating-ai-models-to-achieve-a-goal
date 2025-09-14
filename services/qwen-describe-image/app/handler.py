@@ -21,7 +21,7 @@ class QwenHandler(InferenceHandler):
 
     def _do_load_model(self) -> InferenceResponse:
         try:
-            logger.info("======== Loading model... This may take several minutes. ========")
+            logger.info("==== Loading model... This may take several minutes. ====")
 
             # Load model
             model_kwargs = {
@@ -51,7 +51,7 @@ class QwenHandler(InferenceHandler):
             # Successfully loaded
             self.status = InferenceStatus.IDLE
             total_time = time.time() - self.loading_start_time
-            logger.info(f"======== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ========")
+            logger.info(f"==== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ====")
 
             return InferenceResponse(
                 status=InferenceStatus.IDLE,
@@ -60,11 +60,11 @@ class QwenHandler(InferenceHandler):
             )
             
         except Exception as e:
-            logger.error(f"======== Failed to load model: {e} ========")
-            self.status = InferenceStatus.FAILED
+            logger.error(f"==== Failed to load model: {e} ====")
+            self.status = InferenceStatus.ERROR
             self.error_message = str(e)
             return InferenceResponse(
-                status=InferenceStatus.FAILED,
+                status=InferenceStatus.ERROR,
                 message=f"Failed to load model: {str(e)}",
                 data=""
             )
@@ -93,7 +93,7 @@ class QwenHandler(InferenceHandler):
             if not image_url:
                 raise ValueError("The 'image_url' parameter is required for this model")
             
-            logger.info(f"======== Describing image from {image_url} ========")
+            logger.info(f"==== Describing image from {image_url} ====")
         
             if not self.is_loaded():
                 self.load_model()
@@ -128,7 +128,7 @@ class QwenHandler(InferenceHandler):
                 return_tensors="pt",
             ).to(self.model.device)
 
-            logger.info("======== Generating caption ========")
+            logger.info("==== Generating caption ====")
 
             generated_ids = self.model.generate(**inputs, max_new_tokens=256)
             generated_ids_trimmed = [
@@ -140,19 +140,19 @@ class QwenHandler(InferenceHandler):
 
             description = output_text[0].strip() if output_text else "No description generated"
 
-            logger.info("======== Description generated successfully ========")
+            logger.info("==== Image description generated successfully ====")
             logger.info(description)
 
             return InferenceResponse(
                 status=InferenceStatus.IDLE,
-                message="Description generated successfully.",
+                message="Image description generated successfully.",
                 data=description
             )
 
         except Exception as e:
-            logger.error(f"======== Error: {str(e)} ========")
+            logger.error(f"==== Error: {str(e)} ====")
             return InferenceResponse(
-                status=InferenceStatus.FAILED,
+                status=InferenceStatus.ERROR,
                 message=f"Error: {str(e)}",
                 data=""
             )

@@ -1,9 +1,11 @@
-from typing import Optional, Generic, TypeVar, List
+from typing import Optional, Generic, TypeVar, List, Literal
 from pydantic import BaseModel
 # No necesitamos importar GenericModel, ahora BaseModel es suficiente
 
 # Tipo genérico para el campo data
 T = TypeVar('T')
+
+InferenceStatus = Literal["IDLE", "PROCESSING", "FAILED", "COLD", "WARMINGUP"]
 
 # API Request schemas
 class GenerateDescriptionRequest(BaseModel):
@@ -24,8 +26,12 @@ class StatusRequest(BaseModel):
     model: str
     job_id: Optional[str] = None
 
-# Modelo de respuesta estandarizado para APIs
 class ServiceResponse(BaseModel, Generic[T]):
-    status: str
+    status: InferenceStatus
     message: str
     data: Optional[T] = None
+
+class PodResponse(BaseModel, Generic[T]):
+    status: InferenceStatus
+    id: str
+    output: ServiceResponse[T]

@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 def rp_handler(event: Dict[str, Any]) -> Dict[str, Any]:
     # Extraer el input del evento y pasarlo directamente al handler de inferencia
     input_data = event.get("input", {})
-    logger.info(f"======== Received RunPod event with input: {input_data} ========")
+    logger.info(f"==== Received RunPod event with input: {input_data} ====")
     
     return handler.run_job(input_data)
 
 
 if __name__ == "__main__":
-    logger.info("======== Starting RunPod serverless handler... ========")
+    logger.info("==== Starting RunPod serverless handler... ====")
     runpod.serverless.start({"handler": rp_handler})
