@@ -17,10 +17,13 @@ def rp_handler(event: Dict[str, Any]) -> Dict[str, Any]:
     response = handler.run_job(input_data)
     
     if hasattr(response, "dict"):
+        logger.info(f"======== Response is a Pydantic model with dict method: {response.dict()} ========")
         return response.dict()
     elif hasattr(response, "model_dump"):
+        logger.info(f"======== Response is a Pydantic model with model_dump method: {response.model_dump()} ========")
         return response.model_dump()
     else:
+        logger.info(f"======== Response is a Pydantic model with model_dump method: {response.model_dump()} ========")
         return response
 
 
