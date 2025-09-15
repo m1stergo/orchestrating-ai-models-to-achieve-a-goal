@@ -1,24 +1,20 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { useMutation, useQuery } from '@pinia/colada'
-import { getAvailableVoices, generatePromotionalAudioScript, generateTextToSpeech } from './api'
+import { useQuery } from '@pinia/colada'
+import { getAvailableVoices } from './api'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import Skeleton from 'primevue/skeleton'
 import Textarea from 'primevue/textarea'
+import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 import { AudioPlayer } from '@/shared/ui/AudioPlayer'
 import { useProductForm } from '@/composables/useProductForm'
-import { getSettings } from '@/features/UserSettings/api'
+import { useService } from '@/entities/services/useService'
 
 const props = defineProps<{ model?: string }>()
 
 const form = useProductForm()
-
-const { data: userSettings } = useQuery({
-  key: ['settings'],
-  query: () => getSettings(),
-  refetchOnWindowFocus: false,
-})
 
 const toast = useToast()
 
@@ -34,50 +30,52 @@ const audioDescription = computed({
     }
 })
 
-// Fetch available voices
 const { data: voices } = useQuery({
   key: ['voices'],
   query: () => getAvailableVoices(),
 })
 
-// Promotional audio script mutation
-const { mutateAsync: triggerGeneratePromotionalAudioScript, isLoading: isLoadingGeneratePromotionalAudioScript } = useMutation({
-  mutation: () => generatePromotionalAudioScript({ 
-    text: form?.values.image_description + ' ' + form?.values.description, 
-    model: props.model!,
-    prompt: userSettings.value?.generate_promotional_audio_script_prompt || undefined
-  }),
-  onSuccess: ({ data }) => {
-    const parsedData = parseDescriptionResponse(data)
-    form.setFieldValue('audio_description', parsedData.description)
-    dirty.value = false
-  },
-  onError: () => {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'There was an error generating the promotional audio script, please try again', life: 3000 });
-  },
+const generateDescription = useService('generate-description', {
+    onSuccess: (response: any) => {
+        const parsedData = parseDescriptionResponse(response.data)
+        form.setFieldValue('audio_description', parsedData.description)
+        dirty.value = false
+    },
+    onError: () => {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'There was an error generating the promotional audio script, please try again', life: 3000 });
+    },
 })
 
-// Text-to-speech mutation
-const { mutateAsync: triggerGenerateAudio, isLoading: isLoadingGenerateAudio } = useMutation({
-  mutation: generateTextToSpeech,
-  onSuccess: ({ data }: any) => {
-    form.setFieldValue('audio', data.audio_url)
-  },
-  onError: (error) => {
-    console.error('TTS generation error:', error)
-    toast.add({ severity: 'error', summary: 'Error', detail: 'There was an error generating the audio, please try again', life: 3000 });
-  },
+const tts = useService('text-to-speech', {
+    onSuccess: (response: any) => {
+      form.setFieldValue('audio', response.data)
+    },
+    onError: (error) => {
+      console.error('TTS generation error:', error)
+      toast.add({ severity: 'error', summary: 'Error', detail: 'There was an error generating the audio, please try again', life: 3000 });
+    },
 })
 
+async function generateSpeech() {
+    try {
+        await generateDescription.run({
+            text: form?.values.description,
+            model: props.model,
+            voice_url: selectedVoice.value.audio_url
+        })
+    } catch (error) {
+        console.error('Error generating promotional audio script:', error)
+    }
+}
 
-async function generatePromotionalAudio() {
+async function generateAudio() {
     if (!form?.values.audio_description) {
         toast.add({ severity: 'warn', summary: 'Warning', detail: 'Please ensure the promotional script is not empty', life: 3000 });
         return
     }
 
     try {
-        await triggerGenerateAudio({
+        await tts.run({
             text: form?.values.audio_description,
             model: 'chatterbox',
             voice_url: selectedVoice.value.audio_url
@@ -117,15 +115,26 @@ watch(voices, (newVoices) => {
 </script>
 
 <template>
-    <div class="flex flex-col gap-4 mb-6">
+    <Message v-if="tts.isLoadingWarmup.value" severity="warn" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            <ProgressSpinner class="w-6 h-6" />
+            Text to speech models are warming up, please wait a few seconds...
+        </div>
+    </Message> 
+    <Message v-else-if="tts.error.value" severity="error" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            An error occurred please try again later. {{ tts.error.value }}
+        </div>
+    </Message>
+    <div v-else class="flex flex-col gap-4 mb-6">
         <Button 
-            :disabled="isLoadingGeneratePromotionalAudioScript"
-            :loading="isLoadingGeneratePromotionalAudioScript"
-            :label="isLoadingGeneratePromotionalAudioScript ? 'Generating promotional audio script...' : 'Generate promotional audio script'"     
+            :disabled="generateDescription.isLoadingInference.value"
+            :loading="generateDescription.isLoadingInference.value"
+            :label="generateDescription.isLoadingInference.value ? 'Generating promotional audio script...' : 'Generate promotional audio script'"     
             :severity="form?.values.audio_description ? 'primary' : 'help'"
             variant="outlined"
-            @click="() => triggerGeneratePromotionalAudioScript()" />
-        <div v-if="isLoadingGeneratePromotionalAudioScript">
+            @click="generateSpeech" />
+        <div v-if="generateDescription.isLoadingInference.value">
             <Skeleton height="5rem" />
         </div>
         <div v-else-if="form?.values.audio_description || dirty" class="space-y-2">
@@ -160,13 +169,13 @@ watch(voices, (newVoices) => {
         </div>
         <Button 
             v-if="form?.values.audio_description"
-            :disabled="isLoadingGenerateAudio"
-            :label="isLoadingGenerateAudio ? 'Generating audio... this may take a few seconds' : 'Generate promotional audio'"
-            :loading="isLoadingGenerateAudio"
+            :disabled="tts.isLoadingInference.value"
+            :label="tts.isLoadingInference.value ? 'Generating audio... this may take a few seconds' : 'Generate promotional audio'"
+            :loading="tts.isLoadingInference.value"
             :severity="form?.values.audio ? 'primary' : 'help'"
             variant="outlined"
-            @click="generatePromotionalAudio" />  
-        <Skeleton v-if="isLoadingGenerateAudio" height="3rem" />
-        <AudioPlayer v-if="form?.values.audio && !isLoadingGenerateAudio" :audio="form?.values.audio" label="Play generated audio" />
+            @click="generateAudio" />  
+        <Skeleton v-if="tts.isLoadingInference.value" height="3rem" />
+        <AudioPlayer v-if="form?.values.audio && !tts.isLoadingInference.value" :audio="form?.values.audio" label="Play generated audio" />
     </div>
 </template>

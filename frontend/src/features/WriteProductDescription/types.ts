@@ -52,9 +52,9 @@ export interface TextToSpeechResponse {
 }
 
 export enum Status {
-  PENDING = 'pending',
-  SUCCESS = 'success',
-  FAILED = 'error'
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED'
 }
 
 /**

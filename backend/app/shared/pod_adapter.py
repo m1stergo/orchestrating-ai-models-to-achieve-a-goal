@@ -63,17 +63,27 @@ class PodAdapter(Adapter):
                         logger.error(f"{self.service_name} service error: {resp.status}, {error_text}")
                         raise Exception(f"HTTP error: {resp.status}")
                     
-                    response = await resp.json()
-                    
-                    return PodResponse(
-                        status=response.get("status", ""),
-                        id=response.get("id", ""),
-                        output=ServiceResponse(
-                            status=response.get("output", {}).get("status", ""),
-                            message=response.get("output", {}).get("message", ""),
-                            data=response.get("output", {}).get("data", "")
+                    response_json = await resp.json()
+
+                    if "output" in response_json and isinstance(response_json["output"], dict):
+                        output_dict = response_json["output"]
+                        service_response = ServiceResponse(
+                            status=output_dict.get("status", ""),
+                            message=output_dict.get("message", ""),
+                            data=output_dict.get("data", "")
                         )
-                    )
+                        
+                        return PodResponse(
+                            status=response_json.get("status", "COMPLETED"),
+                            id=response_json.get("id", ""),
+                            output=service_response
+                        )
+                    else:
+                        return PodResponse(
+                            status=response_json.get("status", "COMPLETED"),
+                            id=response_json.get("id", ""),
+                            output=ServiceResponse(status="COMPLETED", message="", data="")
+                        )
         except aiohttp.ClientError as e:
             logger.error(f"{self.service_name} connection error: {str(e)}")
             raise
@@ -86,7 +96,6 @@ class PodAdapter(Adapter):
             if not self._is_available():
                 raise ValueError(f"{self.service_name} service URL is not configured")
             
-            # Format the payload for RunPod
             runpod_payload = {
                 "input": {
                     "action": action,
@@ -94,39 +103,29 @@ class PodAdapter(Adapter):
                 }
             }
             
-            # Submit the job
             initial_result = await self._call_endpoint("run", "POST", runpod_payload)
-            
-            if initial_result.get("status") == "FAILED":
-                return ServiceResponse(
-                    status="FAILED",
-                    message=initial_result.get("output", {}).get("message") or "Unknown error",
-                    data=""
-                )
+
+            if initial_result.status == "FAILED":
+                return initial_result.output
                 
-            job_id = initial_result.get("id", "")
+            job_id = initial_result.id
             logger.info(f"===== Waiting for {self.service_name} job {job_id} to complete... =====")
             logger.info(f"===== Initial response: {initial_result} =====")
             
-            # Poll until job is complete
             final_result = await self._poll_until_complete(job_id)
             logger.info(f"===== Final result after polling: {final_result} =====")
             
-            return ServiceResponse(
-                status=final_result.get("output", {}).get("status", "IDLE"),
-                message=final_result.get("output", {}).get("message", "Model warmed up successfully"),
-                data=final_result.get("output", {}).get("data", "")
-            )
+            return final_result.output
             
         except Exception as e:
             logger.error(f"{self.service_name} run error: {str(e)}")
             return ServiceResponse(
                 status="FAILED",
-                message=str(e),
+                message=f"{self.service_name} run error: {str(e)}",
                 data=""
             )
 
-    async def warmup(self) -> ServiceResponse:       
+    async def warmup(self) -> ServiceResponse:      
         try:
             if not self._is_available():
                 raise ValueError(f"{self.service_name} service URL is not configured")
@@ -139,30 +138,23 @@ class PodAdapter(Adapter):
             }
             
             initial_result = await self._call_endpoint("run", "POST", payload)
-            
-            if initial_result.get("status") == "FAILED":
-                return ServiceResponse(
-                    status="FAILED",
-                    message=initial_result.get("output", {}).get("message") or "Unknown error",
-                    data=""
-                )
+
+            if initial_result.status == "FAILED":
+                return initial_result.output
                 
-            job_id = initial_result.get("id", "")
+            job_id = initial_result.id
             logger.info(f"===== Initial result WARMUP: {initial_result} =====")
             logger.info(f"===== Waiting for warmup job {job_id} to complete... =====")
             
             final_result = await self._poll_until_complete(job_id)
-            return ServiceResponse(
-                status=final_result.get("output", {}).get("status", "IDLE"),
-                message=final_result.get("output", {}).get("message", "Model warmed up successfully"),
-                data=final_result.get("output", {}).get("data", "")
-            )
+
+            return final_result.output
                 
         except Exception as e:
             logger.error(f"{self.service_name} warmup error: {str(e)}")
             return ServiceResponse(
                 status="FAILED",
-                message=str(e),
+                message=f"{self.service_name} warmup error: {str(e)}",
                 data=""
             )
             
@@ -182,19 +174,35 @@ class PodAdapter(Adapter):
                     result = await resp.json()
                     logger.info(f"===== Status response for job {job_id}: {result} =====")
                     
-                    # Check if the result indicates the job doesn't exist
-                    if result.get("status") == "FAILED":
-                        raise Exception(result.get("output", {}).get("message", f"Job ID {job_id} not found"))
-                        
-                    return PodResponse(
-                        status=result.get("status", ""),
-                        id=result.get("id", ""),
-                        output=ServiceResponse(
-                            status=result.get("output", {}).get("status", ""),
-                            message=result.get("output", {}).get("message", ""),
-                            data=result.get("output", {}).get("data", "")
+                    # Convertir el diccionario JSON a objetos Pydantic
+                    if "output" in result and isinstance(result["output"], dict):
+                        output_dict = result["output"]
+                        service_response = ServiceResponse(
+                            status=output_dict.get("status", ""),
+                            message=output_dict.get("message", ""),
+                            data=output_dict.get("data", "")
                         )
-                    )
+                        
+                        # Check if the result indicates the job doesn't exist
+                        if result.get("status") == "FAILED":
+                            raise Exception(service_response.message or "Unknown error")
+                            
+                        return PodResponse(
+                            status=result.get("status", ""),
+                            id=result.get("id", ""),
+                            output=service_response
+                        )
+                    else:
+                        empty_service_response = ServiceResponse(status="", message="", data="")
+                        
+                        if result.get("status") == "FAILED":
+                            raise Exception("Unknown error")
+                            
+                        return PodResponse(
+                            status=result.get("status", ""),
+                            id=result.get("id", ""),
+                            output=empty_service_response
+                        )
                         
         except aiohttp.ClientError as e:
             logger.error(f"===== {self.service_name} status check connection error: {str(e)} =====")
@@ -229,14 +237,14 @@ class PodAdapter(Adapter):
             status_response = await self.pod_status(job_id)
 
             # If job failed
-            if status_response.get("status") == "FAILED":
-                error_message = status_response.get("output", {}).get("message", "")
+            if status_response.status == "FAILED":
+                error_message = status_response.output.message if status_response.output else "Unknown error"
                 logger.error(f"===== Job {job_id} failed: {error_message} =====")
 
                 return status_response
 
-            jobstatus = status_response.get("status")
-            outputstatus = status_response.get("output", {}).get("status")
+            jobstatus = status_response.status
+            outputstatus = status_response.output.status if status_response.output else ""
             
             logger.info(f"===== Poll {retries}: jobstatus={jobstatus}, outputstatus={outputstatus} for job_id={job_id} =====")
                 

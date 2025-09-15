@@ -85,7 +85,7 @@ class TextToSpeechAdapterFactory:
             logger.info(f"===== Available voices retrieved successfully: {voices} =====")
 
             return ServiceResponse(
-                status="IDLE",
+                status="COMPLETED",
                 message="Voice models loaded successfully",
                 data=voices
             )

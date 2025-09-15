@@ -48,12 +48,12 @@ class MistralHandler(InferenceHandler):
             )
 
             # Successfully loaded
-            self.state = InferenceStatus.IDLE
+            self.state = InferenceStatus.COMPLETED
             total_time = time.time() - self.loading_start_time
             logger.info(f"==== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ====")
             
             return InferenceResponse(
-                status=InferenceStatus.IDLE,
+                status=InferenceStatus.COMPLETED,
                 message="Model is ready to use.",
                 data=""
             )
@@ -79,8 +79,8 @@ class MistralHandler(InferenceHandler):
             if not self.is_loaded():
                 self.load_model()
             
-            # Set state to PROCESSING before starting generation
-            self.state = InferenceStatus.PROCESSING
+            # Set state to IN_PROGRESS before starting generation
+            self.state = InferenceStatus.IN_PROGRESS
             
             # Extract text and prompt from request_data
             text = request_data.get('text', '')
@@ -116,13 +116,13 @@ class MistralHandler(InferenceHandler):
             generated_tokens = outputs[0][prompt_len:]
             text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
-            # Reset state to IDLE after processing
-            self.state = InferenceStatus.IDLE
+            # Reset state to COMPLETED after processing
+            self.state = InferenceStatus.COMPLETED
             
             logger.info("==== Product description generated successfully ====")
             logger.info(f"==== {text} ====")
             return InferenceResponse(
-                status=InferenceStatus.IDLE,
+                status=InferenceStatus.COMPLETED,
                 message="Product description generated successfully.",
                 data=text.strip()
             )

@@ -1,78 +1,86 @@
-import { watch, ref, reactive, computed } from "vue"
-import { inference, warmup, type ServiceResponse, type DescribeImageInferenceParams, type DescribeImageWarmupParams } from "./api"
+import { computed, reactive, watch } from "vue"
+import { inference, warmup, type ServiceResponse } from "./api"
 import { getSettings } from "@/features/UserSettings/api"
 import { useMutation, useQuery } from "@pinia/colada"
 
-const state = reactive<Record<string, any>>({
+// Define valid service names as a type
+type ServiceName = 'describe-image' | 'generate-description' | 'text-to-speech'
+
+interface ServiceState {
+    isLoadingWarmup: boolean;
+    isLoadingInference: boolean;
+    error: string;
+}
+
+const state = reactive<Record<ServiceName, ServiceState>>({ 
     'describe-image': {
-        isWarmingUp: false,
-        isLoading: false,
+        isLoadingWarmup: false,
+        isLoadingInference: false,
         error: '',
     },
     'generate-description': {
-        isWarmingUp: false,
-        isLoading: false,
+        isLoadingWarmup: false,
+        isLoadingInference: false,
         error: '',
     },
-    'text-to-speech': {
-        isWarmingUp: false,
-        isLoading: false,
+    'text-to-speech': { 
+        isLoadingWarmup: false,
+        isLoadingInference: false,
         error: '',
     },
 })
 
-export function useService(service: string, options?: { onSuccess?: (response: ServiceResponse<string>) => void, onError?: (error: Error) => void, }) {
-    if (!state[service]) {
-        state[service] = {
-            isWarmingUp: false,
-            isLoading: false,
-            error: '',
-        }
-    }
-
+export function useService(service: ServiceName, options?: { onSuccess?: (response: ServiceResponse<string>) => void, onError?: (error: Error) => void, }) {
     const { data: settings } = useQuery({
         key: ['settings'],
         query: () => getSettings(),
         refetchOnWindowFocus: false,
     })
 
-    const { mutateAsync: triggerWarmup, isLoading: isLoadingWarmup } = useMutation({
-        mutation: (params: DescribeImageWarmupParams) => warmup(service, params),
-        onError: (err: Error) => {
-            options?.onError?.(err)
-            state[service].error = err.message
-        }
-    })
-
-    const { mutateAsync: inferenceMutation, isLoading: isLoadingInference } = useMutation({
-        mutation: (params: DescribeImageInferenceParams) => inference(service, params),
-        onError: (err: Error) => {
-            options?.onError?.(err)
-            state[service].error = err.message
+    const { mutateAsync: triggerWarmup, isLoading: isLoadingWarmup, error: errorWarmup } = useMutation({
+        mutation: (params: Record<string, any>) => warmup(service, params),
+        onSuccess: () => {
+            state[service].isLoadingWarmup = false
+            state[service].error = ''
         },
-        onSuccess: (data: ServiceResponse<string>) => {
-            options?.onSuccess?.(data)
+        onError: () => {
+            state[service].isLoadingWarmup = false
+            state[service].error = errorWarmup.value?.message || ''
         }
     })
 
-    async function run(params: { image_url: string, prompt?: string, model: string }) {
-        await inferenceMutation(params)
+    const { mutateAsync: inferenceMutateAsync, isLoading: isLoadingInference, error: errorInference } = useMutation({
+        mutation: (params: Record<string, any>) => inference(service, params),
+        onSuccess: (response: ServiceResponse<string>) => {
+            options?.onSuccess?.(response)
+            state[service].isLoadingInference = false
+            state[service].error = ''
+        },
+        onError: (error: Error) => {
+            options?.onError?.(error)
+            state[service].isLoadingInference = false
+            state[service].error = errorInference.value?.message || ''
+        }
+    })
+
+    async function run(params: Record<string, any>) {
+        await inferenceMutateAsync(params)
     }
 
-    watch(isLoadingWarmup, (value) => {
-        state[service].isWarmingUp = value
+    watch(() => isLoadingWarmup.value, () => {
+        state[service].isLoadingWarmup = isLoadingWarmup.value
     })
-
-    watch(isLoadingInference, (value) => {
-        state[service].isLoading = value
+    
+    watch(() => isLoadingInference.value, () => {
+        state[service].isLoadingInference = isLoadingInference.value
     })
-
+    
     return {
-        isWarmingUp: computed(() => state[service].isWarmingUp),
-        isLoading: computed(() => state[service].isLoading),
-        run,
+        isLoadingWarmup: computed(() => state[service].isLoadingWarmup),
+        isLoadingInference: computed(() => state[service].isLoadingInference),
         error: computed(() => state[service].error),
+        run,
+        warmup: triggerWarmup,
         settings,
-        triggerWarmup,
     }
 }

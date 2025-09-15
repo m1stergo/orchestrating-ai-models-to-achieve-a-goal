@@ -6,7 +6,7 @@ import logging
 import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Callable, TypeVar, Optional
-from app.shared.schemas import ServiceResponse
+from app.shared.schemas import ServiceResponse, PodResponse
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class Adapter(ABC):
             logger.info(f"==== {self.service_name} executed task successfully ====")
             
             return ServiceResponse(
-                status="IDLE",
+                status="COMPLETED",
                 message=f"{self.service_name} executed task successfully",
                 data=result
             )
@@ -56,7 +56,7 @@ class Adapter(ABC):
             logger.info(f"==== Warming up {self.service_name}... ====")
             
             return ServiceResponse(
-                status="IDLE",
+                status="COMPLETED",
                 message=f"{self.service_name} warmup successful",
                 data=""
             )
@@ -67,3 +67,4 @@ class Adapter(ABC):
                 message=f"{self.service_name} warmup error: {str(e)}",
                 data=""
             )
+    

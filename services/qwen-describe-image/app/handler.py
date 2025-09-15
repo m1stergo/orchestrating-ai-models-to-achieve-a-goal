@@ -49,12 +49,12 @@ class QwenHandler(InferenceHandler):
             )
             
             # Successfully loaded
-            self.status = InferenceStatus.IDLE
+            self.status = InferenceStatus.COMPLETED
             total_time = time.time() - self.loading_start_time
             logger.info(f"==== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ====")
 
             return InferenceResponse(
-                status=InferenceStatus.IDLE,
+                status=InferenceStatus.COMPLETED,
                 message="Model is ready to use.",
                 data=""
             )
@@ -144,7 +144,7 @@ class QwenHandler(InferenceHandler):
             logger.info(description)
 
             return InferenceResponse(
-                status=InferenceStatus.IDLE,
+                status=InferenceStatus.COMPLETED,
                 message="Image description generated successfully.",
                 data=description
             )

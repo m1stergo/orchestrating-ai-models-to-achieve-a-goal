@@ -130,7 +130,7 @@ async def convert_local_image_to_base64(image_url: str) -> str:
     base_path = Path(__file__).parent.parent.parent  # Go up to app/
     file_path = base_path / relative_path
     
-    logger.info(f"Reading local image file: {file_path}")
+    logger.info(f"===== Reading local image file: {file_path} =====")
     
     # Read the file asynchronously
     async with aiofiles.open(file_path, 'rb') as f:

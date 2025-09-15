@@ -28,14 +28,10 @@ const { data: settings } = useQuery({
 
 const activeStep = ref(props.step || 1)
 
-// Extract content status
-const extractContentStatus = ref<Status>(Status.PENDING)
-const productDescriptionStatus = ref<Status>(Status.PENDING)
+const extractContentStatus = ref<Status>(Status.IN_PROGRESS)
+const productDescriptionStatus = ref<Status>(Status.IN_PROGRESS)
 
-const { 
-    isWarmingUp: isWarmingUpDescribeImageService, 
-    error: errorDescribeImageService, 
-} = useService('describe-image')
+const describeImageService = useService('describe-image')
 
 const productDescription = useTemplateRef('productDescription')
 
@@ -46,7 +42,7 @@ function handleProductDescriptionStatusUpdate(status: Status) {
 
 function handleExtractContentStatusUpdate(status: Status) {
     extractContentStatus.value = status
-    if (status === Status.SUCCESS) {
+    if (status === Status.COMPLETED) {
         activeStep.value = 2
         productDescription.value?.generateDescription()
     }
@@ -54,15 +50,15 @@ function handleExtractContentStatusUpdate(status: Status) {
 </script>
 
 <template>
-    <Message v-if="isWarmingUpDescribeImageService" severity="warn" class="flex justify-center">
+    <Message v-if="describeImageService.isLoadingWarmup.value" severity="warn" class="flex justify-center">
         <div class="flex items-center gap-2 justify-center text-center">
             <ProgressSpinner class="w-6 h-6" />
             Models are warming up, please wait a few seconds...
         </div>
     </Message> 
-    <Message v-else-if="errorDescribeImageService" severity="error" class="flex justify-center">
+    <Message v-else-if="describeImageService.error.value" severity="error" class="flex justify-center">
         <div class="flex items-center gap-2 justify-center text-center">
-            An error occurred please try again later. {{ errorDescribeImageService }}
+            An error occurred please try again later. {{ describeImageService.error.value }}
         </div>
     </Message>
     <div v-else class="card">
@@ -78,7 +74,7 @@ function handleExtractContentStatusUpdate(status: Status) {
                 </StepPanel>
             </StepItem>
             <StepItem :value="2">
-                <Step :disabled="extractContentStatus !== Status.SUCCESS && form.values.description === ''">Product description</Step>
+                <Step :disabled="extractContentStatus !== Status.COMPLETED && form.values.description === ''">Product description</Step>
                 <StepPanel>
                     <ProductDescription 
                         ref="productDescription" 

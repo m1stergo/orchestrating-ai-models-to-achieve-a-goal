@@ -4,7 +4,6 @@ import { ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useMutation } from '@pinia/colada'
 import { uploadImage } from '@/features/WriteProductDescription/api'
-import ProgressSpinner from 'primevue/progressspinner'
 
 const image = defineModel<string>()
 
@@ -53,7 +52,7 @@ watch(selectedFile, (newFile) => {
       <FileUpload :loading="isLoading" :disabled="isLoading" mode="basic" accept="image/*" :maxFileSize="1000000" @select="onFileSelect" :auto="true" chooseLabel="Choose image" class="p-button-outlined"/>
     </div>
     <img v-if="imagePreview" :src="imagePreview" class="rounded shrink-0" alt="Preview" style="width: auto; max-height: 42px;" />
-    <p v-if="selectedFile">{{ selectedFile?.name }}</p>
+    <p v-if="selectedFile" class="text-sm truncate">{{ selectedFile?.name }}</p>
   </div>
 </div>
 </template>

@@ -8,20 +8,19 @@ import requests
 import tempfile
 from typing import Dict, Any
 from .config import settings
-from .common import InferenceModel, ModelState
+from .common import InferenceHandler, InferenceResponse, InferenceStatus
 from uuid import uuid4
 from minio import Minio
-from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
-class ChatterboxModel(InferenceModel):
+class ChatterboxHandler(InferenceHandler):
     """Chatterbox TTS model."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model_name: str):
+        super().__init__(model_name)
 
-    def load_model(self):
+    def _do_load_model(self):
         self.loading_start_time = time.time()
         try:
             # Load model
@@ -43,22 +42,31 @@ class ChatterboxModel(InferenceModel):
                 raise
 
             # Successfully loaded
-            self.state = ModelState.IDLE
+            self.state = InferenceStatus.COMPLETED
             total_time = time.time() - self.loading_start_time
             logger.info(f"==== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ====")
             
-            return self.model
+            return InferenceResponse(
+                status=InferenceStatus.COMPLETED,
+                message="Model is ready to use.",
+                data=""
+            )
+
         except Exception as e:
             logger.error(f"Chatterbox TTS model loading failed: {str(e)}")
-            self.state = ModelState.FAILED
+            self.state = InferenceStatus.FAILED
             self.error_message = str(e)
-            raise
+            return InferenceResponse(
+                status=InferenceStatus.ERROR,
+                message=f"Failed to load model: {str(e)}",
+                data=""
+            )
 
     def is_loaded(self):
         """Check if model is loaded."""
         return self.model is not None
     
-    def inference(self, request_data: Dict[str, Any]) -> bytes:
+    def infer(self, request_data: Dict[str, Any]) -> bytes:
         try:
             text = request_data.get('text', '')
             logger.info(f"==== Processing text: {text} ====")
@@ -139,7 +147,11 @@ class ChatterboxModel(InferenceModel):
                 audio_url = f"https://{base_url}/{bucket_name}/{audio_filename}"
                 logger.info(f"==== Audio uploaded to MinIO: {audio_url} ====")
                 
-                return audio_url
+                return InferenceResponse(
+                    status=InferenceStatus.COMPLETED,
+                    message="Audio generated successfully.",
+                    data=audio_url
+                )
                 
             except Exception as storage_error:
                 logger.error(f"==== Error uploading to MinIO: {storage_error} ====")

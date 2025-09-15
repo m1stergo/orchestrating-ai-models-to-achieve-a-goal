@@ -5,7 +5,7 @@ from pydantic import BaseModel
 # Tipo genérico para el campo data
 T = TypeVar('T')
 
-InferenceStatus = Literal["IDLE", "PROCESSING", "FAILED", "COLD", "WARMINGUP"]
+InferenceStatus = Literal["COMPLETED", "IN_PROGRESS", "FAILED", "COLD", "WARMINGUP"]
 
 # API Request schemas
 class GenerateDescriptionRequest(BaseModel):

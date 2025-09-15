@@ -31,6 +31,6 @@ class ChatterboxAdapter(PodAdapter):
         if voice_url:
             payload["voice_url"] = voice_url
 
-        response = await self.run_inference(payload)
+        response = await self.run(payload)
         
         return response

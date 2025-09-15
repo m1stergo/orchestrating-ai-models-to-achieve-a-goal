@@ -21,8 +21,8 @@ class JobStatus(str, Enum):
 class InferenceStatus(str, Enum):
     COLD = "COLD" 
     WARMINGUP = "WARMINGUP"
-    PROCESSING = "PROCESSING"
-    IDLE = "IDLE"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
 # RunPod-like schemas
@@ -75,10 +75,10 @@ class InferenceHandler(ABC):
         self.require_gpu()
         
         if self.is_loaded():
-            self.status = InferenceStatus.IDLE
+            self.status = InferenceStatus.COMPLETED
             logger.info("==== Model is ready to use. ====")
             return InferenceResponse(
-                status=InferenceStatus.IDLE,
+                status=InferenceStatus.COMPLETED,
                 message="Model is ready to use.",
                 data=""
             )
@@ -133,15 +133,15 @@ class InferenceHandler(ABC):
                 data=""
             )
             
-        if self.status == InferenceStatus.PROCESSING:
+        if self.status == InferenceStatus.IN_PROGRESS:
             return InferenceResponse(
-                status=InferenceStatus.PROCESSING,
+                status=InferenceStatus.IN_PROGRESS,
                 message=f"Model is currently processing another request. Please try again later.",
                 data=""
             )
 
         return InferenceResponse(
-            status=InferenceStatus.IDLE,
+            status=InferenceStatus.COMPLETED,
             message=f"Model is ready to use.",
             data=""
         )
@@ -209,7 +209,7 @@ class RunPodSimulator:
             self.busy = True
             self.job['status'] = JobStatus.IN_PROGRESS
             self.job['output'] = InferenceResponse(
-                status=InferenceStatus.WARMINGUP if action == "warmup" else InferenceStatus.PROCESSING,
+                status=InferenceStatus.WARMINGUP if action == "warmup" else InferenceStatus.IN_PROGRESS,
                 message="Warming up..." if action == "warmup" else "Processing...",
                 data=""
             )

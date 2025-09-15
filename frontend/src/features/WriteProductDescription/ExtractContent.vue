@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import UploadImage from './UploadImage.vue'
 import type { ExtractWebContentResponse } from './types'
 import { useMutation, useQuery } from '@pinia/colada'
@@ -20,6 +20,29 @@ const props = defineProps<{ model?: string }>()
 const emit = defineEmits(['update:status'])
 
 const form = useProductForm()
+
+const contextPairs = ref<Array<{key: string, value: string}>>([{key: '', value: ''}])
+
+const additionalContextString = computed(() => {
+  return contextPairs.value
+    .filter(pair => pair.key.trim() !== '' && pair.value.trim() !== '')
+    .map(pair => [pair.key.trim(), pair.value.trim()].join(': ')).join(', ')
+})
+
+function updateContextPair(index: number, field: 'key' | 'value', value: string) {
+  contextPairs.value[index][field] = value
+  
+  const lastIndex = contextPairs.value.length - 1
+  if (index === lastIndex && contextPairs.value[lastIndex].key && contextPairs.value[lastIndex].value) {
+    contextPairs.value.push({key: '', value: ''})
+  }
+}
+
+function removeContextPair(index: number) {
+  if (contextPairs.value.length > 1) {
+    contextPairs.value.splice(index, 1)
+  }
+}
 
 const { data: userSettings } = useQuery({
   key: ['settings'],
@@ -45,32 +68,36 @@ const confirm = useConfirm();
 
 const uploadedImage = ref('')
 
+const latestDescribeImageResponse = ref('')
+const latestWebsiteUrl = ref('')
+const latestUploadedImageUrl = ref('')
+
 const { data: extractWebContentData, mutateAsync: triggerExtractWebContent, isLoading: isLoadingExtractWebContent } = useMutation({
   mutation: extractWebContent,
+  onSuccess: (response: ExtractWebContentResponse) => {
+    website.value = response
+  },
   onError: () => {
     toast.add({ severity: 'error', summary: 'Rejected', detail: 'There was an error extracting the content, please try again', life: 3000 })
     emit('update:status', Status.FAILED)
   },
 })
 
-const { run: describeImage, isLoading } = useService('describe-image', {
+const describeImageService = useService('describe-image', {
   onSuccess: (response: any) => {
-    if (selectedContentSource.value.value === 'website') {
-      form.setValues({
-        image_description: 'Listing description: ' + extractWebContentData.value?.title + ' ' + 'Image description: ' +  response.data!,
-        images: extractWebContentData.value?.images!,
-      })
-    } else {
-      form.setValues({
-        image_description: response.data!,
-        images: [uploadedImage.value],
-      })
-    }
-    emit('update:status', Status.SUCCESS)
+    latestDescribeImageResponse.value = response.data
+    generateDescription()
   },
   onError: () => {
     emit('update:status', Status.FAILED)
   }
+})
+
+const buttonLabel = computed(() => {
+  if (isLoadingExtractWebContent.value || describeImageService.isLoadingInference.value) {
+    return 'Extracting content...'
+  }
+  return 'Extract content'
 })
 
 async function extractContent() {
@@ -101,20 +128,42 @@ async function extractContent() {
 
 async function performExtraction() {
     if (selectedContentSource.value.value === 'website') {
-        if (!website.value.url) return
+        if (!website.value.url || latestWebsiteUrl.value === website.value.url) return
         await triggerExtractWebContent(website.value.url)
-        describeImage({
-            image_url: extractWebContentData.value?.images[0]!,
-            model: props.model!,
-            prompt: userSettings.value?.describe_image_prompt
-        })
-    } else if (uploadedImage.value) {
-      describeImage({
-          image_url: uploadedImage.value,
-          model: props.model!,
-          prompt: userSettings.value?.describe_image_prompt
+        latestWebsiteUrl.value = website.value.url
+    }
+    else if (uploadedImage.value && latestUploadedImageUrl.value !== uploadedImage.value) {
+      await describeImageService.run({
+        image_url: uploadedImage.value,
+        model: props.model!,
+        prompt: userSettings.value?.describe_image_prompt
+      })
+      latestUploadedImageUrl.value = uploadedImage.value
+    } else {
+      generateDescription()
+    }
+}
+
+function generateDescription() {
+  if (selectedContentSource.value.value === 'website') {
+      form.setValues({
+        image_description: `
+        # Context: ${additionalContextString.value}
+        # Brief: ${extractWebContentData.value?.title}
+        # Image description: ${latestDescribeImageResponse.value}
+        `,
+        images: extractWebContentData.value?.images!,
+      })
+    } else {
+      form.setValues({
+        image_description: `
+        # Context: ${additionalContextString.value}
+        # Image description: ${latestDescribeImageResponse.value}
+        `,
+        images: [uploadedImage.value],
       })
     }
+    emit('update:status', Status.COMPLETED)
 }
 </script>
 
@@ -127,17 +176,45 @@ async function performExtraction() {
           placeholder="Select a content source"
           class="w-full" />
       <InputText v-if="selectedContentSource.value === 'website'" v-model="website.url" placeholder="Enter a URL" />
-      <UploadImage v-if="selectedContentSource.value === 'image'" v-model="uploadedImage" />
+      <UploadImage 
+        v-if="selectedContentSource.value === 'image'" 
+        v-model="uploadedImage" />
   </div>
-
+  <div class="py-4">
+    <p class="mb-2 text-sm font-medium">Additional context (key-value pairs)</p>
+    <p class="text-sm text-gray-600">Provide specific details that cannot be inferred from the image, such as brand name, material composition, or special features</p>
+    <div class="space-y-2">
+      <div v-for="(pair, index) in contextPairs" :key="index" class="flex items-center gap-2">
+        <InputText 
+          class="flex-1 p-inputtext-sm" 
+          size="small"
+          :value="pair.key" 
+          @input="event => updateContextPair(index, 'key', (event.target as HTMLInputElement).value)" 
+          placeholder="Material" />
+        <InputText 
+          class="flex-1 p-inputtext-sm" 
+          size="small"
+          :value="pair.value" 
+          @input="event => updateContextPair(index, 'value', (event.target as HTMLInputElement).value)" 
+          placeholder="Dull copper" />
+        <Button 
+          v-if="contextPairs.length > 1" 
+          icon="pi pi-times" 
+          severity="danger" 
+          text 
+          rounded 
+          @click="removeContextPair(index)" />
+      </div>
+    </div>
+  </div>
   <div class="py-6">
     <Button 
       class="w-full"
       :severity="form.values.description ? 'primary' : 'help'" 
       variant="outlined"
       :disabled="!uploadedImage && !website.url" 
-      :loading="isLoadingExtractWebContent || isLoading" 
-      :label="(isLoadingExtractWebContent || isLoading) ? 'Extracting content...' : 'Extract content'" 
+      :loading="isLoadingExtractWebContent || describeImageService.isLoadingInference.value" 
+      :label="buttonLabel" 
       @click="extractContent" />
     <ConfirmPopup></ConfirmPopup>
   </div>

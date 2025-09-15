@@ -59,8 +59,8 @@ export interface TextToSpeechResponse {
 }
 
 export enum Status {
-  PENDING = 'pending',
-  SUCCESS = 'success',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'success',
   FAILED = 'error'
 }
 
@@ -73,7 +73,7 @@ export interface StatusResponse {
   detail?: any
 }
 
-export async function warmup(service: string, params: DescribeImageWarmupParams): Promise<ServiceResponse<string>> {
+export async function warmup(service: string, params: any): Promise<ServiceResponse<string>> {
   const response = await fetch(`${API_BASE_URL}/v1/${service}/warmup`, {
     method: 'POST',
     headers: {
@@ -91,7 +91,7 @@ export async function warmup(service: string, params: DescribeImageWarmupParams)
   return data
 }
 
-export async function status(service: string, params: DescribeImageStatusParams): Promise<ServiceResponse<string>> {
+export async function status(service: string, params: any): Promise<ServiceResponse<string>> {
   const response = await fetch(`${API_BASE_URL}/v1/${service}/status`, {
     method: 'POST',
     headers: {
@@ -109,17 +109,13 @@ export async function status(service: string, params: DescribeImageStatusParams)
   return data
 }
 
-export async function inference(service: string, params: DescribeImageInferenceParams): Promise<ServiceResponse<string>> {
+export async function inference(service: string, params: any): Promise<ServiceResponse<string>> {
     const response = await fetch(`${API_BASE_URL}/v1/${service}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        image_url: params.image_url,
-        prompt: params.prompt,
-        model: params.model
-      })
+      body: JSON.stringify(params)
     })
     if (!response.ok) {
       throw new Error(`Failed to ${service} model ${params.model}: ${response.statusText}`)

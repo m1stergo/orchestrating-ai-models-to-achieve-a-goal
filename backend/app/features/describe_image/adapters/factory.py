@@ -53,7 +53,7 @@ class ImageDescriptionAdapterFactory:
             ServiceResponse: Service response with list of available model names
         """
         return ServiceResponse(
-            status="IDLE",
+            status="COMPLETED",
             message="Available models retrieved successfully",
             data=list(cls._adapters.keys())
         )
