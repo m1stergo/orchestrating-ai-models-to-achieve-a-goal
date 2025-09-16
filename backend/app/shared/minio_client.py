@@ -51,7 +51,7 @@ class MinioClient:
             logger.error(f"===== Error ensuring bucket {self.bucket_name} exists: {e} =====")
         
         self._initialized = True
-        logger.info(f"===== Minio client initialized with endpoint: {settings.MINIO_ENDPOINT} =====")
+        logger.info(f"===== Minio client initialized with endpoint: {settings.MINIO_ENDPOINT_URL} =====")
     
     def upload_file(self, file_data: Union[bytes, BinaryIO], filename: Optional[str] = None, 
                   content_type: Optional[str] = None) -> str:
@@ -72,7 +72,12 @@ class MinioClient:
                 ext = '.bin'
                 if content_type:
                     if 'image/' in content_type:
-                        ext = '.jpg' if 'jpeg' in content_type else '.png'
+                        if 'jpeg' in content_type:
+                            ext = '.jpg'
+                        elif 'webp' in content_type:
+                            ext = '.webp'
+                        else:
+                            ext = '.png'
                     elif 'audio/' in content_type:
                         ext = '.wav' if 'wav' in content_type else '.mp3'
                 filename = f"{uuid.uuid4()}{ext}"
