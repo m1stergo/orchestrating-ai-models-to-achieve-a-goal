@@ -32,14 +32,14 @@ class MinioClient:
             return
             
         self.client = Minio(
-            endpoint=settings.MINIO_ENDPOINT,
+            endpoint=settings.MINIO_ENDPOINT_URL,
             access_key=settings.MINIO_ACCESS_KEY,
             secret_key=settings.MINIO_SECRET_KEY,
             secure=settings.MINIO_SECURE,
             cert_check=False  # Necesario para algunos servidores con certificados autofirmados
         )
         
-        self.bucket_name = settings.MINIO_PUBLIC_BUCKET
+        self.bucket_name = settings.MINIO_BUCKET_NAME
         self.temp_prefix = settings.MINIO_TEMP_PREFIX
         
         # Ensure bucket exists
