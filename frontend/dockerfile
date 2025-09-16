@@ -1,24 +1,28 @@
+
 # -----------------------
-# STAGE 1: Build con Node
+# STAGE 1: Build with Node
 # -----------------------
 FROM node:20-alpine AS build
 WORKDIR /app
 
+ENV NODE_ENV=production
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY package.json pnpm-lock.yaml ./
-
 RUN pnpm install --frozen-lockfile
 
+# ARG to inject the API base URL from EasyPanel
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 COPY . .
-COPY . .
-RUN pnpm build   # Esto genera la carpeta /app/dist
+RUN pnpm build
 
 # -----------------------
-# STAGE 2: Nginx para servir
+# STAGE 2: Nginx to serve
 # -----------------------
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
+    
