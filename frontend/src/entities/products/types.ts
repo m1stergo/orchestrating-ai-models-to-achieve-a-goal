@@ -6,12 +6,18 @@ export interface Product {
   name: string;
   sku?: string;
   description: string;
+  immage_description?: string;
   keywords?: string[];
   category?: string;
   images?: string[];
   audio_description?: string;
   audio?: string;
   audio_config?: Record<string, string>;
+  additional_context?: {key: string, value: string }[];
+  vendor_url?: string;
+  vendor_context?: string;
+  selected_context_source?: string;
+  uploaded_image?: string;
 }
 
 /**
@@ -28,5 +34,10 @@ export interface ProductFormData {
   audio_description?: string;
   audio?: string;
   audio_config?: Record<string, string>;
-  image_description?: string
+  image_description?: string;
+  additional_context?: {key: string, value: string }[];
+  vendor_url?: string;
+  vendor_context?: string;
+  selected_context_source?: string;
+  uploaded_image?: string;
 }

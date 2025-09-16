@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, provide } from 'vue'
+import { ref, nextTick, provide, computed } from 'vue'
 import Drawer from 'primevue/drawer'
 import { WriteProductDescription } from '@/features/WriteProductDescription'
 import { useMutation, useQueryCache } from '@pinia/colada'
@@ -9,6 +9,7 @@ import Button from 'primevue/button'
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { CreateProductSchema, type CreateProductFormData } from '@/entities/products';
+import { useService } from '@/entities/services/useService'
 
 const queryCache = useQueryCache()
 
@@ -50,6 +51,12 @@ const form = useForm({
 },
 })
 
+const describeImageService = useService('describe-image')
+const generateDescriptionService = useService('generate-description')
+
+const isLoadingWarmup = computed(() => describeImageService.isLoadingWarmup.value || generateDescriptionService.isLoadingWarmup.value)
+const error = computed(() => describeImageService.error.value || generateDescriptionService.error.value)
+
 provide('form', form)
 
 const onSubmit = form.handleSubmit((values) => {
@@ -65,7 +72,18 @@ function onClose() {
 <template>
   <Button icon="pi pi-sparkles" label="Write product description" size="small" outlined severity="primary" @click="() => visible = true" />
   <Drawer v-model:visible="visible" header="Write product description" position="right" class="w-1/2" :pt="{ content: { class: 'flex flex-col gap-2' } }" @hide="onClose">
-    <WriteProductDescription/>
+    <Message v-if="isLoadingWarmup" severity="warn" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            <ProgressSpinner class="w-6 h-6" />
+            Models are warming up, please wait a few seconds...
+        </div>
+    </Message> 
+    <Message v-else-if="error" severity="error" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            An error occurred please try again later. {{ error }}
+        </div>
+    </Message>
+    <WriteProductDescription v-else/>
     <template #footer>
       <Button 
         :disabled="Object.keys(form.errors.value).length > 0" 

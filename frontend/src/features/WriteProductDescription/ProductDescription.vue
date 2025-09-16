@@ -1,114 +1,24 @@
 <script setup lang="ts">
-import { useQuery } from '@pinia/colada'
 import { useProductForm } from '@/composables/useProductForm'
-import { getSettings } from '@/features/UserSettings/api'
 import Skeleton from 'primevue/skeleton'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import AutoComplete from 'primevue/autocomplete'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
-import { useService } from '@/entities/services/useService'
-import { Status } from './types'
 
-const emit = defineEmits(['update:status'])
-    
-const props = defineProps<{ model?: string }>()
-
+defineProps<{ categories: string[] }>()
 const form = useProductForm()
-
-const { data: userSettings } = useQuery({
-  key: ['settings'],
-  query: () => getSettings(),
-  refetchOnWindowFocus: false,
-})
-
-const generateDescriptionService = useService('generate-description', {
-    onError: () => {
-        emit('update:status', Status.FAILED)
-    },
-    onSuccess: (response: any) => {
-        const parsedData = parseDescriptionResponse(response.data)
-        form.setValues({
-          name: parsedData.title || form?.values.name,
-          description: parsedData.description,
-          keywords: parsedData.keywords || form?.values.keywords,
-          category: parsedData.category || form?.values.category,
-        })
-        emit('update:status', Status.COMPLETED)
-      },
-})
-
-function parseDescriptionResponse(description: string) {
-  try {
-    // Try to parse as JSON
-    const parsed = JSON.parse(description)
-    
-    // Validate that it has the expected structure
-    if (typeof parsed === 'object' && parsed !== null) {
-      return {
-        title: parsed.title || '',
-        description: parsed.description || description,
-        keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
-        category: parsed.category || ''
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to parse description as JSON:', error)
-  }
-  
-  // Fallback: return original description with empty other fields
-  return {
-    title: '',
-    description: description,
-    keywords: [],
-    category: ''
-  }
-}
-
-defineExpose({
-    isLoadingInference: generateDescriptionService.isLoadingInference,
-    generateDescription: () => {
-        if (!form?.values.image_description || !props.model) return
-        generateDescriptionService.run({ 
-            text: form?.values.image_description, 
-            model: props.model,
-            prompt: userSettings.value?.generate_description_prompt || undefined,
-            categories: userSettings.value?.categories || undefined
-        })
-    }
-})
 </script>
 <template>
-    <Message v-if="generateDescriptionService.isLoadingWarmup.value" severity="warn" class="flex justify-center">
-        <div class="flex items-center gap-2 justify-center text-center">
-            <ProgressSpinner class="w-6 h-6" />
-            Models are warming up, please wait a few seconds...
-        </div>
-    </Message> 
-    <Message v-else-if="generateDescriptionService.error.value" severity="error" class="flex justify-center">
-        <div class="flex items-center gap-2 justify-center text-center">
-            An error occurred please try again later. {{ generateDescriptionService.error.value }}
-        </div>
-    </Message>
-    <!-- Show image after analysis, then description generation -->
-    <div v-if="form?.values.images && form.values.images.length > 0" class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2">
         <!-- Show the image -->
-        <div v-if="form?.values.images?.length > 0" class="flex gap-2 flex-wrap">
+        <div v-if="form?.values.images?.length ?? 0 > 0" class="flex gap-2 flex-wrap">
             <div v-for="image in form?.values.images" :key="image">
                 <img :src="image" alt="Image" class="w-24 rounded">
             </div>
         </div>
-        <!-- Show description generation skeleton or final description -->
-        <div v-if="generateDescriptionService.isLoadingInference.value">
-            <p class="text-sm">Generating product description...</p>
-            <div class="flex flex-col gap-2">
-                <Skeleton height="2rem"></Skeleton>
-                <Skeleton height="4rem"></Skeleton>
-            </div>
-        </div>
-        <div v-else class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4">
             <!-- SKU Field -->
             <div class="flex flex-col gap-2">
                 <label class="text-sm font-medium text-gray-700">SKU *</label>
@@ -172,7 +82,7 @@ defineExpose({
                 <Select 
                     :modelValue="form?.values.category" 
                     @update:modelValue="form.setFieldValue('category', $event)"
-                    :options="userSettings?.categories || []"
+                    :options="categories"
                     placeholder="Select product category" 
                 />
             </div>
