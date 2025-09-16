@@ -48,8 +48,10 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = None
     MINIO_SECURE: bool = True
     MINIO_REGION: Optional[str] = None
-    MINIO_BUCKET_NAME: str = None
-    MINIO_TEMP_PREFIX: str = None
+    
+    # Buckets configuration (new approach with separate buckets)
+    MINIO_PUBLIC_BUCKET: str = "public"
+    MINIO_TEMP_BUCKET: str = "temp"
     MINIO_PUBLIC_URL: str = None
     
     # Microservice base URLs with API prefix

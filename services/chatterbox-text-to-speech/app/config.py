@@ -13,10 +13,12 @@ class Settings(BaseSettings):
     HUGGINGFACE_CACHE_DIR: Optional[str] = None
     
     # MinIO storage settings
-    MINIO_BUCKET_NAME: str # Nombre predeterminado del bucket
     MINIO_ENDPOINT_URL: str
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
+    MINIO_SECURE: bool = True
+    MINIO_PUBLIC_BUCKET: str = "public"
+    MINIO_TEMP_BUCKET: str = "temp"
     
     # Custom prompt template
     PROMPT: Optional[str] = """

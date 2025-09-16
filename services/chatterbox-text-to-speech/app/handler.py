@@ -118,22 +118,27 @@ class ChatterboxHandler(InferenceHandler):
                     endpoint=settings.MINIO_ENDPOINT_URL,
                     access_key=settings.MINIO_ACCESS_KEY,
                     secret_key=settings.MINIO_SECRET_KEY,
-                    secure=True,
+                    secure=settings.MINIO_SECURE,
                     cert_check=False
                 )
 
-                bucket_exists = client.bucket_exists(settings.MINIO_BUCKET_NAME)
+                # Asegurar que ambos buckets existan (público y temporal)
+                for bucket in [settings.MINIO_PUBLIC_BUCKET, settings.MINIO_TEMP_BUCKET]:
+                    try:
+                        if not client.bucket_exists(bucket):
+                            client.make_bucket(bucket)
+                            logger.info(f"===== Created bucket: {bucket} =====")
+                    except Exception as e:
+                        logger.error(f"===== Error ensuring bucket {bucket} exists: {e} =====")
                 
-                if not bucket_exists:
-                    client.make_bucket(settings.MINIO_BUCKET_NAME)
-                
-                bucket_name = settings.MINIO_BUCKET_NAME
+                # Usamos el bucket público para archivos de audio permanentes
+                bucket_name = settings.MINIO_PUBLIC_BUCKET
                 
                 audio_filename = f"{uuid4()}.wav"
                 
                 buffer_size = buffer.getbuffer().nbytes
                 
-                logger.info(f"==== Uploading to MinIO: {bucket_name}/{audio_filename} ====")
+                logger.info(f"==== Uploading to MinIO public bucket: {bucket_name}/{audio_filename} =====")
                 client.put_object(
                     bucket_name,
                     audio_filename,
@@ -142,9 +147,10 @@ class ChatterboxHandler(InferenceHandler):
                     content_type="audio/wav"
                 )
 
-                base_url = settings.MINIO_ENDPOINT_URL
+                # Usar MINIO_PUBLIC_URL según indicado
+                base_url = settings.MINIO_PUBLIC_URL
                 
-                audio_url = f"https://{base_url}/{bucket_name}/{audio_filename}"
+                audio_url = f"{base_url}/{bucket_name}/{audio_filename}"
                 logger.info(f"==== Audio uploaded to MinIO: {audio_url} ====")
                 
                 return InferenceResponse(
