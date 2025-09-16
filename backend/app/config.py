@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     MINIO_PUBLIC_BUCKET: str = "public"
     MINIO_TEMP_BUCKET: str = "temp"
     MINIO_PUBLIC_URL: str = None
-    
+
     # Microservice base URLs with API prefix
     DESCRIBE_IMAGE_QWEN_URL: str = "http://localhost:8001/api/v1"
     GENERATE_DESCRIPTION_MISTRAL_URL: str = "http://localhost:8002/api/v1"
