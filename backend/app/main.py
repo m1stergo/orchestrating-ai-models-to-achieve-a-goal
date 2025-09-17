@@ -74,4 +74,4 @@ app.include_router(export_router, prefix=f"{settings.API_VERSION}/export", tags=
 static_dir = Path("app/static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-logger.warning("#\n#\n#\n#\n#\n#\n#\n# V1.0.13 \n#\n#\n#\n#\n#\n#\n#\n#")
+logger.warning("#\n#\n#\n#\n#\n#\n#\n# V1.0.14 \n#\n#\n#\n#\n#\n#\n#\n#")

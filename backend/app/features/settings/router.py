@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["settings"])
 
-@router.get("/", response_model=UserSettingsResponse)
+@router.get("", response_model=UserSettingsResponse)
 async def get_settings(
     settings_service: SettingsService = Depends(get_settings_service)
 ):

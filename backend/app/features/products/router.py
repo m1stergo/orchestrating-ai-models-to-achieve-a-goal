@@ -7,7 +7,7 @@ from app.database import get_db
 
 router = APIRouter()
 
-@router.get("/", response_model=List[schemas.ProductResponse])
+@router.get("", response_model=List[schemas.ProductResponse])
 async def read_products(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),

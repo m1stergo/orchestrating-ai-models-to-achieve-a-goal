@@ -8,7 +8,7 @@ from .adapters.factory import ImageDescriptionAdapterFactory
 router = APIRouter()
 
 @router.post(
-    "/",
+    "",
     response_model=ServiceResponse[str],
     responses={
         200: {

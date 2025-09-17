@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 @router.post(
-    "/",
+    "",
     response_model=ExtractWebContentResponse,
     summary="Extract Web Content",
     description="""

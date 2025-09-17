@@ -128,7 +128,7 @@ export async function inference(service: string, params: any): Promise<ServiceRe
 }
 
 export async function uploadImage(formData: FormData): Promise<UploadImageResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/upload-image/`, {
+  const response = await fetch(`${API_BASE_URL}/v1/upload-image`, {
     method: 'POST',
     body: formData,
   })
@@ -146,7 +146,7 @@ export async function extractWebContent(url: string): Promise<ExtractWebContentR
   
   const request: ExtractWebContentRequest = { url: formattedUrl }
   
-  const response = await fetch(`${API_BASE_URL}/v1/extract-webcontent/`, {
+  const response = await fetch(`${API_BASE_URL}/v1/extract-webcontent`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -189,7 +189,7 @@ export async function generatePromotionalAudioScript(params: { text: string, mod
 }
 
 export async function generateTextToSpeech(params: { text: string, model?: string, voice_url?: string }): Promise<ServiceResponse<TextToSpeechResponse>> {
-  const response = await fetch(`${API_BASE_URL}/v1/text-to-speech/`, {
+  const response = await fetch(`${API_BASE_URL}/v1/text-to-speech`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

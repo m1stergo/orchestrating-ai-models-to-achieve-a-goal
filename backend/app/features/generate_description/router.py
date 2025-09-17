@@ -6,7 +6,7 @@ from .adapters.factory import GenerateDescriptionAdapterFactory
 router = APIRouter()
 
 @router.post(
-    "/",
+    "",
     response_model=ServiceResponse[str],
     responses={
         200: {

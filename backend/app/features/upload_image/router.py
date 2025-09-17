@@ -5,7 +5,7 @@ from . import schemas
 router = APIRouter()
 
 
-@router.post("/", response_model=schemas.ImageUploadResponse)
+@router.post("", response_model=schemas.ImageUploadResponse)
 async def upload_image_endpoint(file: UploadFile = File(...)):
     """
     Endpoint for uploading an image.

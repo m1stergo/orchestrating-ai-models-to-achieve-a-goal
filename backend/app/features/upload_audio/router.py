@@ -5,7 +5,7 @@ from . import schemas
 router = APIRouter()
 
 
-@router.post("/", response_model=schemas.AudioUploadResponse)
+@router.post("", response_model=schemas.AudioUploadResponse)
 async def upload_audio_endpoint(file: UploadFile = File(...)):
     """
     Endpoint for uploading an audio file.

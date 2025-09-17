@@ -7,7 +7,7 @@ from .adapters.factory import TextToSpeechAdapterFactory
 router = APIRouter()
 
 @router.post(
-    "/",
+    "",
     response_model=ServiceResponse[str],
     responses={
         200: {
