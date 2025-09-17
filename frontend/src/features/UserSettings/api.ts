@@ -9,7 +9,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
  * Get global application settings
  */
 export async function getSettings(): Promise<UserSettingsResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/settings/`)
+  const response = await fetch(`${API_BASE_URL}/v1/settings`)
   if (!response.ok) {
     throw new Error(`Failed to get settings: ${response.statusText}`)
   }
@@ -20,7 +20,7 @@ export async function getSettings(): Promise<UserSettingsResponse> {
  * Update global application settings
  */
 export async function updateSettings(settings: UserSettingsUpdate): Promise<UserSettingsResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/settings/`, {
+  const response = await fetch(`${API_BASE_URL}/v1/settings`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

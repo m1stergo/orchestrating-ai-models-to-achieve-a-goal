@@ -3,7 +3,7 @@ import type { ExtractWebContentRequest, ExtractWebContentResponse, UploadImageRe
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export async function uploadImage(formData: FormData): Promise<UploadImageResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/upload-image/`, {
+  const response = await fetch(`${API_BASE_URL}/v1/upload-image`, {
     method: 'POST',
     body: formData,
   })
@@ -14,7 +14,7 @@ export async function uploadImage(formData: FormData): Promise<UploadImageRespon
 }
 
 export async function describeImage(params: { image_url: string, model?: string, prompt?: string }): Promise<ServiceResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/describe-image/`, {
+  const response = await fetch(`${API_BASE_URL}/v1/describe-image`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -30,7 +30,7 @@ export async function describeImage(params: { image_url: string, model?: string,
 }
 
 export async function generateDescription(params: { text: string, model: string, prompt?: string, categories?: string[] }): Promise<ServiceResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/generate-description/`, {
+  const response = await fetch(`${API_BASE_URL}/v1/generate-description`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -51,7 +51,7 @@ export async function extractWebContent(url: string): Promise<ExtractWebContentR
   
   const request: ExtractWebContentRequest = { url: formattedUrl }
   
-  const response = await fetch(`${API_BASE_URL}/v1/extract-webcontent/`, {
+  const response = await fetch(`${API_BASE_URL}/v1/extract-webcontent`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ export async function generatePromotionalAudioScript(params: { text: string, mod
 }
 
 export async function generateTextToSpeech(params: { text: string, model?: string, voice_url?: string }): Promise<TextToSpeechResponse> {
-  const response = await fetch(`${API_BASE_URL}/v1/text-to-speech/`, {
+  const response = await fetch(`${API_BASE_URL}/v1/text-to-speech`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
