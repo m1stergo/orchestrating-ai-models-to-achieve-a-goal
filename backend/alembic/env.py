@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.database import Base
 # Import models so that metadata contains all tables
 from app.features.products import models as products_models  # noqa: F401
-from app.settings import models as settings_models  # noqa: F401
+from app.features.settings import models as settings_models  # noqa: F401
 from app.config import settings as app_settings
 
 # this is the Alembic Config object, which provides
