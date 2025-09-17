@@ -23,6 +23,7 @@ class InferenceStatus(str, Enum):
     WARMINGUP = "WARMINGUP"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
+    IN_QUEUE = "IN_QUEUE"
     FAILED = "FAILED"
 
 # RunPod-like schemas

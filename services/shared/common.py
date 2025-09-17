@@ -24,6 +24,7 @@ class InferenceStatus(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+    IN_QUEUE = "IN_QUEUE"
 
 # RunPod-like schemas
 class JobRequest(BaseModel):
