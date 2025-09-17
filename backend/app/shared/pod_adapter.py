@@ -178,7 +178,7 @@ class PodAdapter(Adapter):
                     if "output" in result and isinstance(result["output"], dict):
                         output_dict = result["output"]
                         service_response = ServiceResponse(
-                            status=output_dict.get("status", ""),
+                            status=output_dict.get("status", "COMPLETED"),
                             message=output_dict.get("message", ""),
                             data=output_dict.get("data", "")
                         )
@@ -193,7 +193,7 @@ class PodAdapter(Adapter):
                             output=service_response
                         )
                     else:
-                        empty_service_response = ServiceResponse(status="", message="", data="")
+                        empty_service_response = ServiceResponse(status="COMPLETED", message="", data="")
                         
                         if result.get("status") == "FAILED":
                             raise Exception("Unknown error")
