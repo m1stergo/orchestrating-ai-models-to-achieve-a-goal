@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useQuery } from '@pinia/colada'
 import { getAvailableVoices } from './api'
 import { useToast } from 'primevue/usetoast'
@@ -12,7 +12,7 @@ import { AudioPlayer } from '@/shared/ui/AudioPlayer'
 import { useProductForm } from '@/composables/useProductForm'
 import { useService } from '@/entities/services/useService'
 
-const props = defineProps<{ model?: string }>()
+const props = defineProps<{ model?: string, prompt?: string }>()
 
 const form = useProductForm()
 
@@ -35,7 +35,7 @@ const { data: voices } = useQuery({
   query: () => getAvailableVoices(),
 })
 
-const generateDescription = useService('generate-description', {
+const generateDescription = useService('generate-description/promotional-audio-script', {
     onSuccess: (response: any) => {
         const parsedData = parseDescriptionResponse(response.data)
         form.setFieldValue('audio_description', parsedData.description)
@@ -60,8 +60,8 @@ async function generateSpeech() {
     try {
         await generateDescription.run({
             text: form?.values.description,
+            prompt: props.prompt,
             model: props.model,
-            voice_url: selectedVoice.value.audio_url
         })
     } catch (error) {
         console.error('Error generating promotional audio script:', error)
@@ -111,6 +111,10 @@ watch(voices, (newVoices) => {
   if (newVoices.length > 0 && !selectedVoice.value) {
     selectedVoice.value = newVoices[0]
   }
+})
+
+onMounted(() => {
+  tts.warmup({ model: 'chatterbox' })
 })
 </script>
 
@@ -167,8 +171,19 @@ watch(voices, (newVoices) => {
                 </div>
             </div>
         </div>
+        <Message v-if="tts.isLoadingWarmup.value" severity="warn" class="flex justify-center">
+            <div class="flex items-center gap-2 justify-center text-center">
+                <ProgressSpinner class="w-6 h-6" />
+                Models are warming up, please wait a few seconds...
+            </div>
+        </Message> 
+        <Message v-else-if="tts.error.value" severity="error" class="flex justify-center">
+            <div class="flex items-center gap-2 justify-center text-center">
+                An error occurred please try again later. {{ tts.error.value }}
+            </div>
+        </Message>
         <Button 
-            v-if="form?.values.audio_description"
+            v-else-if="form?.values.audio_description"
             :disabled="tts.isLoadingInference.value"
             :label="tts.isLoadingInference.value ? 'Generating audio... this may take a few seconds' : 'Generate promotional audio'"
             :loading="tts.isLoadingInference.value"

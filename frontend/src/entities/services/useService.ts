@@ -4,7 +4,7 @@ import { getSettings } from "@/features/UserSettings/api"
 import { useMutation, useQuery } from "@pinia/colada"
 
 // Define valid service names as a type
-type ServiceName = 'describe-image' | 'generate-description' | 'text-to-speech'
+type ServiceName = 'describe-image' | 'generate-description' | 'text-to-speech' | 'generate-description/promotional-audio-script'
 
 interface ServiceState {
     isLoadingWarmup: boolean;
@@ -28,6 +28,11 @@ const state = reactive<Record<ServiceName, ServiceState>>({
         isLoadingInference: false,
         error: '',
     },
+    'generate-description/promotional-audio-script': { 
+        isLoadingWarmup: false,
+        isLoadingInference: false,
+        error: '',
+    },
 })
 
 export function useService(service: ServiceName, options?: { onSuccess?: (response: ServiceResponse<string>) => void, onError?: (error: Error) => void, }) {
@@ -39,9 +44,12 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
 
     const { mutateAsync: triggerWarmup, isLoading: isLoadingWarmup, error: errorWarmup } = useMutation({
         mutation: (params: Record<string, any>) => warmup(service, params),
-        onSuccess: () => {
+        onSuccess: (response: ServiceResponse<string>) => {
             state[service].isLoadingWarmup = false
             state[service].error = ''
+            if (response.status === 'FAILED') {
+                state[service].error = response.message
+            }
         },
         onError: () => {
             state[service].isLoadingWarmup = false
@@ -55,6 +63,9 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
             options?.onSuccess?.(response)
             state[service].isLoadingInference = false
             state[service].error = ''
+            if (response.status === 'FAILED') {
+                state[service].error = response.message
+            }
         },
         onError: (error: Error) => {
             options?.onError?.(error)

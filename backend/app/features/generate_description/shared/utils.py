@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 """
 Shared prompt templates for text generation adapters.
 """
-def get_product_description_prompt(custom_prompt: str = None, product_description: str = None, categories: list = None) -> str:
+def get_product_description_prompt(custom_prompt: str = None,  categories: list = None) -> str:
     """
     Get the product description prompt template.
     
@@ -33,9 +33,6 @@ def get_product_description_prompt(custom_prompt: str = None, product_descriptio
     - Focus on features first, then benefits
     - Keywords must not repeat, must be relevant for SEO
     """
-
-    base_instruction = base_instruction + "\n\n" + "Product: " + product_description
-
     categories_text = ", ".join(categories) if categories and len(categories) > 0 else "any"
     
     json_structure = """Return a valid JSON response with the following structure:
@@ -49,7 +46,7 @@ def get_product_description_prompt(custom_prompt: str = None, product_descriptio
     return base_instruction + "\n\n" + json_structure
 
 
-def get_promotional_audio_script_prompt(custom_prompt: Optional[str] = None, text: str = None) -> str:
+def get_promotional_audio_script_prompt(custom_prompt: Optional[str] = None) -> str:
     """
     Get promotional audio script prompt template.
     
@@ -69,10 +66,10 @@ def get_promotional_audio_script_prompt(custom_prompt: Optional[str] = None, tex
 
     json_structure = """Return a valid JSON response with the following structure:
     {
-    "description": "Inferred product description",
+    "description": "Promotional video script",
     }"""
     
-    return base_instruction + "\n\n" + "Product: " + text + "\n\n" + json_structure
+    return base_instruction + "\n\n" + json_structure
 
 
 def extract_json_from_response(response_text: str) -> str:

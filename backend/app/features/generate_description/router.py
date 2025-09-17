@@ -2,7 +2,6 @@ from fastapi import APIRouter, Body, HTTPException
 from typing import List
 from app.shared.schemas import GenerateDescriptionRequest, ServiceResponse, WarmupRequest
 from .adapters.factory import GenerateDescriptionAdapterFactory
-from .shared.utils import get_product_description_prompt, get_promotional_audio_script_prompt
 
 router = APIRouter()
 
@@ -63,8 +62,7 @@ async def run_text(
 ):
     try:
         adapter = GenerateDescriptionAdapterFactory.get_adapter(request.model)
-        final_prompt = get_product_description_prompt(custom_prompt=request.prompt, product_description=request.text, categories=request.categories)
-        result = await adapter.infer(final_prompt)
+        result = await adapter.infer(request.text, request.prompt, request.categories)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating description: {str(e)}")
@@ -126,8 +124,7 @@ async def run_audio_script(
 ):
     try:
         adapter = GenerateDescriptionAdapterFactory.get_adapter(request.model)
-        final_prompt = get_promotional_audio_script_prompt(custom_prompt=request.prompt, text=request.text)
-        result = await adapter.infer(final_prompt)
+        result = await adapter.infer_audio_script(request.text, request.prompt)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating promotional audio script: {str(e)}")

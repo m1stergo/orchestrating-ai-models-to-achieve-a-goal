@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, provide, watch } from 'vue'
+import { ref, nextTick, provide, watch, computed } from 'vue'
 
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
@@ -14,6 +14,7 @@ import { UpdateProductSchema } from '@/entities/products';
 import type { ProductFormData, UpdateProductFormData } from '@/entities/products'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
+import { useService } from '@/entities/services/useService'
 
 const props = defineProps<{ id: number }>()
 const queryCache = useQueryCache()
@@ -63,6 +64,13 @@ const form = useForm({
 
 provide('form', form)
 
+const describeImageService = useService('describe-image')
+const generateDescriptionService = useService('generate-description')
+
+const isLoadingWarmup = computed(() => describeImageService.isLoadingWarmup.value || generateDescriptionService.isLoadingWarmup.value)
+const error = computed(() => describeImageService.error.value || generateDescriptionService.error.value)
+
+
 const onSubmit = form.handleSubmit(async (values) => {
   await mutateAsync(values as UpdateProductFormData)
   visible.value = false
@@ -76,7 +84,18 @@ watch(data, () => {
 <template>
   <Button icon="pi pi-pencil" rounded text size="small" @click="() => visible = true"/>
   <Drawer v-model:visible="visible" header="Edit Product" position="right" class="w-1/2" @show="refresh()">
-    <div v-if="isLoading" class="flex flex-col gap-4">
+    <Message v-if="isLoadingWarmup" severity="warn" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            <ProgressSpinner class="w-6 h-6" />
+            Models are warming up, please wait a few seconds...
+        </div>
+    </Message> 
+    <Message v-else-if="error" severity="error" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            An error occurred please try again later. {{ error }}
+        </div>
+    </Message>
+    <div v-else-if="isLoading" class="flex flex-col gap-4">
       <div class="flex flex-col gap-2">
         <Skeleton height="1rem" />
         <Skeleton height="3rem" />

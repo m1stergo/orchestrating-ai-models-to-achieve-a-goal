@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 
 class GeminiAdapter(ApiAdapter):
     def __init__(self):
+        genai.configure(api_key=settings.GEMINI_API_KEY)
         super().__init__(
             api_token=settings.GEMINI_API_KEY,
             model_name=settings.GEMINI_VISION_MODEL,  # e.g., "gemini-1.5-pro-vision-latest"
-            service_name="Gemini"
+            service_name="Gemini",
+            model=genai.GenerativeModel(settings.GEMINI_VISION_MODEL)
         )
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel(self.model_name)
 
     async def infer(self, image_url: str, prompt: Optional[str] = None) -> ServiceResponse:
         logger.info(f"===== Gemini: describing image from {image_url} =====")

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useProductForm } from '@/composables/useProductForm'
-import Skeleton from 'primevue/skeleton'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import AutoComplete from 'primevue/autocomplete'

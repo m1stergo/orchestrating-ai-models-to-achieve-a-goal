@@ -28,20 +28,6 @@ const generateDescriptionService = useService('generate-description', {
   }
 })
 
-const { warmup: triggerWarmupGenerateAudio } = useService('text-to-speech', {
-  onError: () => {
-    toast.add({
-      severity: 'error',
-      summary: 'Service Unavailable',
-      detail: 'Unable to connect to generate audio service. Please refresh the page.',
-    })
-  }
-})
-
-onMounted(() => {
-  triggerWarmupGenerateAudio({ model: 'chatterbox' })
-})
-
 watch(describeImageService.settings, (newSettings, oldSettings) => {
   if (newSettings?.describe_image_model !== oldSettings?.describe_image_model && newSettings?.describe_image_model) {
     describeImageService.warmup({ model: newSettings.describe_image_model })

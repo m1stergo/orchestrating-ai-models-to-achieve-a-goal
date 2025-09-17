@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar('T')
 
 class Adapter(ABC):
-    def __init__(self, model_name: str, service_name: str, model: Any, api_token: Optional[str] = None):
+    def __init__(self, model_name: str, service_name: str, model: Optional[Any] = None, api_token: Optional[str] = None):
         self.model_name = model_name
         self.service_name = service_name
         self.model = model

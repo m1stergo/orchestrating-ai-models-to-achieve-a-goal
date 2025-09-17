@@ -6,6 +6,8 @@ import { useMutation, useQueryCache } from '@pinia/colada'
 import { createProduct } from '@/entities/products/api'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
+import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { CreateProductSchema, type CreateProductFormData } from '@/entities/products';

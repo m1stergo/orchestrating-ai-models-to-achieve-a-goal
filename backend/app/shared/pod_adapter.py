@@ -20,12 +20,14 @@ class PodAdapter(Adapter):
 
     def __init__(self, service_url: str, api_token: Optional[str] = None, 
                  service_name: str = "RunPod", model: Any = None, timeout: int = 60, 
-                 poll_interval: int = 5, max_retries: int = 40):
+                 poll_interval: int = 60, max_retries: int = 40):
         super().__init__(service_name, service_name, model, api_token)
         self.service_url = service_url
         self.timeout = aiohttp.ClientTimeout(total=timeout)
-        self.poll_interval = poll_interval
+        self.poll_interval = 30
         self.max_retries = max_retries
+
+        logger.warning(f"{self.service_name} initialized with poll_interval: {self.poll_interval}, max_retries: {self.max_retries}")
 
     def _is_available(self) -> bool:
         """Check if the service URL is available."""
@@ -64,6 +66,8 @@ class PodAdapter(Adapter):
                         raise Exception(f"HTTP error: {resp.status}")
                     
                     response_json = await resp.json()
+
+                    logger.warning("===== RESPONSE JSON: {} =====".format(response_json))
 
                     if "output" in response_json and isinstance(response_json["output"], dict):
                         output_dict = response_json["output"]
@@ -126,6 +130,7 @@ class PodAdapter(Adapter):
             )
 
     async def warmup(self) -> ServiceResponse:      
+        logger.warning("===== WARMUP =====")
         try:
             if not self._is_available():
                 raise ValueError(f"{self.service_name} service URL is not configured")
@@ -136,20 +141,35 @@ class PodAdapter(Adapter):
                     "action": "warmup"
                 }
             }
+
+            logger.warning("===== CALLING WITH PAYLOAD: {} =====".format(payload))
             
             initial_result = await self._call_endpoint("run", "POST", payload)
 
-            if initial_result.status == "FAILED":
-                return initial_result.output
+            logger.warning("===== Initial result WARMUP=====")
+
+            logger.warning(initial_result)
+
+            # if initial_result.status == "FAILED":
+            #     return initial_result.output
                 
             job_id = initial_result.id
-            logger.info(f"===== Initial result WARMUP: {initial_result} =====")
+            # logger.info(f"===== Initial result WARMUP: {initial_result} =====")
             logger.info(f"===== Waiting for warmup job {job_id} to complete... =====")
             
             final_result = await self._poll_until_complete(job_id)
 
+            logger.info(f"===== Warmup job {job_id} completed with result: {final_result} =====")
+
+            logger.warning("POR RETORNAR")
+
+            logger.warning(final_result.output)
+            logger.warning(f"Tipo de final_result.output: {type(final_result.output).__name__}")
+
+            logger.warning("DALE QUESO")
+
             return final_result.output
-                
+
         except Exception as e:
             logger.error(f"{self.service_name} warmup error: {str(e)}")
             return ServiceResponse(
@@ -171,28 +191,38 @@ class PodAdapter(Adapter):
                 } if self.api_token else {}
                 
                 async with session.get(status_url, headers=headers) as resp:
+                    logger.warning(f"===== ENTRA =====")
                     result = await resp.json()
+                    logger.info(result)
                     logger.info(f"===== Status response for job {job_id}: {result} =====")
                     
                     # Convertir el diccionario JSON a objetos Pydantic
                     if "output" in result and isinstance(result["output"], dict):
+                        logger.info("===== Output found in result: {} =====".format(result["output"]))
                         output_dict = result["output"]
                         service_response = ServiceResponse(
                             status=output_dict.get("status", "COMPLETED"),
                             message=output_dict.get("message", ""),
                             data=output_dict.get("data", "")
                         )
+
+                        logger.info(f"===== Service response: {service_response} =====")
                         
                         # Check if the result indicates the job doesn't exist
                         if result.get("status") == "FAILED":
                             raise Exception(service_response.message or "Unknown error")
                             
-                        return PodResponse(
+                        value = PodResponse(
                             status=result.get("status", ""),
                             id=result.get("id", ""),
                             output=service_response
                         )
+
+                        logger.info(f"===== Pod response: {value} =====")
+
+                        return value
                     else:
+                        logger.error("===== Output not found in result =====")
                         empty_service_response = ServiceResponse(status="COMPLETED", message="", data="")
                         
                         if result.get("status") == "FAILED":
@@ -227,14 +257,19 @@ class PodAdapter(Adapter):
                 )
             )
 
-    async def _poll_until_complete(self, job_id: str, interval: int = None, max_retries: int = None) -> PodResponse:
-        interval = interval or self.poll_interval
-        max_retries = max_retries or self.max_retries
+    async def _poll_until_complete(self, job_id: str) -> PodResponse:
         retries = 0
+
+        logger.warning("===== POLLING ===== {}".format(self.poll_interval))
+        logger.warning("===== JOB ID: {} =====".format(job_id))
+
         
-        while retries < max_retries:
+        while retries < self.max_retries:
             # Check job status
             status_response = await self.pod_status(job_id)
+
+
+            logger.warning("===== STATUS RESPONSE: {} =====".format(status_response))
 
             # If job failed
             if status_response.status == "FAILED":
@@ -250,15 +285,17 @@ class PodAdapter(Adapter):
                 
             if jobstatus == "COMPLETED":
                 logger.info(f"===== Job {job_id} completed =====")
+
+                logger.info(f"=====  status response: {status_response} =====")
                 return status_response
                     
             # Wait before checking again
             retries += 1
-            logger.info(f"===== Job {job_id} still in progress, retry {retries}/{max_retries} =====")
-            await asyncio.sleep(interval)
+            logger.info(f"===== Job {job_id} still in progress, retry {retries}/{self.max_retries} =====")
+            await asyncio.sleep(self.poll_interval)
         
         # If we got here, we've exceeded max retries
-        error_message = f"Timed out waiting for job {job_id} after {max_retries} retries"
+        error_message = f"Timed out waiting for job {job_id} after {self.max_retries} retries"
         logger.error(f"===== {error_message} =====")
         return PodResponse(
             status="FAILED", 

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar('T')
 
 class ApiAdapter(Adapter):
-    def __init__(self, model_name: str, service_name: str, model: Any, api_token: Optional[str] = None):
+    def __init__(self, model_name: str, service_name: str, model: Optional[Any] = None, api_token: Optional[str] = None):
         super().__init__(model_name, service_name, model, api_token)
 
     def _is_available(self) -> bool:

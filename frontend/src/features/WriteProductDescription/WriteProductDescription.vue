@@ -195,7 +195,7 @@ function parseJSON(text: string) {
             <StepItem :value="3">
                 <Step :disabled="!form.values.description">Promotional audio</Step>
                 <StepPanel>
-                    <PromotionalAudio />
+                    <PromotionalAudio :prompt="settings?.generate_promotional_audio_script_prompt" :model="settings?.generate_description_model" />
                 </StepPanel>
             </StepItem>
         </Stepper>
