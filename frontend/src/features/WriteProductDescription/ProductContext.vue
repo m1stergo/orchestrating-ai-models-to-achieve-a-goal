@@ -24,7 +24,7 @@ const selectedContextSourceComputed = computed({
 
 const vendorContext = ref<ProductFormData['vendor_context']>(form.values.vendor_context)
 const vendorUrl = ref<ProductFormData['vendor_url']>(form.values.vendor_url)
-const additionalContext = ref<Array<{key: string, value: string}>>(form.values.additional_context || [])
+const additionalContext = ref<Array<{key: string, value: string}>>(form.values.additional_context?.length ? form.values.additional_context : [{key: '', value: ''}])
 const uploadedImage = ref<ProductFormData['uploaded_image']>(form.values.uploaded_image)
 
 function updateAditionalContext(index: number, field: 'key' | 'value', value: string) {
