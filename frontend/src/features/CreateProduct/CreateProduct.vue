@@ -41,16 +41,22 @@ const validationSchema = toTypedSchema(CreateProductSchema)
 const form = useForm({
   validationSchema,
   initialValues: {
-  name: '',
-  sku: '',
-  description: '',
-  keywords: [],
-  category: '',
-  images: [],
-  audio_description: '',
-  audio: '',
-  image_description: '',
-},
+    name: '',
+    sku: '',
+    description: '',
+    keywords: [],
+    category: '',
+    images: [],
+    audio_description: null,
+    audio: null,
+    image_description: null,
+    audio_config: null,
+    additional_context: [],
+    vendor_url: null,
+    vendor_context: null,
+    selected_context_source: null,
+    uploaded_image: null
+  },
 })
 
 const describeImageService = useService('describe-image')

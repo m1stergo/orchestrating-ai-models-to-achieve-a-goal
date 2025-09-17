@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 
 
 class ProductBase(BaseModel):
@@ -13,6 +13,12 @@ class ProductBase(BaseModel):
     audio_description: Optional[str] = Field(None, description="Audio description")
     audio: Optional[str] = Field(None, description="Audio URL")
     audio_config: Optional[Dict[str, str]] = Field(None, description="Audio configuration settings")
+    additional_context: Optional[List[Dict[str, str]]] = Field(None, description="List of key-value pairs for additional context")
+    image_description: Optional[str] = Field(None, description="Description generated from image")
+    vendor_url: Optional[str] = Field(None, description="URL to vendor website")
+    vendor_context: Optional[str] = Field(None, description="Context from vendor")
+    selected_context_source: Optional[str] = Field(None, description="Source of context (image/website)")
+    uploaded_image: Optional[str] = Field(None, description="URL to uploaded image")
 
 
 class ProductCreate(ProductBase):
@@ -31,6 +37,12 @@ class ProductUpdate(BaseModel):
     audio_description: Optional[str] = Field(None, description="Audio description")
     audio: Optional[str] = Field(None, description="Audio URL")
     audio_config: Optional[Dict[str, str]] = Field(None, description="Audio configuration settings")
+    additional_context: Optional[List[Dict[str, str]]] = Field(None, description="List of key-value pairs for additional context")
+    image_description: Optional[str] = Field(None, description="Description generated from image")
+    vendor_url: Optional[str] = Field(None, description="URL to vendor website")
+    vendor_context: Optional[str] = Field(None, description="Context from vendor")
+    selected_context_source: Optional[str] = Field(None, description="Source of context (image/website)")
+    uploaded_image: Optional[str] = Field(None, description="URL to uploaded image")
 
 
 class ProductInDB(ProductBase):

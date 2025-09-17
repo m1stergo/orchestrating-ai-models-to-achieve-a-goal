@@ -62,7 +62,14 @@ async def create_product(db: Session, product: schemas.ProductCreate) -> models.
         category=product.category,
         images=product.images,
         audio_description=product.audio_description,
-        audio=product.audio
+        audio=product.audio,
+        audio_config=product.audio_config,
+        additional_context=product.additional_context,
+        image_description=product.image_description,
+        vendor_url=product.vendor_url,
+        vendor_context=product.vendor_context,
+        selected_context_source=product.selected_context_source,
+        uploaded_image=product.uploaded_image
     )
     db.add(db_product)
     db.commit()

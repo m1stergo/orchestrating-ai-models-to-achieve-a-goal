@@ -80,6 +80,8 @@ const generateDescriptionLabel = computed(() => {
 
 const isLoadingProductDescription = computed(() => isLoadingExtractWebContent.value || describeImageService.isLoadingInference.value || generateDescriptionService.isLoadingInference.value)
 
+const additionalContext = computed(() => form.values.additional_context?.map(context => `${context.key}: ${context.value}`).join(', ') || '')
+
 function generateDescription() {
     if (form.values.selected_context_source === 'website' && form.values.vendor_url) {
         triggerExtractWebContent(form.values.vendor_url).then(() => {
@@ -90,7 +92,7 @@ function generateDescription() {
             })
         }).then(() => {
             generateDescriptionService.run({
-                text: form.values.image_description,
+                text: (form.values.vendor_context || '') + (form.values.image_description || '') + ' # CONTEXT: ' + additionalContext.value,
                 model: settings.value?.generate_description_model,
                 prompt: settings.value?.generate_description_prompt,
                 categories: settings.value?.categories || []
@@ -104,7 +106,7 @@ function generateDescription() {
             prompt: settings.value?.describe_image_prompt
         }).then(() => {
             generateDescriptionService.run({
-                text: form.values.image_description,
+                text: (form.values.image_description || '') + ' # CONTEXT: ' + additionalContext.value,
                 model: settings.value?.generate_description_model,
                 prompt: settings.value?.generate_description_prompt,
                 categories: settings.value?.categories || []
