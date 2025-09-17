@@ -28,7 +28,7 @@ async def read_product(product_id: int, db: Session = Depends(get_db)):
     return await service.get_product(db, product_id=product_id)
 
 
-@router.post("/", response_model=schemas.ProductResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=schemas.ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     product: schemas.ProductCreate,
     db: Session = Depends(get_db)

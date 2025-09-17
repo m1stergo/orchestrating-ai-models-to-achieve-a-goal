@@ -28,7 +28,7 @@ async def get_settings(
             detail="Failed to get settings"
         )
 
-@router.put("/", response_model=UserSettingsResponse)
+@router.put("", response_model=UserSettingsResponse)
 async def update_settings(
     settings_data: UserSettingsUpdate,
     settings_service: SettingsService = Depends(get_settings_service)
@@ -54,7 +54,7 @@ async def update_settings(
             detail="Failed to update settings"
         )
 
-@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 async def reset_settings(
     settings_service: SettingsService = Depends(get_settings_service)
 ):
