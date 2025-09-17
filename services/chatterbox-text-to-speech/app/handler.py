@@ -10,7 +10,8 @@ from typing import Dict, Any
 from .config import settings
 from .common import InferenceHandler, InferenceResponse, InferenceStatus
 from uuid import uuid4
-from minio import Minio
+from app.minio_client import MinioClient
+minio_client = MinioClient()
 
 logger = logging.getLogger(__name__)
 
@@ -114,44 +115,13 @@ class ChatterboxHandler(InferenceHandler):
                 ta.save(buffer, wav, self.model.sr, format="wav")
                 buffer.seek(0)
                 
-                client = Minio(
-                    endpoint=settings.MINIO_ENDPOINT_URL,
-                    access_key=settings.MINIO_ACCESS_KEY,
-                    secret_key=settings.MINIO_SECRET_KEY,
-                    secure=settings.MINIO_SECURE,
-                    cert_check=False
-                )
-
-                # Asegurar que ambos buckets existan (público y temporal)
-                for bucket in [settings.MINIO_PUBLIC_BUCKET, settings.MINIO_TEMP_BUCKET]:
-                    try:
-                        if not client.bucket_exists(bucket):
-                            client.make_bucket(bucket)
-                            logger.info(f"===== Created bucket: {bucket} =====")
-                    except Exception as e:
-                        logger.error(f"===== Error ensuring bucket {bucket} exists: {e} =====")
-                
-                # Usamos el bucket público para archivos de audio permanentes
-                bucket_name = settings.MINIO_PUBLIC_BUCKET
-                
-                audio_filename = f"{uuid4()}.wav"
-                
-                buffer_size = buffer.getbuffer().nbytes
-                
-                logger.info(f"==== Uploading to MinIO public bucket: {bucket_name}/{audio_filename} =====")
-                client.put_object(
-                    bucket_name,
-                    audio_filename,
-                    buffer,
-                    buffer_size,
+                # Subir el archivo usando el método upload_file del cliente
+                audio_url = minio_client.upload_temp_file(
+                    file_data=buffer,
                     content_type="audio/wav"
                 )
-
-                # Usar MINIO_PUBLIC_URL según indicado
-                base_url = settings.MINIO_PUBLIC_URL
                 
-                audio_url = f"{base_url}/{bucket_name}/{audio_filename}"
-                logger.info(f"==== Audio uploaded to MinIO: {audio_url} ====")
+                logger.info(f"==== Audio uploaded to MinIO: {audio_url} =====")
                 
                 return InferenceResponse(
                     status=InferenceStatus.COMPLETED,
