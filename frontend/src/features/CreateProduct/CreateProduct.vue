@@ -62,7 +62,7 @@ const form = useForm({
 const describeImageService = useService('describe-image')
 const generateDescriptionService = useService('generate-description')
 
-const isLoadingWarmup = computed(() => describeImageService.isLoadingWarmup.value || generateDescriptionService.isLoadingWarmup.value)
+const isReady = computed(() => describeImageService.isReady.value && generateDescriptionService.isReady.value)
 const error = computed(() => describeImageService.error.value || generateDescriptionService.error.value)
 
 provide('form', form)
@@ -78,19 +78,19 @@ function onClose() {
 </script>
 
 <template>
-  <Button icon="pi pi-sparkles" label="Write product description" size="small" outlined severity="primary" @click="() => visible = true" />
+  <Button :disabled="describeImageService.isLoadingSettings.value" icon="pi pi-sparkles" label="Write product description" size="small" outlined severity="primary" @click="() => visible = true" />
   <Drawer v-model:visible="visible" header="Write product description" position="right" class="w-1/2" :pt="{ content: { class: 'flex flex-col gap-2' } }" @hide="onClose">
-    <Message v-if="isLoadingWarmup" severity="warn" class="flex justify-center">
+    <Message v-if="error" severity="error" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            An error occurred please try again later. {{ error }}
+        </div>
+    </Message>
+    <Message v-else-if="!isReady" severity="warn" class="flex justify-center">
         <div class="flex items-center gap-2 justify-center text-center">
             <ProgressSpinner class="w-6 h-6" />
             Models are warming up, please wait a few seconds...
         </div>
     </Message> 
-    <Message v-else-if="error" severity="error" class="flex justify-center">
-        <div class="flex items-center gap-2 justify-center text-center">
-            An error occurred please try again later. {{ error }}
-        </div>
-    </Message>
     <WriteProductDescription v-else/>
     <template #footer>
       <Button 

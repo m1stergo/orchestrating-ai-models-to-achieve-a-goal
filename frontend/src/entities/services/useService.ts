@@ -1,4 +1,4 @@
-import { computed, reactive, watch } from "vue"
+import { computed, reactive, ref, watch } from "vue"
 import { inference, warmup, type ServiceResponse } from "./api"
 import { getSettings } from "@/features/UserSettings/api"
 import { useMutation, useQuery } from "@pinia/colada"
@@ -10,6 +10,7 @@ interface ServiceState {
     isLoadingWarmup: boolean;
     isLoadingInference: boolean;
     error: string;
+    isReady: boolean;
 }
 
 const state = reactive<Record<ServiceName, ServiceState>>({ 
@@ -17,26 +18,30 @@ const state = reactive<Record<ServiceName, ServiceState>>({
         isLoadingWarmup: false,
         isLoadingInference: false,
         error: '',
+        isReady: false,
     },
     'generate-description': {
         isLoadingWarmup: false,
         isLoadingInference: false,
         error: '',
+        isReady: false,
     },
     'text-to-speech': { 
         isLoadingWarmup: false,
         isLoadingInference: false,
         error: '',
+        isReady: false,
     },
     'generate-description/promotional-audio-script': { 
         isLoadingWarmup: false,
         isLoadingInference: false,
         error: '',
+        isReady: false,
     },
 })
 
 export function useService(service: ServiceName, options?: { onSuccess?: (response: ServiceResponse<string>) => void, onError?: (error: Error) => void, }) {
-    const { data: settings } = useQuery({
+    const { data: settings, isLoading: isLoadingSettings } = useQuery({
         key: ['settings'],
         query: () => getSettings(),
         refetchOnWindowFocus: false,
@@ -61,6 +66,7 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
         mutation: (params: Record<string, any>) => inference(service, params),
         onSuccess: (response: ServiceResponse<string>) => {
             options?.onSuccess?.(response)
+            state[service].isLoadingWarmup = false
             state[service].isLoadingInference = false
             state[service].error = ''
             if (response.status === 'FAILED') {
@@ -70,16 +76,16 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
         onError: (error: Error) => {
             options?.onError?.(error)
             state[service].isLoadingInference = false
+            state[service].isLoadingWarmup = false
             state[service].error = errorInference.value?.message || ''
         }
     })
 
-    async function run(params: Record<string, any>) {
-        await inferenceMutateAsync(params)
-    }
-
     watch(() => isLoadingWarmup.value, () => {
         state[service].isLoadingWarmup = isLoadingWarmup.value
+        if (!isLoadingWarmup.value) {
+            state[service].isReady = true
+        }
     })
     
     watch(() => isLoadingInference.value, () => {
@@ -87,11 +93,19 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
     })
     
     return {
+        isLoadingSettings,
         isLoadingWarmup: computed(() => state[service].isLoadingWarmup),
         isLoadingInference: computed(() => state[service].isLoadingInference),
         error: computed(() => state[service].error),
-        run,
-        warmup: triggerWarmup,
+        run: (params: Record<string, any>) => { 
+            if (!state[service].isReady || state[service].isLoadingInference) return Promise.resolve()
+            return inferenceMutateAsync(params)
+        },
+        warmup: (params: Record<string, any>) => { 
+            if (state[service].isReady) return Promise.resolve()
+            triggerWarmup(params); 
+        },
         settings,
+        isReady: computed(() => state[service].isReady),
     }
 }

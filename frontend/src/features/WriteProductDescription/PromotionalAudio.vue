@@ -107,30 +107,19 @@ function parseDescriptionResponse(data: string) {
   }
 }
 
+onMounted(() => {
+  tts.warmup({ model: 'chatterbox' })
+})
+
 watch(voices, (newVoices) => {
   if (newVoices.length > 0 && !selectedVoice.value) {
     selectedVoice.value = newVoices[0]
   }
 })
-
-onMounted(() => {
-  tts.warmup({ model: 'chatterbox' })
-})
 </script>
 
 <template>
-    <Message v-if="tts.isLoadingWarmup.value" severity="warn" class="flex justify-center">
-        <div class="flex items-center gap-2 justify-center text-center">
-            <ProgressSpinner class="w-6 h-6" />
-            Text to speech models are warming up, please wait a few seconds...
-        </div>
-    </Message> 
-    <Message v-else-if="tts.error.value" severity="error" class="flex justify-center">
-        <div class="flex items-center gap-2 justify-center text-center">
-            An error occurred please try again later. {{ tts.error.value }}
-        </div>
-    </Message>
-    <div v-else class="flex flex-col gap-4 mb-6">
+    <div class="flex flex-col gap-4 mb-6">
         <Button 
             :disabled="generateDescription.isLoadingInference.value"
             :loading="generateDescription.isLoadingInference.value"
@@ -171,17 +160,17 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-        <Message v-if="tts.isLoadingWarmup.value" severity="warn" class="flex justify-center">
+        <Message v-if="tts.error.value" severity="error" class="flex justify-center">
             <div class="flex items-center gap-2 justify-center text-center">
-                <ProgressSpinner class="w-6 h-6" />
-                Models are warming up, please wait a few seconds...
-            </div>
-        </Message> 
-        <Message v-else-if="tts.error.value" severity="error" class="flex justify-center">
-            <div class="flex items-center gap-2 justify-center text-center">
-                An error occurred please try again later. {{ tts.error.value }}
+               Text to speech model is not available, please try again later. {{ tts.error.value }}
             </div>
         </Message>
+        <Message v-else-if="!tts.isReady.value" severity="warn" class="flex justify-center">
+            <div class="flex items-center gap-2 justify-center text-center">
+                <ProgressSpinner class="w-6 h-6" />
+                Text to speech model is warming up, please wait a few seconds...
+            </div>
+        </Message> 
         <Button 
             v-else-if="form?.values.audio_description"
             :disabled="tts.isLoadingInference.value"

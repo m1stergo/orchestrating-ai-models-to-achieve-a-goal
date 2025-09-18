@@ -4,7 +4,6 @@ import { RouterView } from 'vue-router'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { useService } from '@/entities/services/useService'
-import { onMounted } from 'vue'
 
 const toast = useToast()
 

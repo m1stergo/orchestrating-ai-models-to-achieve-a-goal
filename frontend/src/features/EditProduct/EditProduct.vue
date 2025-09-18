@@ -74,7 +74,7 @@ provide('form', form)
 const describeImageService = useService('describe-image')
 const generateDescriptionService = useService('generate-description')
 
-const isLoadingWarmup = computed(() => describeImageService.isLoadingWarmup.value || generateDescriptionService.isLoadingWarmup.value)
+const isReady = computed(() => describeImageService.isReady.value && generateDescriptionService.isReady.value)
 const error = computed(() => describeImageService.error.value || generateDescriptionService.error.value)
 
 
@@ -89,34 +89,43 @@ watch(data, () => {
 </script>
 
 <template>
-  <Button icon="pi pi-pencil" rounded text size="small" @click="() => visible = true"/>
+  <Button :disabled="describeImageService.isLoadingSettings.value" icon="pi pi-pencil" rounded text size="small" @click="() => visible = true"/>
   <Drawer v-model:visible="visible" header="Edit Product" position="right" class="w-1/2" @show="refresh()">
-    <Message v-if="isLoadingWarmup" severity="warn" class="flex justify-center">
+    <Message v-if="error" severity="error" class="flex justify-center">
+        <div class="flex items-center gap-2 justify-center text-center">
+            An error occurred please try again later. {{ error }}
+        </div>
+    </Message>
+    <Message v-else-if="!isReady" severity="warn" class="flex justify-center">
         <div class="flex items-center gap-2 justify-center text-center">
             <ProgressSpinner class="w-6 h-6" />
             Models are warming up, please wait a few seconds...
         </div>
     </Message> 
-    <Message v-else-if="error" severity="error" class="flex justify-center">
-        <div class="flex items-center gap-2 justify-center text-center">
-            An error occurred please try again later. {{ error }}
-        </div>
-    </Message>
     <div v-else-if="isLoading" class="flex flex-col gap-4">
-      <div class="flex flex-col gap-2">
-        <Skeleton height="1rem" />
-        <Skeleton height="3rem" />
+      <div class="flex flex-col gap-4">
+        <Skeleton height="2rem" />
+        <Skeleton height="2rem" />
       </div>
-      <div class="flex flex-col gap-2">
-        <Skeleton height="1rem" />
-        <Skeleton height="3rem" />
+      <div class="flex flex-col">
+        <Skeleton height="5rem" width="5rem" />
       </div>
-      <div class="flex flex-col gap-2">
-        <Skeleton height="1rem" />
-        <Skeleton height="3rem" />
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
+          <Skeleton height="1.5rem" width="10rem" />
+          <Skeleton height="2.5rem" />
+        </div>
+        <div class="flex flex-col gap-2">
+          <Skeleton height="1.5rem" width="10rem" />
+          <Skeleton height="2.5rem" />
+        </div>
+        <div class="flex flex-col gap-2">
+          <Skeleton height="1.5rem" width="10rem" />
+          <Skeleton height="6rem" />
+        </div>
       </div>
     </div>
-    <div class="flex flex-col gap-4">
+    <div v-else class="flex flex-col gap-4">
        <WriteProductDescription :step="2"/>
     </div>
     
