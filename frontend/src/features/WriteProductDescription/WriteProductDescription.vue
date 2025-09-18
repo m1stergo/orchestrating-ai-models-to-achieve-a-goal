@@ -82,14 +82,14 @@ const additionalContext = computed(() => form.values.additional_context?.map(con
 
 function generateDescription() {
     if (form.values.selected_context_source === 'website' && form.values.vendor_url) {
-        triggerExtractWebContent(form.values.vendor_url).then(() => {
+        triggerExtractWebContent(form.values.vendor_url).then((response: ExtractWebContentResponse) => {
             return describeImageService.run({
                 image_url: form.values.images?.[0],
                 model: settings.value?.describe_image_model,
                 prompt: settings.value?.describe_image_prompt
             })
-        }).then(() => {
-            generateDescriptionService.run({
+        }).then((_: any) => {
+            return generateDescriptionService.run({
                 text: (form.values.vendor_context || '') + (form.values.image_description || '') + ' # CONTEXT: ' + additionalContext.value,
                 model: settings.value?.generate_description_model,
                 prompt: settings.value?.generate_description_prompt,
@@ -102,8 +102,8 @@ function generateDescription() {
             image_url: form.values.uploaded_image,
             model: settings.value?.describe_image_model,
             prompt: settings.value?.describe_image_prompt
-        }).then(() => {
-            generateDescriptionService.run({
+        }).then((_: any) => {
+            return generateDescriptionService.run({
                 text: (form.values.image_description || '') + ' # CONTEXT: ' + additionalContext.value,
                 model: settings.value?.generate_description_model,
                 prompt: settings.value?.generate_description_prompt,
