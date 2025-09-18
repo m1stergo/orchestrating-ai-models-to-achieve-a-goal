@@ -18,8 +18,6 @@ COPY requirements.txt ./
 # Install dependencies via pip (PyTorch already included in base image)
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN python -c "from chatterbox.tts import ChatterboxTTS; model = ChatterboxTTS.from_pretrained(device='cuda')"
-
 # Copy application code
 COPY . .
 

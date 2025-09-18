@@ -3,6 +3,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { EditProduct } from '@/features/EditProduct'
 import { DeleteProduct } from '@/features/DeleteProduct'
+import { ExportProduct } from '@/features/ExportProduct'
 import { getAllProducts } from '@/entities/products'
 import { useQuery } from '@pinia/colada'
 import { AudioPlayer } from '@/shared/ui/AudioPlayer'
@@ -66,6 +67,7 @@ const { state: products } = useQuery({
       <template #body="slotProps">    
           <EditProduct v-if="slotProps.data.id" :id="slotProps.data.id" />
           <DeleteProduct v-if="slotProps.data.id" :id="slotProps.data.id" />
+          <ExportProduct v-if="slotProps.data.id" :id="slotProps.data.id" />  
       </template>
     </Column>
     <template #empty>

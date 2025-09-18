@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -57,3 +57,23 @@ async def delete_product(product_id: int, db: Session = Depends(get_db)):
     Delete a product.
     """
     return await service.delete_product(db, product_id=product_id)
+
+
+
+@router.post("/{product_id}/export", response_model=schemas.ExportResponse)
+async def export_product_endpoint(product_id: int, db: Session = Depends(get_db)):
+    """
+    Export single product data as a ZIP file.
+    
+    Creates a ZIP file containing:
+    - product.csv: Product data in CSV format
+    - images/: Product images
+    - audio/: Product audio file
+    
+    Args:
+        product_id: ID of the product to export
+    
+    Returns:
+        Information about the generated export file including download URL
+    """
+    return await service.create_export_zip(db, product_id=product_id)

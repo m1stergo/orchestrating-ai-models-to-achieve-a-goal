@@ -56,3 +56,15 @@ class ProductInDB(ProductBase):
 class ProductResponse(ProductInDB):
     """Schema for product response."""
     pass
+
+
+
+class ExportResponse(BaseModel):
+    """Response schema for export operations."""
+    
+    filename: str
+    download_url: str
+    size: int
+    products_count: int
+    images_count: int
+    audio_count: int

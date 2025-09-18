@@ -99,7 +99,7 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
         error: computed(() => state[service].error),
         run: (params: Record<string, any>) => { 
             if (!state[service].isReady || state[service].isLoadingInference) return Promise.resolve({
-                status: 'IN_PROGRESS c',
+                status: 'IN_PROGRESS',
                 message: 'Service is not ready or is already running'
             })
             return inferenceMutateAsync(params)

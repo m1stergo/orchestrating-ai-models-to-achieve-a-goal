@@ -1,3 +1,14 @@
+import type { ServiceResponse } from '../services/api'
+
+// Interfaz específica para la respuesta de exportación
+interface ExportResponse {
+  filename: string;
+  download_url: string;
+  size: number;
+  products_count: number;
+  images_count: number;
+  audio_count: number;
+}
 import type { CreateProductFormData, UpdateProductFormData } from './schema'
 import type { Product } from './types'
 
@@ -77,6 +88,21 @@ export async function deleteProduct(id: number): Promise<Product> {
   })
   if (!response.ok) {
     throw new Error(`Failed to delete product ${id}: ${response.statusText}`)
+  }
+  return response.json()
+}
+
+
+export async function exportProduct(params: { id: string }): Promise<ExportResponse> {
+  const response = await fetch(`${API_URL}/${params.id}/export`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    // No es necesario enviar el cuerpo ya que el ID ya está en la URL
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to export product: ${response.statusText}`)
   }
   return response.json()
 }
