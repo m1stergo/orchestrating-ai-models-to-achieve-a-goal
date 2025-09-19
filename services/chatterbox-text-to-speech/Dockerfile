@@ -1,9 +1,13 @@
 FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
 
-# Install system dependencies
+# Install system dependencies and build tools
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends bash ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+    bash \
+    ca-certificates \
+    build-essential \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
