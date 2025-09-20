@@ -15,7 +15,6 @@ async def run(request: Dict[str, Any]):
     input_data = request.get('input', request)
     return pod.run(input_data)
 
-
 @router.get("/status/{id}")
 async def status(id: str):
     return pod.status(id)
