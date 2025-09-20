@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     TMPDIR: Optional[str] = "/runpod-volume/tmp"
     MODELS_DIR: Optional[str] = "/runpod-volume/models"
 
+    PROMPT: Optional[str] = "Describe this image in detail"
+
     class Config:
         env_file = ".env"
         case_sensitive = True
