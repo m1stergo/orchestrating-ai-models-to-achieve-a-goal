@@ -23,8 +23,12 @@ WORKDIR /app
 # Copy requirements file first for better layer caching
 COPY requirements.txt ./
 
-# Install dependencies via pip (PyTorch already included in base image)
+# Install dependencies via pip with explicit handling of torch packages
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Verify torch and torchvision installation
+RUN python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')" && \
+    python -c "import torchvision; print(f'Torchvision version: {torchvision.__version__}')"
 
 # Copy application code
 COPY . .

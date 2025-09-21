@@ -20,5 +20,14 @@ mkdir -p "$HF_HOME" "$TRANSFORMERS_CACHE" "$TORCH_HOME" "$TMPDIR" /runpod-volume
 ( df -hT /runpod-volume || true )
 ( du -h --max-depth=1 "$HF_HOME" 2>/dev/null | sort -h || true )
 
+# Verify critical dependencies
+echo "[entrypoint] Verifying critical dependencies..."
+python -m app.check_imports
+if [ $? -ne 0 ]; then
+    echo "[entrypoint] ERROR: Dependency verification failed. Check the logs."
+    exit 1
+fi
+echo "[entrypoint] Verificación de dependencias exitosa."
+
 # Start RunPod handler
 exec python -m app.rp_handler
