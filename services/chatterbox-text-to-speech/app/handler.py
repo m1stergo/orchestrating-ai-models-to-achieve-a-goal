@@ -21,21 +21,40 @@ class ChatterboxHandler(InferenceHandler):
     def __init__(self, model_name: str):
         super().__init__(model_name)
 
+    def _materialize_model(self) -> str:
+        # Usar la configuración centralizada de Pydantic
+        base_models_dir = settings.MODELS_DIR
+        local_dir = f"{base_models_dir}/{self.model_name.replace('/', '__')}"
+        os.makedirs(local_dir, exist_ok=True)
+        cache_dir = settings.HUGGINGFACE_CACHE_DIR
+        logger.info(f"==== snapshot_download to {local_dir} (cache: {cache_dir}) ====")
+        path = snapshot_download(
+            repo_id=self.model_name,
+            cache_dir=cache_dir,
+            local_dir=local_dir,
+            local_dir_use_symlinks=False,
+            resume_download=True,
+            allow_patterns=["*.safetensors","*.bin","*.json","tokenizer.*","processor.*","*.model","vocab.*","merges.txt",".gitattributes"],
+            ignore_patterns=["images/*","assets/*","examples/*","docs/*","test*/*","*.md"],
+        )
+        return path
+
     def _do_load_model(self):
         self.loading_start_time = time.time()
         try:
+
+            local_repo = self._materialize_model()
+
             # Load model
             model_kwargs = {
                 "device": "cuda",
+                "offload_folder": "/runpod-volume/offload",
                 "trust_remote_code": True,
             }
-            
-            if settings.HUGGINGFACE_CACHE_DIR:
-                model_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
 
             try:
                 self.model = ChatterboxTTS.from_pretrained(
-                    device="cuda"
+                    local_repo, **model_kwargs
                 )
             except Exception as cuda_error:
                 # Based on memory from previous issues with ChatterboxTTS and CUDA
@@ -43,7 +62,7 @@ class ChatterboxHandler(InferenceHandler):
                 raise
 
             # Successfully loaded
-            self.state = InferenceStatus.COMPLETED
+            self.status = InferenceStatus.COMPLETED
             total_time = time.time() - self.loading_start_time
             logger.info(f"==== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ====")
             
@@ -55,10 +74,10 @@ class ChatterboxHandler(InferenceHandler):
 
         except Exception as e:
             logger.error(f"Chatterbox TTS model loading failed: {str(e)}")
-            self.state = InferenceStatus.FAILED
+            self.status = InferenceStatus.FAILED
             self.error_message = str(e)
             return InferenceResponse(
-                status=InferenceStatus.ERROR,
+                status=InferenceStatus.FAILED,
                 message=f"Failed to load model: {str(e)}",
                 data=""
             )

@@ -29,12 +29,14 @@ const generateDescriptionService = useService('generate-description', {
 
 watch(describeImageService.settings, (newSettings, oldSettings) => {
   if (newSettings?.describe_image_model !== oldSettings?.describe_image_model && newSettings?.describe_image_model) {
+    describeImageService.dispose()
     describeImageService.warmup({ model: newSettings.describe_image_model })
   }
 })
 
 watch(generateDescriptionService.settings, (newSettings, oldSettings) => {
   if (newSettings?.generate_description_model !== oldSettings?.generate_description_model && newSettings?.generate_description_model) {
+    generateDescriptionService.dispose()
     generateDescriptionService.warmup({ model: newSettings.generate_description_model })
   }
 })

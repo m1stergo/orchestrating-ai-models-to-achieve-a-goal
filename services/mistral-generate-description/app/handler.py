@@ -5,6 +5,8 @@ from .config import settings
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from .common import InferenceHandler, InferenceResponse, InferenceStatus
+import os
+from huggingface_hub import snapshot_download
 
 logger = logging.getLogger(__name__)
 
@@ -13,21 +15,40 @@ class MistralHandler(InferenceHandler):
     def __init__(self, model_name: str):
         super().__init__(model_name)
         self.tokenizer: Optional[Any] = None
+
+    def _materialize_model(self) -> str:
+        # Usar la configuración centralizada de Pydantic
+        base_models_dir = settings.MODELS_DIR
+        local_dir = f"{base_models_dir}/{self.model_name.replace('/', '__')}"
+        os.makedirs(local_dir, exist_ok=True)
+        cache_dir = settings.HUGGINGFACE_CACHE_DIR
+        logger.info(f"==== snapshot_download to {local_dir} (cache: {cache_dir}) ====")
+        path = snapshot_download(
+            repo_id=self.model_name,
+            cache_dir=cache_dir,
+            local_dir=local_dir,
+            local_dir_use_symlinks=False,
+            resume_download=True,
+            allow_patterns=["*.safetensors","*.bin","*.json","tokenizer.*","processor.*","*.model","vocab.*","merges.txt",".gitattributes"],
+            ignore_patterns=["images/*","assets/*","examples/*","docs/*","test*/*","*.md"],
+        )
+        return path
         
     def _do_load_model(self) -> InferenceResponse:
         try:
             logger.info("==== Loading model... This may take several minutes. ====")
 
+            local_repo = self._materialize_model()
+
             # Load tokenizer
             tokenizer_kwargs = {
-                "trust_remote_code": True, 
+                "trust_remote_code": True,
+                "offload_folder": "/runpod-volume/offload",
                 "token": settings.HF_TOKEN
             }
-            if settings.HUGGINGFACE_CACHE_DIR:
-                tokenizer_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
                 
             self.tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name,
+                local_repo,
                 **tokenizer_kwargs
             )
 
@@ -36,6 +57,7 @@ class MistralHandler(InferenceHandler):
                 "torch_dtype": "auto",
                 "device_map": "auto",
                 "trust_remote_code": True,
+                "offload_folder": "/runpod-volume/offload",
                 "token": settings.HF_TOKEN
             }
             
@@ -43,12 +65,12 @@ class MistralHandler(InferenceHandler):
                 model_kwargs["cache_dir"] = settings.HUGGINGFACE_CACHE_DIR
 
             self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
+                local_repo,
                 **model_kwargs
             )
 
             # Successfully loaded
-            self.state = InferenceStatus.COMPLETED
+            self.status = InferenceStatus.COMPLETED
             total_time = time.time() - self.loading_start_time
             logger.info(f"==== Model loaded successfully and ready for inference - Total loading time: {total_time:.2f} seconds ({total_time/60:.2f} minutes) ====")
             
@@ -60,7 +82,7 @@ class MistralHandler(InferenceHandler):
             
         except Exception as e:
             logger.error(f"==== Failed to load Mistral model: {str(e)} ====")
-            self.state = InferenceStatus.FAILED
+            self.status = InferenceStatus.FAILED
             self.error_message = str(e)
             return InferenceResponse(
                 status=InferenceStatus.FAILED,
@@ -80,7 +102,7 @@ class MistralHandler(InferenceHandler):
                 self.load_model()
             
             # Set state to IN_PROGRESS before starting generation
-            self.state = InferenceStatus.IN_PROGRESS
+            self.status = InferenceStatus.IN_PROGRESS
             
             # Extract text and prompt from request_data
             text = request_data.get('text', '')
@@ -117,7 +139,7 @@ class MistralHandler(InferenceHandler):
             text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
             # Reset state to COMPLETED after processing
-            self.state = InferenceStatus.COMPLETED
+            self.status = InferenceStatus.COMPLETED
             
             logger.info("==== Product description generated successfully ====")
             logger.info(f"==== {text} ====")
@@ -129,7 +151,7 @@ class MistralHandler(InferenceHandler):
         except Exception as e:
             logger.error(f"==== Error: {str(e)} ====")
             return InferenceResponse(
-                status=InferenceStatus.ERROR,
+                status=InferenceStatus.FAILED,
                 message=f"Error: {str(e)}",
                 data=""
             )

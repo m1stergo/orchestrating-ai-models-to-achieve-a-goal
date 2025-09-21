@@ -54,11 +54,13 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
             state[service].error = ''
             if (response.status === 'FAILED') {
                 state[service].error = response.message
+                options?.onError?.(new Error(response.message))
             }
         },
         onError: () => {
             state[service].isLoadingWarmup = false
             state[service].error = errorWarmup.value?.message || ''
+            options?.onError?.(new Error(state[service].error))
         }
     })
 
@@ -71,6 +73,7 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
             state[service].error = ''
             if (response.status === 'FAILED') {
                 state[service].error = response.message
+                options?.onError?.(new Error(response.message))
             }
         },
         onError: (error: Error) => {
@@ -78,6 +81,7 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
             state[service].isLoadingInference = false
             state[service].isLoadingWarmup = false
             state[service].error = errorInference.value?.message || ''
+            options?.onError?.(new Error(state[service].error))
         }
     })
 
@@ -110,5 +114,11 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
         },
         settings,
         isReady: computed(() => state[service].isReady),
+        dispose: () => {
+            state[service].isReady = false
+            state[service].isLoadingWarmup = false
+            state[service].isLoadingInference = false
+            state[service].error = ''
+        }
     }
 }

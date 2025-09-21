@@ -8,10 +8,8 @@ class Settings(BaseSettings):
     API_TITLE: str = "Chatterbox Text to Speech Service"
     API_DESCRIPTION: str = "AI service for text to speech conversion"
     API_VERSION: str = "/api/v1"
-    PORT: int = 8000
+    PORT: int = 8003
 
-    HUGGINGFACE_CACHE_DIR: Optional[str] = None
-    
     # Minio storage settings
     MINIO_ENDPOINT_URL: str = None
     MINIO_ACCESS_KEY: str = None
@@ -23,6 +21,13 @@ class Settings(BaseSettings):
     MINIO_PUBLIC_BUCKET: str = "public"
     MINIO_TEMP_BUCKET: str = "temp"
     MINIO_PUBLIC_URL: str = None
+
+    # Caching / Temp (defaults target the network volume)
+    HUGGINGFACE_CACHE_DIR: Optional[str] = "/runpod-volume/huggingface"
+    TORCH_HOME: Optional[str] = "/runpod-volume/torch"
+    TMPDIR: Optional[str] = "/runpod-volume/tmp"
+    MODELS_DIR: Optional[str] = "/runpod-volume/models"
+
     
     # Custom prompt template
     PROMPT: Optional[str] = """
@@ -40,6 +45,9 @@ class Settings(BaseSettings):
     - Length suitable for a video under 30 seconds.
     - Avoid emojis and marketing fluff. Keep it direct and simple.
     """
+
+    PYTORCH_CUDA_ALLOC_CONF: Optional[str] = "max_split_size_mb:128,garbage_collection_threshold:0.8"
+    
 
     class Config:
         env_file = ".env"

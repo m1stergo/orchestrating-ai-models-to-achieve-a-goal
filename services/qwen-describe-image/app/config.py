@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     PROMPT: Optional[str] = "Describe this image in detail"
 
+    PYTORCH_CUDA_ALLOC_CONF: Optional[str] = "max_split_size_mb:128,garbage_collection_threshold:0.8"
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

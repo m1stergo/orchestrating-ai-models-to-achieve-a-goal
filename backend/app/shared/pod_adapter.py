@@ -20,11 +20,11 @@ class PodAdapter(Adapter):
 
     def __init__(self, service_url: str, api_token: Optional[str] = None, 
                  service_name: str = "RunPod", model: Any = None, timeout: int = 60, 
-                 poll_interval: int = 60, max_retries: int = 40):
+                 poll_interval: int = 15, max_retries: int = 40):
         super().__init__(service_name, service_name, model, api_token)
         self.service_url = service_url
         self.timeout = aiohttp.ClientTimeout(total=timeout)
-        self.poll_interval = 30
+        self.poll_interval = poll_interval
         self.max_retries = max_retries
 
         logger.warning(f"{self.service_name} initialized with poll_interval: {self.poll_interval}, max_retries: {self.max_retries}")
@@ -54,6 +54,8 @@ class PodAdapter(Adapter):
         headers = {
             "Authorization": f"Bearer {self.api_token}"
         } if self.api_token else {}
+
+        logger.warning(f"===== CALLING ENDPOINT: {self.service_url} {endpoint} =====")
 
         url = f"{self.service_url}/{endpoint.lstrip('/')}"
         
@@ -161,12 +163,8 @@ class PodAdapter(Adapter):
 
             logger.info(f"===== Warmup job {job_id} completed with result: {final_result} =====")
 
-            logger.warning("POR RETORNAR")
-
             logger.warning(final_result.output)
             logger.warning(f"Tipo de final_result.output: {type(final_result.output).__name__}")
-
-            logger.warning("DALE QUESO")
 
             return final_result.output
 

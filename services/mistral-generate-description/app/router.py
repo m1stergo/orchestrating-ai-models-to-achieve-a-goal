@@ -11,10 +11,9 @@ logger = logging.getLogger(__name__)
 pod = RunPodSimulator(handler)
 
 @router.post("/run", response_model=JobResponse)
-async def run(request: Dict[str, Any]):    
+async def run(request: Dict[str, Any]):
     input_data = request.get('input', request)
     return pod.run(input_data)
-
 
 @router.get("/status/{id}")
 async def status(id: str):

@@ -12,6 +12,8 @@ def rp_handler(event: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"==== Received RunPod event with input: {input_data} ====")
     action = input_data.get("action", "inference")
     try:
+        if (handler.is_busy()):
+            return InferenceResponse(status=handler.status(), message="Model is currently processing another request. Please try again later.")
         if action == "inference":
             response = handler.infer(input_data)
         elif action == "warmup":

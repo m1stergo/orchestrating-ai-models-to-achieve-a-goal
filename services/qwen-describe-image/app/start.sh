@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo "[entrypoint] RunPod Serverless worker starting..."
 
-# Establecer valores fijos que no pueden ser sobrescritos
+# set environment variables
 export HF_HOME="/runpod-volume/huggingface"
 export HF_HUB_CACHE="/runpod-volume/huggingface"
 export TRANSFORMERS_CACHE="/runpod-volume/huggingface"

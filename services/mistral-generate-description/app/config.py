@@ -13,11 +13,16 @@ class Settings(BaseSettings):
 
     # Model configurations
     MISTRAL_MODEL_NAME: str = "mistralai/Mistral-7B-Instruct-v0.1"
+    #MISTRAL_MODEL_NAME: str = "teknium/OpenHermes-2.5-Mistral-7B"
     
     # HuggingFace cache directory
     HF_TOKEN: Optional[str] = None
-    HUGGINGFACE_CACHE_DIR: Optional[str] = None
 
+    # Caching / Temp (defaults target the network volume)
+    HUGGINGFACE_CACHE_DIR: Optional[str] = "/runpod-volume/huggingface"
+    TORCH_HOME: Optional[str] = "/runpod-volume/torch"
+    TMPDIR: Optional[str] = "/runpod-volume/tmp"
+    MODELS_DIR: Optional[str] = "/runpod-volume/models"
 
     # Custom prompt template
     PROMPT: Optional[str] = """
@@ -31,6 +36,9 @@ class Settings(BaseSettings):
     - Focus on features first, then benefits
     - Keywords must not repeat, must be relevant for SEO
     """
+
+    PYTORCH_CUDA_ALLOC_CONF: Optional[str] = "max_split_size_mb:128,garbage_collection_threshold:0.8"
+    
     
     class Config:
         env_file = ".env"

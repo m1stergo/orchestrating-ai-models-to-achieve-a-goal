@@ -114,6 +114,8 @@ class InferenceHandler(ABC):
         if self.status == InferenceStatus.IN_PROGRESS:
             return InferenceResponse(status=InferenceStatus.IN_PROGRESS, message="Model is currently processing another request. Please try again later.")
         return InferenceResponse(status=InferenceStatus.COMPLETED, message="Model is ready to use.")
+    def is_busy(self) -> bool:
+        return self.status == InferenceStatus.IN_PROGRESS or self.status == InferenceStatus.WARMINGUP
 
 class RunPodSimulator:
     def __init__(self, model: InferenceHandler):
@@ -122,7 +124,7 @@ class RunPodSimulator:
         self.busy = False
 
     def run(self, request_data: Dict[str, Any]) -> JobResponse:
-        if self.busy:
+        if self.model.is_busy():
             return JobResponse(id=self.job.get('id', 'busy'), status=self.job['status'], output=self.job['output'])
         job_id = str(uuid.uuid4())
         try:
