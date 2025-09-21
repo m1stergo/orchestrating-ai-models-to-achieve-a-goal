@@ -58,6 +58,7 @@ const tts = useService('text-to-speech', {
 
 async function generateSpeech() {
     try {
+        debugger
         await generateDescription.run({
             text: form?.values.description,
             prompt: props.prompt,

@@ -10,6 +10,7 @@ from typing import Dict, Any
 from .config import settings
 from .common import InferenceHandler, InferenceResponse, InferenceStatus
 from uuid import uuid4
+from huggingface_hub import snapshot_download
 from app.minio_client import MinioClient
 minio_client = MinioClient()
 
@@ -53,8 +54,9 @@ class ChatterboxHandler(InferenceHandler):
             }
 
             try:
-                self.model = ChatterboxTTS.from_pretrained(
-                    local_repo, **model_kwargs
+                self.model = ChatterboxTTS.from_local(
+                    ckpt_dir=local_repo,
+                    device="cuda",
                 )
             except Exception as cuda_error:
                 # Based on memory from previous issues with ChatterboxTTS and CUDA

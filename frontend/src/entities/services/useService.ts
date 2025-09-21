@@ -50,6 +50,7 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
     const { mutateAsync: triggerWarmup, isLoading: isLoadingWarmup, error: errorWarmup } = useMutation({
         mutation: (params: Record<string, any>) => warmup(service, params),
         onSuccess: (response: ServiceResponse<string>) => {
+            debugger
             state[service].isLoadingWarmup = false
             state[service].error = ''
             if (response.status === 'FAILED') {
@@ -87,6 +88,7 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
 
     watch(() => isLoadingWarmup.value, () => {
         state[service].isLoadingWarmup = isLoadingWarmup.value
+        debugger
         if (!isLoadingWarmup.value) {
             state[service].isReady = true
         }
@@ -102,18 +104,22 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
         isLoadingInference: computed(() => state[service].isLoadingInference),
         error: computed(() => state[service].error),
         run: (params: Record<string, any>) => { 
-            if (!state[service].isReady || state[service].isLoadingInference) return Promise.resolve({
+            debugger
+            const key = service === 'generate-description/promotional-audio-script' ? 'generate-description' : service
+            if (!state[key].isReady || state[key].isLoadingInference) return Promise.resolve({
                 status: 'IN_PROGRESS',
                 message: 'Service is not ready or is already running'
             })
             return inferenceMutateAsync(params)
         },
         warmup: (params: Record<string, any>) => { 
-            if (state[service].isReady) return Promise.resolve({ status: 'COMPLETED', message: 'Service is already ready' })
             triggerWarmup(params); 
         },
         settings,
-        isReady: computed(() => state[service].isReady),
+        isReady: computed(() => {
+            const key = service === 'generate-description/promotional-audio-script' ? 'generate-description' : service
+            return state[key].isReady
+        }),
         dispose: () => {
             state[service].isReady = false
             state[service].isLoadingWarmup = false

@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     TORCH_HOME: Optional[str] = "/runpod-volume/torch"
     TMPDIR: Optional[str] = "/runpod-volume/tmp"
     MODELS_DIR: Optional[str] = "/runpod-volume/models"
+    
+    # Modelo TTS - Repositorio oficial de ChatterboxTTS en HuggingFace
+    CHATTERBOX_MODEL_NAME: str = "ResembleAI/chatterbox"
 
     
     # Custom prompt template

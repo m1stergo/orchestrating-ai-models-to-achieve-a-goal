@@ -14,6 +14,8 @@ wheel==0.41.2
 pkuseg==0.0.25
 minio==7.2.4
 hf-xet==1.1.10
+sentencepiece>=0.1.99
+protobuf>=3.20.0
 # Already included in the base image
 # torch>=2.0.0
 # torchaudio>=2.6.0
