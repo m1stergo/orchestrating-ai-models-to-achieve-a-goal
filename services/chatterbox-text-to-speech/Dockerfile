@@ -1,8 +1,8 @@
 FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
 
-# Install system dependencies
+# Install system dependencies and build tools needed for pkuseg
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends bash ca-certificates && \
+    apt-get install -y --no-install-recommends bash ca-certificates build-essential g++ && \
     rm -rf /var/lib/apt/lists/*
 
 # Useful defaults (can be overridden in RunPod UI)
