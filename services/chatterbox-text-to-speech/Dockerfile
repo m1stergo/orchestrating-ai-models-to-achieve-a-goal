@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
+FROM pytorch/pytorch:2.6.0-cuda12.1-cudnn8-runtime
 
 # Install system dependencies and build tools needed for pkuseg
 RUN apt-get update && \

@@ -27,7 +27,7 @@ if [ $? -ne 0 ]; then
     echo "[entrypoint] ERROR: Dependency verification failed. Check the logs."
     exit 1
 fi
-echo "[entrypoint] Verificación de dependencias exitosa."
+echo "[entrypoint] Dependency verification successful."
 
 # Start RunPod handler
 exec python -m app.rp_handler
