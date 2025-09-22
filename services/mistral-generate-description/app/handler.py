@@ -1,3 +1,13 @@
+"""Mistral text generation model handler implementation.
+
+This module provides the MistralHandler class that implements the InferenceHandler
+interface for the Mistral large language model. It handles model loading, text processing,
+and running inference to generate product descriptions based on image descriptions.
+
+The handler supports downloading the model from HuggingFace, proper prompt formatting,
+and generating structured text outputs for product information.
+"""
+
 import logging
 import time
 from typing import Any, Optional, Dict
@@ -8,33 +18,80 @@ from .common import InferenceHandler, InferenceResponse, InferenceStatus
 import os
 from huggingface_hub import snapshot_download
 
+# Configure module logger
 logger = logging.getLogger(__name__)
 
 class MistralHandler(InferenceHandler):
-    """Local Mistral model for text generation (aligned with other providers)."""
+    """Handler for Mistral language model inference.
+    
+    This class implements the InferenceHandler interface for the Mistral
+    large language model. It handles model loading, text processing,
+    and running inference to generate product descriptions based on
+    image descriptions.
+    
+    Attributes:
+        model_name: Name or path of the Mistral model to use
+        tokenizer: Text tokenizer for encoding and decoding
+    """
     def __init__(self, model_name: str):
+        """Initialize the Mistral handler.
+        
+        Args:
+            model_name: Name or path of the Mistral model to use
+        """
         super().__init__(model_name)
         self.tokenizer: Optional[Any] = None
 
     def _materialize_model(self) -> str:
-        # Usar la configuración centralizada de Pydantic
+        """Download and prepare the model files.
+        
+        This method downloads the model from HuggingFace Hub if not available
+        locally, using the configured cache and local directories. It filters
+        the files to download only necessary model components and not documentation
+        or example files.
+        
+        Returns:
+            str: Path to the downloaded/cached model directory
+            
+        Note:
+            This uses HuggingFace's snapshot_download to efficiently download
+            and cache model files, with resume capability for large models.
+        """
+        # Use the centralized Pydantic configuration
         base_models_dir = settings.MODELS_DIR
         local_dir = f"{base_models_dir}/{self.model_name.replace('/', '__')}"
         os.makedirs(local_dir, exist_ok=True)
         cache_dir = settings.HUGGINGFACE_CACHE_DIR
+        
         logger.info(f"==== snapshot_download to {local_dir} (cache: {cache_dir}) ====")
+        
+        # Download model files, filtering unnecessary files
         path = snapshot_download(
             repo_id=self.model_name,
             cache_dir=cache_dir,
             local_dir=local_dir,
             local_dir_use_symlinks=False,
             resume_download=True,
+            # Only download model files, not documentation or examples
             allow_patterns=["*.safetensors","*.bin","*.json","tokenizer.*","processor.*","*.model","vocab.*","merges.txt",".gitattributes"],
             ignore_patterns=["images/*","assets/*","examples/*","docs/*","test*/*","*.md"],
         )
         return path
         
     def _do_load_model(self) -> InferenceResponse:
+        """Load the Mistral language model into memory.
+        
+        This method implements the abstract method from InferenceHandler.
+        It downloads the model if needed, then loads both the tokenizer and model
+        with optimal settings for memory management and GPU utilization.
+        
+        Returns:
+            InferenceResponse: Response with status of the model loading operation
+            
+        Note:
+            This is a resource-intensive operation that may take several minutes
+            depending on the model size and hardware configuration.
+        """
         try:
             logger.info("==== Loading model... This may take several minutes. ====")
 
@@ -90,11 +147,36 @@ class MistralHandler(InferenceHandler):
                 data=""
             )
             
-    def is_loaded(self):
-        """Check if model is loaded."""
+    def is_loaded(self) -> bool:
+        """Check if the model is loaded and ready for inference.
+        
+        This method implements the abstract method from InferenceHandler.
+        It verifies that both the model and tokenizer are loaded.
+        
+        Returns:
+            bool: True if the model and tokenizer are loaded, False otherwise
+        """
         return self.model is not None and self.tokenizer is not None
 
     def infer(self, request_data: Dict[str, Any]) -> InferenceResponse:
+        """Run inference to generate a product description.
+        
+        This method implements the abstract method from InferenceHandler.
+        It processes input text describing a product image and generates a structured
+        product description including title, description, keywords, and category.
+        
+        Args:
+            request_data: Dictionary with inference parameters including:
+                - text: Description of the product image (required)
+                - prompt: Custom prompt to use (optional)
+                
+        Returns:
+            InferenceResponse: Response with the generated product description
+            
+        Note:
+            If the model is not loaded, this will trigger model loading
+            and return a warming up status.
+        """
         logger.info(f"==== Generating product description ====")
 
         try:
@@ -157,6 +239,21 @@ class MistralHandler(InferenceHandler):
             )
 
     def _build_chat_prompt(self, text: str, prompt: str) -> str:
+        """Build a properly formatted chat prompt for the model.
+        
+        This method formats the input text and prompt into the proper chat format
+        expected by the Mistral model, using the model's chat template if available.
+        
+        Args:
+            text: The input text (image description) to process
+            prompt: The system prompt with instructions
+            
+        Returns:
+            str: Formatted chat prompt ready for the model
+            
+        Note:
+            Falls back to a simpler format if chat template is not available.
+        """
         messages = [
             {"role": "system", "content": prompt},
             {"role": "user", "content": text}
@@ -174,6 +271,18 @@ class MistralHandler(InferenceHandler):
             pass
 
     def _generate_sync(self, input_text: str) -> str:
+        """Generate text synchronously using the Mistral model.
+        
+        This is a helper method that handles the actual text generation process
+        using the model and tokenizer. It configures generation parameters for
+        optimal output quality.
+        
+        Args:
+            input_text: The prepared input text to send to the model
+            
+        Returns:
+            str: Generated text from the model
+        """
         inputs = self.tokenizer(
             input_text,
             return_tensors="pt",

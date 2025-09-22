@@ -1,26 +1,40 @@
 """
-Utility functions for generate_description module.
+Utility functions for the generate_description module.
+
+This module provides helper functions for generating product descriptions
+and promotional audio scripts, including prompt templates and JSON response
+parsing. It supports customizable prompts from user settings with fallback
+to default templates.
+
+Functions:
+    get_product_description_prompt: Generate a prompt for product descriptions
+    get_promotional_audio_script_prompt: Generate a prompt for audio scripts
+    extract_json_from_response: Parse JSON from AI model responses
 """
 import re
 import json
 import logging
-from typing import Optional
+from typing import Optional, List
 
-
+# Configure module logger
 logger = logging.getLogger(__name__)
 
-"""
-Shared prompt templates for text generation adapters.
-"""
-def get_product_description_prompt(custom_prompt: str = None,  categories: list = None) -> str:
+# Prompt templates for text generation with AI models
+def get_product_description_prompt(custom_prompt: Optional[str] = None, categories: Optional[List[str]] = None) -> str:
     """
-    Get the product description prompt template.
+    Get the product description prompt template for AI models.
+    
+    This function generates a prompt for AI models to create product descriptions.
+    It can use either a custom prompt from user settings or a default template.
+    The prompt includes instructions for format, style, and a JSON structure for
+    the expected response.
     
     Args:
-        custom_prompt: Optional custom prompt to use instead of default
+        custom_prompt: Optional custom prompt from user settings
+        categories: Optional list of valid product categories to choose from
         
     Returns:
-        str: The prompt template with placeholders
+        str: The complete prompt template to send to the AI model
     """
     base_instruction = custom_prompt if custom_prompt and custom_prompt.strip() else """
     You are a professional e-commerce copywriter.
@@ -48,13 +62,17 @@ def get_product_description_prompt(custom_prompt: str = None,  categories: list 
 
 def get_promotional_audio_script_prompt(custom_prompt: Optional[str] = None) -> str:
     """
-    Get promotional audio script prompt template.
+    Get promotional audio script prompt template for AI models.
+    
+    This function generates a prompt for AI models to create short, engaging
+    audio scripts for product promotions suitable for social media platforms.
+    It can use either a custom prompt from user settings or a default template.
     
     Args:
         custom_prompt: Optional custom prompt from user settings
         
     Returns:
-        str: The prompt template
+        str: The complete prompt template to send to the AI model
     """
     base_instruction = custom_prompt if custom_prompt and custom_prompt.strip() else """
     Create a short description for a Reels/TikTok promotional video.
@@ -76,11 +94,21 @@ def extract_json_from_response(response_text: str) -> str:
     """
     Extract JSON from response text that may contain markdown code blocks.
     
+    This function parses responses from AI models to extract valid JSON data.
+    It handles various formats including markdown code blocks and directly
+    embedded JSON objects. If valid JSON is found, it's validated and
+    normalized before returning.
+    
     Args:
         response_text: Text response from an AI model that might contain JSON
         
     Returns:
-        Extracted and validated JSON string or original text if no valid JSON found
+        str: Extracted and validated JSON string, or the original text if no valid JSON found
+        
+    Note:
+        The function tries multiple extraction methods:
+        1. Finding JSON in markdown code blocks (```json ... ```)
+        2. Looking for JSON objects directly in the text ({...})
     """
     if not response_text:
         return response_text

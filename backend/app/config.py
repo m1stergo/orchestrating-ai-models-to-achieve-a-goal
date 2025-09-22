@@ -1,46 +1,79 @@
+"""Application configuration module.
+
+This module defines the Settings class that represents the application configuration.
+It uses Pydantic's BaseSettings to provide type validation and automatic loading
+of environment variables.
+"""
 from pydantic_settings import BaseSettings
 from typing import Optional
 from pathlib import Path
 
 
 class Settings(BaseSettings):
-    """Application settings."""
+    """Application settings and configuration.
+    
+    This class represents all configuration options for the application.
+    Values are loaded from environment variables, .env file, or defaults.
+    
+    Attributes:
+        API_VERSION: Version prefix for all API endpoints.
+        PROJECT_NAME: Name of the project displayed in API documentation.
+        DATABASE_HOST: Host address of the database server.
+        DATABASE_PORT: Port of the database server.
+        DATABASE_USER: Username for database authentication.
+        DATABASE_PASSWORD: Password for database authentication.
+        DATABASE_NAME: Name of the database.
+        DATABASE_URL: Complete database URL for SQLAlchemy.
+        PORT: Port on which the server will run.
+        BASE_URL: Base URL of the server.
+        IMAGES_DIR: Directory where uploaded images are stored.
+        STATIC_URL: URL for accessing static files.
+        VOICE_MODELS_CONFIG: Path to voice models configuration file.
+        AUDIO_DIR: Directory where audio files are stored.
+        AUDIO_URL: URL for accessing audio files.
+        EXPORTS_DIR: Directory where export files are stored.
+    """
     
     # API settings
-    API_VERSION: str = "/api/v1"
-    PROJECT_NAME: str = "AI Orchestration API"
+    API_VERSION: str = "/api/v1"  # Version prefix for all API endpoints
+    PROJECT_NAME: str = "AI Orchestration API"  # Project name for API documentation
     
     # Database settings
-    DATABASE_HOST: str = "localhost"
-    DATABASE_PORT: str = "5432"
-    DATABASE_USER: str = "postgres"
-    DATABASE_PASSWORD: str = "postgres"
-    DATABASE_NAME: str = "orchestration_db"
-    DATABASE_URL: Optional[str] = None
+    DATABASE_HOST: str = "localhost"  # Database server hostname
+    DATABASE_PORT: str = "5432"  # Database server port
+    DATABASE_USER: str = "postgres"  # Database username
+    DATABASE_PASSWORD: str = "postgres"  # Database password
+    DATABASE_NAME: str = "orchestration_db"  # Database name
+    DATABASE_URL: Optional[str] = None  # Full database connection string (built from components if not provided)
     
     def __init__(self, **kwargs):
+        """Initialize settings with values from environment and defaults.
+        
+        Args:
+            **kwargs: Override any setting values via keyword arguments.
+        """
         super().__init__(**kwargs)
         # Build DATABASE_URL if not provided
         if not self.DATABASE_URL:
             self.DATABASE_URL = f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
     
     # Backend URL settings
-    PORT: int = 8000
-    BASE_URL: str = "http://localhost:8000"
+    PORT: int = 8000  # Port on which the API server will run
+    BASE_URL: str = "http://localhost:8000"  # Base URL for the API server
     
     # Image storage settings
-    IMAGES_DIR: Path = Path("app/static/images")
-    STATIC_URL: str = "http://localhost:8000/static"
+    IMAGES_DIR: Path = Path("app/static/images")  # Directory for storing uploaded images
+    STATIC_URL: str = "http://localhost:8000/static"  # Base URL for static files
     
     # Voice models configuration
-    VOICE_MODELS_CONFIG: Path = Path("app/features/text_to_speech/voice_models.json")
+    VOICE_MODELS_CONFIG: Path = Path("app/features/text_to_speech/voice_models.json")  # Path to voice models config file
     
     # Audio storage settings
-    AUDIO_DIR: Path = Path("app/static/audio")
-    AUDIO_URL: str = "http://localhost:8000/static"
+    AUDIO_DIR: Path = Path("app/static/audio")  # Directory for storing audio files
+    AUDIO_URL: str = "http://localhost:8000/static"  # Base URL for audio files
     
     # Export storage settings
-    EXPORTS_DIR: Path = Path("app/static/exports")
+    EXPORTS_DIR: Path = Path("app/static/exports")  # Directory for storing export files
 
     # Minio storage settings
     MINIO_ENDPOINT_URL: str = None
@@ -73,18 +106,27 @@ class Settings(BaseSettings):
     # Computed property for image URL construction
     @property
     def images_url(self) -> str:
-        """Get the full URL path for images."""
+        """Get the full URL path for accessing images.
+        
+        Returns:
+            str: Complete URL path to the images directory
+        """
         return f"{self.STATIC_URL}/images"
     
     # Computed property for audio URL construction
     @property
     def audio_url(self) -> str:
-        """Get the full URL path for audio files."""
+        """Get the full URL path for accessing audio files.
+        
+        Returns:
+            str: Complete URL path to the audio directory
+        """
         return f"{self.AUDIO_URL}/audio"
     
     class Config:
-        env_file = ".env"
-        case_sensitive = True
+        """Configuration for Pydantic settings behavior."""
+        env_file = ".env"  # Load environment variables from .env file
+        case_sensitive = True  # Environment variables are case-sensitive
 
 
 settings = Settings()

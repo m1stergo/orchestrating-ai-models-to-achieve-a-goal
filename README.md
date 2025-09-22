@@ -21,15 +21,23 @@ Each service has its own **README.md**, since they are designed for independent 
 
 ## Backend
 
-1. Create and activate a virtual environment:
+1. Create a virtual environment and install dependencies:
    ```bash
    cd backend
    python -m venv .venv
    source .venv/bin/activate   # Linux/Mac
    .venv\Scripts\activate      # Windows
-
+   
+   # Install dependencies
    pip install -r requirements.txt
+   
+   # Copy .env.example to .env and fill in the values
    cp .env.example .env
+   
+   # Create database tables
+   python create_tables.py
+
+   # Run the backend
    python main.py```
 
 ## AI Services

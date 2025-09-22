@@ -1,7 +1,14 @@
+"""Main application module for the AI Product Description Generator API.
+
+This module initializes the FastAPI application, sets up middleware, error handlers,
+and registers all the API routes. It's the entry point for the web application.
+"""
+
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+# Import routers from all feature modules
 from app.features.products.router import router as products_router
 from app.features.describe_image.router import router as describe_image_router
 from app.features.generate_description.router import router as generate_description_router
@@ -10,27 +17,32 @@ from app.features.upload_image.router import router as upload_image_router
 from app.features.upload_audio.router import router as upload_audio_router
 from app.features.settings.router import router as settings_router
 from app.features.extract_web_content.router import router as extract_web_content_router
+# Import configuration and utilities
 from app.config import settings
 from pathlib import Path
 import logging
 from dotenv import load_dotenv
 import colorlog
 
+# Load environment variables from .env file
 load_dotenv()
 
-# Configure logging
+# Configure logging system
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
+# Add colored log formatting for console output
 handler = colorlog.StreamHandler()
 handler.setFormatter(colorlog.ColoredFormatter(
 	'%(log_color)s%(levelname)s:%(name)s:%(message)s'))
 
+# Create a logger for the application
 logger = colorlog.getLogger('app')
 logger.addHandler(handler)
 
+# Create the FastAPI application with metadata
 app = FastAPI(
     title="Product description generator",
     description="API for product management with AI capabilities",
@@ -40,6 +52,18 @@ app = FastAPI(
 # Custom exception handler to standardize error responses
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
+    """Standardize error responses across the application.
+    
+    This handler ensures all HTTP exceptions return a consistent JSON format
+    with status, message, and detail fields.
+    
+    Args:
+        request: The incoming request that caused the exception
+        exc: The HTTP exception that was raised
+        
+    Returns:
+        JSONResponse: A standardized error response
+    """
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -49,13 +73,14 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         }
     )
 
-# Configure CORS
+# Configure Cross-Origin Resource Sharing (CORS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    # In production, replace with specific origins like ["https://yourfrontend.com"]
+    allow_origins=["*"],  
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # Include routers
