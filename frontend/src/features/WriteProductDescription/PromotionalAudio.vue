@@ -35,7 +35,7 @@ const { data: voices } = useQuery({
   query: () => getAvailableVoices(),
 })
 
-const generateDescription = useService('generate-description/promotional-audio-script', {
+const generateDescription = useService('generate-description/audio-promo', {
     onSuccess: (response: any) => {
         const parsedData = parseDescriptionResponse(response.data)
         form.setFieldValue('audio_description', parsedData.description)

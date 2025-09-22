@@ -4,7 +4,7 @@ import { getSettings } from "@/features/UserSettings/api"
 import { useMutation, useQuery } from "@pinia/colada"
 
 // Define valid service names as a type
-type ServiceName = 'describe-image' | 'generate-description' | 'text-to-speech' | 'generate-description/promotional-audio-script'
+type ServiceName = 'describe-image' | 'generate-description' | 'text-to-speech' | 'generate-description/audio-promo'
 
 interface ServiceState {
     isLoadingWarmup: boolean;
@@ -32,7 +32,7 @@ const state = reactive<Record<ServiceName, ServiceState>>({
         error: '',
         isReady: false,
     },
-    'generate-description/promotional-audio-script': { 
+    'generate-description/audio-promo': { 
         isLoadingWarmup: false,
         isLoadingInference: false,
         error: '',
@@ -102,7 +102,7 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
         isLoadingInference: computed(() => state[service].isLoadingInference),
         error: computed(() => state[service].error),
         run: (params: Record<string, any>) => { 
-            const key = service === 'generate-description/promotional-audio-script' ? 'generate-description' : service
+            const key = service === 'generate-description/audio-promo' ? 'generate-description' : service
             if (!state[key].isReady || state[key].isLoadingInference) return Promise.resolve({
                 status: 'IN_PROGRESS',
                 message: 'Service is not ready or is already running'
@@ -114,7 +114,7 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
         },
         settings,
         isReady: computed(() => {
-            const key = service === 'generate-description/promotional-audio-script' ? 'generate-description' : service
+            const key = service === 'generate-description/audio-promo' ? 'generate-description' : service
             return state[key].isReady
         }),
         dispose: () => {

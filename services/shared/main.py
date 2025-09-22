@@ -13,17 +13,26 @@ import logging
 from app.config import settings
 import colorlog
 
-# Configure logging with timestamps and colors for better readability
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configure root logger with timestamps and colors for better readability
+# Get the root logger - this will affect all loggers in the application
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
 
-# Set up module logger with color formatting
+# Remove any existing handlers to avoid duplicate logs
+if root_logger.handlers:
+    for handler in root_logger.handlers:
+        root_logger.removeHandler(handler)
+
+# Add a colored stream handler to the root logger
+color_handler = colorlog.StreamHandler()
+color_handler.setFormatter(colorlog.ColoredFormatter(
+    '%(asctime)s - %(log_color)s%(levelname)s%(reset)s - %(name)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+))
+root_logger.addHandler(color_handler)
+
+# Set up module logger
 logger = logging.getLogger(__name__)
-handler = colorlog.StreamHandler()
-handler.setFormatter(colorlog.ColoredFormatter('%(log_color)s%(levelname)s:%(name)s:%(message)s'))
-logger.addHandler(handler)
 
 # Import the API router after logging is configured
 from app.router import router

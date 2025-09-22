@@ -175,7 +175,7 @@ export async function getAvailableVoices(): Promise<VoiceModelsResponse> {
 }
 
 export async function generatePromotionalAudioScript(params: { text: string, model: string, prompt?: string }): Promise<ServiceResponse<string>> {
-  const response = await fetch(`${API_BASE_URL}/v1/generate-description/promotional-audio-script`, {
+  const response = await fetch(`${API_BASE_URL}/v1/generate-description/audio-promo`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

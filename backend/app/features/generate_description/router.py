@@ -68,7 +68,7 @@ async def run_text(
         raise HTTPException(status_code=500, detail=f"Error generating description: {str(e)}")
 
 @router.post(
-    "/promotional-audio-script",
+    "/audio-promo",
     response_model=ServiceResponse,
     responses={
         200: {

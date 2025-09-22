@@ -23,11 +23,11 @@ from uuid import uuid4
 from huggingface_hub import snapshot_download
 from app.minio_client import MinioClient
 
-# Initialize MinIO client for storing generated audio
-minio_client = MinioClient()
-
 # Configure module logger
 logger = logging.getLogger(__name__)
+
+# Initialize MinIO client for storing generated audio
+minio_client = MinioClient()
 
 class ChatterboxHandler(InferenceHandler):
     """Handler for ChatterboxTTS model inference.
