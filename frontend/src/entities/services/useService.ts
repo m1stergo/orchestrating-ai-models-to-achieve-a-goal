@@ -50,7 +50,6 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
     const { mutateAsync: triggerWarmup, isLoading: isLoadingWarmup, error: errorWarmup } = useMutation({
         mutation: (params: Record<string, any>) => warmup(service, params),
         onSuccess: (response: ServiceResponse<string>) => {
-            debugger
             state[service].isLoadingWarmup = false
             state[service].error = ''
             if (response.status === 'FAILED') {
@@ -88,7 +87,6 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
 
     watch(() => isLoadingWarmup.value, () => {
         state[service].isLoadingWarmup = isLoadingWarmup.value
-        debugger
         if (!isLoadingWarmup.value) {
             state[service].isReady = true
         }
@@ -104,7 +102,6 @@ export function useService(service: ServiceName, options?: { onSuccess?: (respon
         isLoadingInference: computed(() => state[service].isLoadingInference),
         error: computed(() => state[service].error),
         run: (params: Record<string, any>) => { 
-            debugger
             const key = service === 'generate-description/promotional-audio-script' ? 'generate-description' : service
             if (!state[key].isReady || state[key].isLoadingInference) return Promise.resolve({
                 status: 'IN_PROGRESS',
